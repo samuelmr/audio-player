@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+ <head>
+ <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="width">
+  <meta name="theme-color" content="#339966">
+  <title>Ctrl&ndash; music player</title>
+<!--
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="../i/ctrl-icon.png">
+  <link rel="shortcut icon" type="image/png" href="../i/favicon.png">
+--> 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200;400;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200;400;600;700&display=swap');
+    :root {
+        --base-hue: 25;
+        --base-saturation: 25%;
+        --base-lightness: 90%;
+    }
+    body {
+        font-family: 'Source Sans Pro';
+    }
+    * {
+        box-sizing: border-box;        
+    }
+    audio-player, audio-browser {
+        background-color: hsl(var(--base-hue), var(--base-saturation), var(--base-lightness));
+        background: linear-gradient(209deg, hsl(var(--base-hue), var(--base-saturation), var(--base-lightness)), hsl(var(--base-hue), var(--base-saturation), calc(0.9 * var(--base-lightness))));
+        border: 1px solid gray;
+        border-radius: 0.5em;
+        display: block;
+        margin: auto;
+        padding: 0.5em 1%;
+        width: 98%;
+    }
+    audio-track {
+        background-color: hsla(var(--base-hue), 100%, 100%, 25%);
+        border-radius: 0.5em;
+        display: grid;
+        grid-template-areas:
+         "artist track duration"
+         "tracknumber album year"
+         "genre playlist keywords";
+        grid-template-rows: 2em 2em 2em;
+        grid-template-columns: 30% 60% 10%;
+        height: 2em;
+        margin: 0.5em auto;
+        padding: 0 0.5em;
+        overflow: hidden;
+        transition: all 240ms;
+        width: 100%;
+    }
+    audio-track:focus, audio-track:focus-within, audio-track:hover {
+        background-color: hsla(var(--base-hue), 100%, 100%, 50%);
+        height: 6em;
+        outline: none;
+        transition: all 120ms;
+    }
+    #buttons, .audio-time {
+        float: left;
+        margin: 0.5em 0 1em 0;
+        padding: 0;
+        text-align: center;
+    }
+    #buttons button, .audio-time input {
+        background-color: hsla(var(--base-hue), 100%, 100%, 25%);
+        border-color: hsla(var(--base-hue), 10%, 5%, 25%);
+        border-radius: 0.2em;
+        font-size: 1.5em;
+        height: 1.5em;
+        margin: 0;
+        padding: 0;
+        transition: all 240ms;
+    }
+    #buttons {
+        width: 10em;
+    }
+    #buttons button {
+        width: 2em;
+    }
+    #buttons button:focus, #buttons button:hover {
+        outline: none;
+        background-color: hsla(var(--base-hue), 100%, 100%, 50%);
+        transition: all 120ms;
+    }
+    .audio-time {
+        width: 11em;
+    }
+    .audio-time input {
+        text-align: center;
+    }
+    .audio-time span {
+        font-size: 2em;
+    }
+    #progress {
+        clear: both;
+        display: block;
+        margin: 0 auto 1em auto;
+        width: 90%;
+    }
+    section {
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 0.5em;
+        white-space: nowrap;
+    }
+    a {
+        color: #000;
+        text-decoration: none;
+    }
+    a:focus, a:hover {
+        outline: none;
+        text-decoration: underline;
+    }
+    .album {
+        grid-area: album;
+    }
+    .artist {
+        grid-area: artist;
+    }
+    .duration {
+        grid-area: duration;
+        text-align: right;
+    }
+    .genre {
+        grid-area: genre;
+    }
+    .keywords {
+        grid-area: keywords;
+    }
+    .playlist {
+        grid-area: playlist;
+    }
+    .title {
+        display: none;
+    }
+    .track {
+        grid-area: track;
+    }
+    .tracknumber {
+        grid-area: tracknumber;
+    }
+    .published {
+        grid-area: year;
+    }
+    audio-browser nav ol, audio-browser nav ol li {
+        margin: 0;
+        padding: 0;
+    }
+    audio-browser nav ol.hidden {
+        display: none;
+    }
+    audio-browser nav ol li {
+        list-style-type: none;
+        padding: 0 0.5em;
+    }
+    audio-browser nav > ol > li {
+        border: 1px solid #333;
+        border-radius: 0.5em;
+        margin-top: 0.5em;
+    }
+    storage-settings {
+        background-color: hsla(var(--base-hue), var(--base-saturation), 15%, 25%);
+        height: 2em;
+        overflow: hidden;
+        padding: 2em;
+        position: absolute;
+        right: 2em;
+        top: 2em;
+        transition: all 120ms;
+        width: 2em;
+    }
+    storage-settings:before {
+        content: '⚙';
+        font-size: 2em;
+        display: block;
+        position: absolute;
+        height: 1em;
+        width: 1em;
+    }
+    storage-settings:focus, storage-settings:focus-within {
+        height: 100vh;
+        right: 0;
+        top: 0;
+        width: 100%;
+    }
+    storage-settings:focus:before, storage-settings:focus-within:before {
+        display: none;
+    }
+    storage-settings label {
+        display: block;
+    }
+
+
+  </style>
+ </head>
+ <body>
+  <audio-player id="ap" name="Player" track="" next="" previous="">
+  </audio-player>
+  <audio-browser>
+    Loading...
+  </audio-browser>
+ </body>
+</html>
