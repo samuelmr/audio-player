@@ -1,4 +1,5 @@
 import HtmlWebpackPlugin from "html-webpack-plugin";
+import TerserPlugin from "terser-webpack-plugin";
 import path from "path";
 import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -12,6 +13,19 @@ export default {
     library: {
       type: "module",
     },
+  },
+  optimization: {
+    minimize: true,
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
+          format: {
+            comments: true,
+          },
+        },
+        extractComments: false,
+      }),
+    ],
   },
   plugins: [
     new HtmlWebpackPlugin({

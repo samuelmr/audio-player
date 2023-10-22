@@ -1,13 +1,38 @@
 <!DOCTYPE html>
 <html>
  <head>
- <meta charset="UTF-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="HandheldFriendly" content="True">
   <meta name="MobileOptimized" content="width">
-  <meta name="theme-color" content="#339966">
-  <title>Ctrl&ndash; music player</title>
+  <meta name="theme-color" content="hsl(180, 50%, 75%)" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="hsl(180, 50%, 25%)" media="(prefers-color-scheme: dark)">
+  <script>
+    const keys = [
+     'accessKeyId',
+     'secretAccessKey',
+     'endpoint',
+     'region',
+     'bucketName'
+    ]
+    const params = new URLSearchParams(document.location.search)
+    const a = document.createElement('a')
+    a.href = document.location.href
+    let keysFound = false
+    keys.forEach(key => {
+      if (params.get(key)) {
+        keysFound = true
+        localStorage.setItem(key, params.get(key))
+        a.search = a.search.replace(new RegExp(`${key}=[^&]*&?`), '')
+      }
+    })
+    if (keysFound) {
+      // redirect to hide secret params
+      // document.location.href = a.href
+    }
+   </script>
+   <title>Ctrl&ndash; music player</title>
 <!--
   <link rel="manifest" href="./manifest.json">
   <link rel="apple-touch-icon" href="../i/ctrl-icon.png">
@@ -19,28 +44,57 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200;400;600;700&display=swap');
     :root {
-        --base-hue: 25;
+        --base-hue: 180;
         --base-saturation: 25%;
-        --base-lightness: 90%;
+        --base-lightness: 75%;
+        --text-color: hsl(var(--base-hue), 50%, 0.5%);
+    }
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --base-lightness: 25%;
+            --text-color: hsl(var(--base-hue), 50%, 99.5%);
+        }
     }
     body {
+        background-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
+        color: var(--text-color);
         font-family: 'Source Sans Pro';
     }
     * {
         box-sizing: border-box;        
+        margin-block-start: 0;
+        margin-block-end: 0;
+        margin-inline-start: 0;
+        margin-inline-end: 0;
+        padding-inline-start: 0;
     }
     audio-player, audio-browser {
         background-color: hsl(var(--base-hue), var(--base-saturation), var(--base-lightness));
         background: linear-gradient(209deg, hsl(var(--base-hue), var(--base-saturation), var(--base-lightness)), hsl(var(--base-hue), var(--base-saturation), calc(0.9 * var(--base-lightness))));
-        border: 1px solid gray;
+        border-color: hsla(var(--base-hue), 50%, 5%, 50%);
         border-radius: 0.5em;
+        border-style: outset;
+        border-width: 2px;
         display: block;
-        margin: auto;
-        padding: 0.5em 1%;
+        margin: 0 auto 1em auto;
+        max-width: 80em;
+        padding: 0 1% 0.5em 1%;
         width: 98%;
+    }
+    audio-player nav {
+        border-color: hsla(var(--base-hue), 50%, 5%, 50%);
+        border-radius: 0.5em;
+        border-style: inset;
+        border-width: 2px;
+        max-height: 30vh;
+        overflow: auto;
+        padding: 0.5em 1em;
     }
     audio-track {
         background-color: hsla(var(--base-hue), 100%, 100%, 25%);
+        background-position: top right;
+        background-repeat: no-repeat;
+        background-size: contain;
         border-radius: 0.5em;
         display: grid;
         grid-template-areas:
@@ -51,14 +105,22 @@
         grid-template-columns: 30% 60% 10%;
         height: 2em;
         margin: 0.5em auto;
-        padding: 0 0.5em;
+        padding: 0 2em 0 0.5em;
         overflow: hidden;
-        transition: all 240ms;
+        transition: all 175ms;
         width: 100%;
+    }
+    audio-track.playing {
+        background-color: hsla(var(--base-hue), 100%, 100%, 75%);
+        border-color: hsla(var(--base-hue), 50%, 5%, 50%);
+        border-radius: 0.5em;
+        border-style: outset;
+        border-width: 2px;
     }
     audio-track:focus, audio-track:focus-within, audio-track:hover {
         background-color: hsla(var(--base-hue), 100%, 100%, 50%);
         height: 6em;
+        padding-right: 6em;
         outline: none;
         transition: all 120ms;
     }
@@ -69,14 +131,15 @@
         text-align: center;
     }
     #buttons button, .audio-time input {
-        background-color: hsla(var(--base-hue), 100%, 100%, 25%);
-        border-color: hsla(var(--base-hue), 10%, 5%, 25%);
+        background-color: hsla(var(--base-hue), 100%, 100%, 75%);
+        border-color: hsla(var(--base-hue), 50%, 5%, 50%);
         border-radius: 0.2em;
+        color: hsla(var(--base-hue), 75%, 10%, 99%);
         font-size: 1.5em;
         height: 1.5em;
         margin: 0;
         padding: 0;
-        transition: all 240ms;
+        transition: all 175ms;
     }
     #buttons {
         width: 10em;
@@ -88,6 +151,9 @@
         outline: none;
         background-color: hsla(var(--base-hue), 100%, 100%, 50%);
         transition: all 120ms;
+    }
+    #buttons button.stalled {
+        animation: 3s infinite alternate fadeInOut;
     }
     .audio-time {
         width: 11em;
@@ -110,13 +176,117 @@
         padding: 0.5em;
         white-space: nowrap;
     }
+    audio-browser nav ol, audio-browser nav ol li {
+        margin: 0;
+        padding: 0;
+        scroll-margin-top: 2em;
+    }
+    /*
+    audio-browser nav ol.hidden, audio-browser nav .playlist.hidden {
+        display: none;
+    }
+    */
+    audio-browser nav ol ol {
+        display: none;
+    }
+    audio-browser nav ol li.open ol {
+        display: block;
+    }
+    audio-browser nav#skipNav {
+        background-color: hsla(var(--base-hue), 60%, 98%, 90%);
+        border-radius: 0 0 0.5em 0.5em;
+        margin: 0;
+        padding: 0 0.5em;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+    audio-browser nav#skipNav a {
+        color: hsl(var(--base-hue), 75%, 2%);
+    }
+    audio-browser nav#skipNav ol {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0;
+        max-width: 100%;
+        padding: 0;
+    }
+    audio-browser nav#skipNav li {
+/*
+        flex: inline;
+*/
+        list-style-type: none;
+    }
+/*
+    audio-browser nav#skipNav:before {
+        content: '[';
+        display: inline;
+    }
+    audio-browser nav#skipNav:after {
+        content: ']';
+        display: inline;
+    }
+*/
+    audio-browser nav ol li {
+        list-style-type: none;
+        padding: 0 0.5em;
+    }
+    audio-browser nav ol li.folder {
+        border-color: hsla(var(--base-hue), 50%, 5%, 50%);
+        border-radius: 0.5em;
+        border-style: outset;
+        border-width: 1px;
+        margin: 0.5em 0;
+    }
+    audio-browser nav .folder {
+        padding-left: 1em;
+        position: relative;
+        transition: all 0.5s ease-out;
+    }
+    audio-browser nav ol li.folder.open, audio-browser nav ol li.folder.open li.folder, audio-browser nav ol li.folder.open li.playlist {
+        background-color: hsla(var(--base-hue), 60%, 98%, 90%);
+        color: hsl(var(--base-hue), 75%, 2%);
+    }
+    audio-browser nav > ol > li.folder.open {
+        transition: all 0.175s ease-out;
+    }
+    audio-browser nav .folder:before {
+        content: "›";
+        font-size: x-large;
+        left: 0.5ex;
+        position: absolute;
+        top: -0.25ex;
+        transition: all 120ms;
+        transform: rotate(0);
+    }
+    audio-browser nav .folder.open:before {
+        transform: rotate(90deg);
+    }
+    .song {
+/*
+        position: relative;
+        left: 26em;
+*/
+    }
     a {
-        color: #000;
+        color: var(--text-color);
         text-decoration: none;
     }
     a:focus, a:hover {
         outline: none;
         text-decoration: underline;
+    }
+    a.action {
+        font-size: 2em;
+        left: 0.125em;
+        line-height: 0.5em;
+        opacity: 25%;
+        position: relative;
+        top: 0.125em;
+    }
+    a.action:hover, a.action:active {
+        opacity: 100%;
+        text-decoration: none;
     }
     .album {
         grid-area: album;
@@ -149,22 +319,6 @@
     .published {
         grid-area: year;
     }
-    audio-browser nav ol, audio-browser nav ol li {
-        margin: 0;
-        padding: 0;
-    }
-    audio-browser nav ol.hidden {
-        display: none;
-    }
-    audio-browser nav ol li {
-        list-style-type: none;
-        padding: 0 0.5em;
-    }
-    audio-browser nav > ol > li {
-        border: 1px solid #333;
-        border-radius: 0.5em;
-        margin-top: 0.5em;
-    }
     storage-settings {
         background-color: hsla(var(--base-hue), var(--base-saturation), 15%, 25%);
         height: 2em;
@@ -196,7 +350,82 @@
     storage-settings label {
         display: block;
     }
-
+    @media (min-width: 60em) {
+      audio-browser nav .folder {
+        height: 2em;
+        left: 52%;
+        margin-right: 0;
+        padding-right: 0;
+        width: 48%;
+      }
+      audio-browser nav > ol > li.folder {
+        left: 1em;
+      }
+      audio-browser nav > ol > li.folder.open {
+        margin-right: -4px;
+        padding-right: -4px;
+        width: 98%;
+      }
+      audio-browser nav > ol > li.folder > ol > li.folder {
+        border-radius: 0.5em;
+        border-width: 1px 1px 1px 1px;
+        right: 1em;
+        top: -2em;
+      }
+      audio-browser nav ol.playlists li.playlist {
+        border-radius: 0.5em;
+        border-width: 1px 1px 1px 1px;
+        position: relative;
+        left: 52%;
+        top: -1em;
+        width: 48%;
+        margin: 0 0 0.5em 0;
+      }
+      audio-browser nav > ol > li.folder > ol > li.folder.open {
+        height: auto;
+      }
+    }
+    @media (max-width: 40em) {
+        html, body {
+            margin: 0;
+        }
+        audio-player, audio-browser {
+            margin: 0 0 1em 0;
+            width: 100%;
+        }
+        audio-player {
+/*
+            position: sticky;
+            top: 0;
+*/
+        }
+        audio-player nav {
+            padding: 0.5em;
+        }
+        audio-player audio-track {
+/*
+            display: block;
+*/
+            height: 1.25em;
+            grid-template-areas:
+             "tracknumber track duration"
+             "artist artist artist"
+             "album album year"
+             "genre genre genre"
+             "playlist playlist playlist"
+             "keywords keywords keywords";
+            grid-template-rows: 1.2em 1.2em 1.2em;
+            grid-template-columns: 2.5ex 1fr 4.5ex;
+            padding: 0 0.5em;
+        }
+        audio-player audio-track.playing, audio-player audio-track:focus, audio-player audio-track:hover {
+            height: auto;
+            padding-right: 0.5em;
+        }
+        audio-player audio-track section {
+            padding: 0;
+        }
+    }
 
   </style>
  </head>
