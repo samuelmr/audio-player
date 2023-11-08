@@ -319,7 +319,9 @@ player.appendChild(titleHolder)
 const progress = document.createElement('input')
 progress.type = 'range'
 progress.id = 'progress'
-progress.addEventListener('input', (e) => {audioRefs.current.currentTime = parseInt(e.target.value)})
+progress.addEventListener('input', (e) => {
+  audioRefs.current.currentTime = parseInt(e.target.value)
+})
 player.appendChild(progress)
 
 updateDuration = function() {
@@ -330,11 +332,11 @@ updateDuration = function() {
 }
 const requestWakeLock = async () => {
   try {
-    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock = await navigator.wakeLock.request("screen")
   } catch (err) {
-    console.error(`${err.name}: ${err.message}`);
+    console.error(`${err.name}: ${err.message}`)
   }
-};
+}
 audioRefs.current.onloadedmetadata = updateDuration
 audioRefs.current.onplay = () => {
   // play.textContent = '⏸'
@@ -376,6 +378,12 @@ const updateTime = () => {
     cursor.value = parseInt(seconds/60) + ':' + 
       parseInt(seconds%60).toString().padStart(2, '0')
     progress.value = seconds
+    if ('setPositionState' in navigator.mediaSession) {
+      navigator.mediaSession.setPositionState({
+        duration: audioRefs.current.duration,
+        position: audioRefs.current.currentTime,
+      })
+    }
 }
 audioRefs.current.addEventListener("timeupdate", updateTime)
 
@@ -820,7 +828,7 @@ const playTrack = async (track) => {
       if (track.dataset.albumArt) {
         sessionOpts.artwork = [ { src: track.dataset.albumArt } ]
       }
-      navigator.mediaSession.metadata = new MediaMetadata(sessionOpts);
+      navigator.mediaSession.metadata = new MediaMetadata(sessionOpts)
     }
     trackTitle.value = document.title
     playerList.querySelector('.playing')?.classList.remove('playing')
@@ -878,7 +886,7 @@ const playTrack = async (track) => {
       url = decodeURIComponent(url)
       url = url.replace('url("', '').replace('")', '')
       image.src = url
-      image.crossOrigin = "Anonymous";
+      image.crossOrigin = "Anonymous"
       image.onload = function() {
         const ctx = document.createElement("canvas").getContext("2d")
         ctx.drawImage(image, 0, 0, 1, 1)
@@ -913,7 +921,7 @@ function getHue(r, g, b) {
       case g: h = (b - r) / d + 2; break;
       case b: h = (r - g) / d + 4; break;
     }
-    h /= 6;
+    h /= 6
   }
   return Math.round(h*360)
 }
