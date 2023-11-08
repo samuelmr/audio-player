@@ -8,6 +8,7 @@
   <meta name="MobileOptimized" content="width">
   <meta name="theme-color" content="hsl(180, 50%, 75%)" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="hsl(180, 50%, 25%)" media="(prefers-color-scheme: dark)">
+  <script src="https://kit.fontawesome.com/2f78fce3a3.js" crossorigin="anonymous"></script>
   <script>
     const keys = [
      'accessKeyId',
@@ -81,8 +82,24 @@
         padding: 0 1% 0.5em 1%;
         width: 98%;
     }
+    audio-player {
+        border-radius: 0 0 0.5em 0.5em;
+        padding-top: 0.5em;
+    }
+    audio-player ol.collection {
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+    }
+    audio-player ol.collection li {
+        background-color: hsla(var(--base-hue), 100%, 100%, 25%);
+        border-radius: 0.5em;
+        margin: 0 0.5em 0.5em 0;
+        padding: 0 0.5em;
+    }
     audio-player nav {
-        border-color: hsla(var(--base-hue), 50%, 5%, 50%);
+        background-color: hsla(var(--base-hue), 100%, 10%, 75%);
+        border-color: hsla(var(--base-hue), 75%, 10%, 25%);
         border-radius: 0.5em;
         border-style: inset;
         border-width: 2px;
@@ -116,6 +133,10 @@
         border-radius: 0.5em;
         border-style: outset;
         border-width: 2px;
+        color: hsla(var(--base-hue), 75%, 10%, 99%);
+    }
+    audio-track.playing a {
+        color: hsla(var(--base-hue), 75%, 10%, 99%);
     }
     audio-track:focus, audio-track:focus-within, audio-track:hover {
         background-color: hsla(var(--base-hue), 100%, 100%, 50%);
@@ -124,13 +145,15 @@
         outline: none;
         transition: all 120ms;
     }
-    #buttons, .audio-time {
+    #buttons, .audio-time, div.track {
         float: left;
-        margin: 0.5em 0 1em 0;
+        margin: 0 0 0.5em 0;
         padding: 0;
+/*
         text-align: center;
+*/
     }
-    #buttons button, .audio-time input {
+    #buttons button, .audio-time input, .track-title {
         background-color: hsla(var(--base-hue), 100%, 100%, 75%);
         border-color: hsla(var(--base-hue), 50%, 5%, 50%);
         border-radius: 0.2em;
@@ -142,6 +165,7 @@
         transition: all 175ms;
     }
     #buttons {
+        text-wrap: nowrap;
         width: 10em;
     }
     #buttons button {
@@ -156,6 +180,7 @@
         animation: 3s infinite alternate fadeInOut;
     }
     .audio-time {
+        text-wrap: nowrap;
         width: 11em;
     }
     .audio-time input {
@@ -164,10 +189,13 @@
     .audio-time span {
         font-size: 2em;
     }
+    div.track, .track-title {
+        max-width: 96%;
+    }
     #progress {
         clear: both;
         display: block;
-        margin: 0 auto 1em auto;
+        margin: 1em auto;
         width: 90%;
     }
     section {
@@ -239,11 +267,11 @@
         margin: 0.5em 0;
     }
     audio-browser nav .folder {
-        padding-left: 1em;
+        padding: 0.25em 1em;
         position: relative;
         transition: all 0.5s ease-out;
     }
-    audio-browser nav ol li.folder.open, audio-browser nav ol li.folder.open li.folder, audio-browser nav ol li.folder.open li.playlist {
+    audio-browser nav ol li.folder.open, audio-browser nav ol li.folder.open a, audio-browser nav ol li.folder.open li.folder, audio-browser nav ol li.folder.open li.playlist {
         background-color: hsla(var(--base-hue), 60%, 98%, 90%);
         color: hsl(var(--base-hue), 75%, 2%);
     }
@@ -277,12 +305,16 @@
         text-decoration: underline;
     }
     a.action {
+/*
         font-size: 2em;
         left: 0.125em;
         line-height: 0.5em;
+*/
         opacity: 25%;
+/*
         position: relative;
         top: 0.125em;
+*/
     }
     a.action:hover, a.action:active {
         opacity: 100%;
@@ -388,6 +420,15 @@
     @media (max-width: 40em) {
         html, body {
             margin: 0;
+        }
+        body {
+            font-size: larger;
+        }
+        #buttons, .audio-time {
+            width: auto;
+        }
+        .audio-time {
+            float: right;
         }
         audio-player, audio-browser {
             margin: 0 0 1em 0;

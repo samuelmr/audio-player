@@ -1,5 +1,5 @@
-import { S3Client } from "@aws-sdk/client-s3";
-import { ListObjectsV2Command, HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client } from "@aws-sdk/client-s3"
+import { ListObjectsV2Command, HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
 const EXPIRE_SECONDS = 7 * 24 * 60 * 60
@@ -16,34 +16,35 @@ locale.playPlaylist = `Add playlist contents to queue`
 locale.jumpTo = `Jump to`
 // locale.playAlbum = `Add all album tracks to queue`
 
-let s3, err, f, bucketName, playerList, browserList, playlistList, db, skipMenu, previousFirst
+let s3, err, f, bucketName, playerList, browserList, playlistList, db, skipMenu, previousFirst, sourceLink, wakeLock
+const audioRefs = {}
 
-const dbRequest = indexedDB.open("audio-library", 3);
+const dbRequest = indexedDB.open("audio-library", 3)
 dbRequest.onupgradeneeded = function(event) {
-  const db = dbRequest.result;
+  const db = dbRequest.result
   if (event.oldVersion < 1) {
-    const cache = db.createObjectStore("meta", {keyPath: "key"});
-    const artistIndex = cache.createIndex("by_artist", "artist");
-    const albumIndex = cache.createIndex("by_album", "album");
-    const titleIndex = cache.createIndex("by_title", "title");
-    const tracknumberIndex = cache.createIndex("by_tracknumber", "tracknumber");
-    const yearIndex = cache.createIndex("by_year", "year");
-    const playlistIndex = cache.createIndex("by_playlist", "playlist");
-    const genreIndex = cache.createIndex("by_genre", "genre");
-    const commentIndex = cache.createIndex("by_comment", "comment");
+    const cache = db.createObjectStore("meta", {keyPath: "key"})
+    const artistIndex = cache.createIndex("by_artist", "artist")
+    const albumIndex = cache.createIndex("by_album", "album")
+    const titleIndex = cache.createIndex("by_title", "title")
+    const tracknumberIndex = cache.createIndex("by_tracknumber", "tracknumber")
+    const yearIndex = cache.createIndex("by_year", "year")
+    const playlistIndex = cache.createIndex("by_playlist", "playlist")
+    const genreIndex = cache.createIndex("by_genre", "genre")
+    const commentIndex = cache.createIndex("by_comment", "comment")
   }
   if (event.oldVersion < 2) {
     const cache = dbRequest.transaction.objectStore("meta")
-    const keyIndex = cache.createIndex("key", "key", {unique: true});
+    const keyIndex = cache.createIndex("key", "key", {unique: true})
   }
   if (event.oldVersion < 3) {
     const cache = dbRequest.transaction.objectStore("meta")
-    const commentIndex = cache.createIndex("image", "image");
+    const commentIndex = cache.createIndex("image", "image")
   }
 }
 dbRequest.onsuccess = function() {
-  db = dbRequest.result;
-};
+  db = dbRequest.result
+}
 
 const player = document.querySelector('audio-player')
 if (!player) {
@@ -227,13 +228,13 @@ const dbName = 'music'
 const dbVersion = 1
 
 let db
-const request = window.indexedDB.open(dbName, dbVersion);
+const request = window.indexedDB.open(dbName, dbVersion)
 request.onerror = (event) => {
-  console.error(`Error: can't use IndexedDB ${Name}, ${dbVersion}!`);
-};
+  console.error(`Error: can't use IndexedDB ${Name}, ${dbVersion}!`)
+}
 request.onsuccess = (event) => {
-  db = event.target.result;
-};
+  db = event.target.result
+}
 */
 
 const enablePlay = async () => {
@@ -246,16 +247,19 @@ const buttons = document.createElement('div')
 buttons.id = 'buttons'
 const prev = document.createElement('button')
 prev.title = locale.previous
-prev.textContent = '⏮'
+// prev.textContent = '⏮'
+prev.innerHTML = '<span class="fa-solid fa-backward"></span>'
 buttons.appendChild(prev)
 const play = document.createElement('button')
 play.title = locale.play
-play.textContent = '⏵'
-// play.disabled = true
+// play.textContent = '⏵'
+play.innerHTML = '<span class="fa-solid fa-play"></span>'
+play.disabled = true
 buttons.appendChild(play)
 const next = document.createElement('button')
 next.title = locale.next
-next.textContent = '⏭'
+// next.textContent = '⏭'
+next.innerHTML = '<span class="fa-solid fa-forward"></span>'
 buttons.appendChild(next)
 player.appendChild(buttons)
 
@@ -263,83 +267,128 @@ const previousTrack = document.createElement('audio')
 previousTrack.className = 'previous'
 previousTrack.preload = 'auto'
 player.appendChild(previousTrack)
-let previousTrackRef = previousTrack
+audioRefs.prev = previousTrack
 
 const audio = document.createElement('audio')
 audio.className = 'current'
 audio.preload = 'auto'
 player.appendChild(audio)
-let audioRef = audio
+audioRefs.current = audio
 
 const nextTrack = document.createElement('audio')
 nextTrack.className = 'next'
 nextTrack.preload = 'auto'
 player.appendChild(nextTrack)
-let nextTrackRef = nextTrack
+audioRefs.next = nextTrack
 
 const audioTime = document.createElement('div')
 audioTime.className = 'audio-time'
 const cursor = document.createElement('input')
+// cursor.type = 'time'
+// cursor.step = '1'
+// cursor.value = '00:00:00'
 cursor.size = 5
-cursor.value = '00:00'
+cursor.pattern = '[0-9]{1,2}:[0-9]{2}'
+cursor.value = '0:00'
+cursor.disabled = true
 cursor.addEventListener('blur', (e) => {
   const parts = e.target.value.split(':')
-  audioRef.currentTime = parts[0] * 60 + parts[1]
+  const secs = parseInt(parts[0]) * 60 + parseInt(parts[1])
+  audioRefs.current.currentTime = secs
 })
 audioTime.appendChild(cursor)
 audioTime.appendChild(document.createTextNode(' / '))
 const trackLength = document.createElement('input')
+// trackLength.type = 'time'
+// trackLength.step = '1'
 trackLength.size = 5
-trackLength.value = '00:00'
+trackLength.value = '0:00'
+trackLength.disabled = true
 audioTime.appendChild(trackLength)
 player.appendChild(audioTime)
+
+const titleHolder = document.createElement('div')
+titleHolder.className = 'track'
+const trackTitle = document.createElement('input')
+trackTitle.size = 70
+trackTitle.className = 'track-title'
+trackTitle.disabled = true
+titleHolder.appendChild(trackTitle)
+player.appendChild(titleHolder)
 
 const progress = document.createElement('input')
 progress.type = 'range'
 progress.id = 'progress'
-progress.addEventListener('input', (e) => {audioRef.currentTime = parseInt(e.target.value)})
+progress.addEventListener('input', (e) => {audioRefs.current.currentTime = parseInt(e.target.value)})
 player.appendChild(progress)
 
 updateDuration = function() {
-  const seconds = parseInt(this?.duration ? this.duration : audioRef.duration)
+  const seconds = parseInt(this?.duration ? this.duration : audioRefs.current.duration)
   progress.max = seconds
   trackLength.value = parseInt(seconds/60) + ':' + parseInt(seconds%60).toString().padStart(2, '0')
+  cursor.max = '0:' + trackLength.value
 }
-audioRef.onloadedmetadata = updateDuration
-audioRef.onplay = () => {
-  play.textContent = '⏸'
+const requestWakeLock = async () => {
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+  } catch (err) {
+    console.error(`${err.name}: ${err.message}`);
+  }
+};
+audioRefs.current.onloadedmetadata = updateDuration
+audioRefs.current.onplay = () => {
+  // play.textContent = '⏸'
+  play.innerHTML = '<span class="fa-solid fa-pause"></span>'
+  cursor.disabled = true
+  requestWakeLock()
 }
-audioRef.onpause = () => {
-  play.textContent = '⏵'
+audioRefs.current.onpause = () => {
+  // play.textContent = '⏵'
+  cursor.disabled = false
+  play.innerHTML = '<span class="fa-solid fa-play"></span>'
+  wakeLock.release()
 }
-audioRef.onstalled = audioRef.onsuspend = audioRef.onwaiting = () => {
+audioRefs.current.onstalled = audioRefs.current.onsuspend = audioRefs.current.onwaiting = () => {
   play.classList.add('stalled')
+  cursor.disabled = false
 }
-audioRef.onplaying = () => {
+audioRefs.current.onplaying = () => {
   play.classList.remove('stalled')
+  cursor.disabled = true
 }
 
-const collection = document.createElement('div')
+const collection = document.createElement('ol')
+collection.className = 'collection'
 player.appendChild(collection)
 
 playerList = document.createElement('nav')
 player.appendChild(playerList)
 
 const updateTime = () => {
-    const seconds = parseInt(audioRef.currentTime)
-    cursor.value = parseInt(seconds/60) + ':' + parseInt(seconds%60).toString().padStart(2, '0')
+    const seconds = parseInt(audioRefs.current.currentTime)
+/*
+    cursor.value = [
+      '00',
+      parseInt(seconds/60).toString().padStart(2, '0'),
+      parseInt(seconds%60).toString().padStart(2, '0')
+    ].join(':')
+*/
+    cursor.value = parseInt(seconds/60) + ':' + 
+      parseInt(seconds%60).toString().padStart(2, '0')
     progress.value = seconds
 }
-audioRef.addEventListener("timeupdate", updateTime);
+audioRefs.current.addEventListener("timeupdate", updateTime)
 
-play.onclick = async (e) => {
-  if (audioRef.paused) {
-    await audioRef.play()
-    play.textContent = '⏸'
+play.onclick = (e) => {
+  if (audioRefs.current.paused) {
+    audioRefs.current.play()
+    // play.textContent = '⏸'
+    play.innerHTML = '<span class="fa-solid fa-pause"></span>'
   }
   else {
-    audioRef.pause()
-    play.textContent = '⏵'
+    audioRefs.current.pause()
+    // play.textContent = '⏵'
+    play.innerHTML = '<span class="fa-solid fa-play"></span>'
   }
 }
 
@@ -357,12 +406,12 @@ window.addEventListener('keydown', (e) => {
     let newCurrent = false
     switch(e.key) {
       case " ": e.preventDefault(); play.click(); break
-      // case "Enter": play.disabled = true; audioRef.src = current.dataset.src; break
+      // case "Enter": play.disabled = true; audioRefs.current.src = current.dataset.src; break
       case "Enter": current.querySelector('.name a')?.click(); break
       case "ArrowRight": playNext(); break
       case "ArrowLeft": playPrevious(); break
       case "ArrowDown":
-        e.preventDefault(); 
+        e.preventDefault() 
         if (current) {
           if (current.nextElementSibling) {
             newCurrent = current.nextElementSibling
@@ -373,7 +422,7 @@ window.addEventListener('keydown', (e) => {
         }
         break
       case "ArrowUp":
-        e.preventDefault(); 
+        e.preventDefault() 
         if (current) {
           if (current.previousElementSibling) {
             newCurrent = current.previousElementSibling
@@ -416,7 +465,6 @@ async function getFolders(parentElement=null, token=null) {
     }
 */
     let olRef = parentElement.querySelector('ol:not(.playlists)')
-    console.log(olRef)
     if (!olRef) {
       const ol = document.createElement('ol')
       parentElement.appendChild(ol)
@@ -470,14 +518,14 @@ async function getFolders(parentElement=null, token=null) {
           // obj.href = `?play#${encodeURIComponent(obj.Key)}`
           const getParams = {Bucket: bucketName, Key: obj.Key}
           const command = new GetObjectCommand(getParams)
-          obj.href = await getSignedUrl(s3, command, { expiresIn: EXPIRE_SECONDS });
+          obj.href = await getSignedUrl(s3, command, { expiresIn: EXPIRE_SECONDS })
           const li = createSongElement(obj, subRef)
         }
         else if (obj.Key.endsWith('.json')) {
           // playlists.push(obj.Key)
           const getParams = {Bucket: bucketName, Key: obj.Key}
           const command = new GetObjectCommand(getParams)
-          // obj.href = await getSignedUrl(s3, command, { expiresIn: EXPIRE_SECONDS });
+          // obj.href = await getSignedUrl(s3, command, { expiresIn: EXPIRE_SECONDS })
           const li = createPlaylistElement(obj, playlistList)
           // console.log(playlistList)
         }
@@ -496,6 +544,35 @@ async function getFolders(parentElement=null, token=null) {
   }
 }
 
+function scrollToFirstTrack(e) {
+  const source = this.dataset.source
+  const track = this.closest('audio-player').querySelector(`audio-track[data-source="${source}"]`)
+  if (track) {
+    track.scrollIntoView({block: "nearest", inline: "nearest"})
+  }
+}
+
+function removeTracks(e) {
+  e.stopPropagation()
+  const cli = this.closest('li')
+  const source = cli.dataset.source
+  const tracks = cli.closest('audio-player').querySelectorAll(`audio-track[data-source="${source}"]`)
+  for (const track of tracks) {
+    if (track.classList.contains('playing')) {
+      // playNext()
+      play.click()
+      trackLength.value = progress.value = 0
+      // cursor.value = '00:00:00'
+      cursor.value = '0:00'
+      trackTitle.value = ''
+      audioRefs.current.src = ''
+    }
+    track.parentNode.removeChild(track)
+  }
+  const li = this.closest('li')
+  li?.parentNode?.removeChild(li)
+}
+
 function createFolderElement(folder, ol) {
   const candidate = ol.querySelector(`[data-folder="${folder}"]`)
   if (candidate) return candidate
@@ -508,20 +585,35 @@ function createFolderElement(folder, ol) {
   a.href = '#' + (parent ? encodeURIComponent(parent) + '/' : '') + encodeURIComponent(folder)
   a.className = 'action'
   a.title = locale.playFolder
-  a.textContent = '⥅' // '⤅' '⧐' '⏵'
+  // a.textContent = '⥅' // '⤅' '⧐' '⏵'
+  // a.innerHTML = '<i class="fa-solid fa-album-circle-plus"></i>'
+  a.innerHTML = '<span class="fa-solid fa-circle-play"></span>'
   a.onclick = async function(e) {
     e.preventDefault()
     e.stopPropagation()
     li.classList.add('open')
-    history.pushState(folder, folder, a.href)
-    collection.innerHTML = (parent ? `${parent}: ` : '') + folder
+    history.pushState(folder, '', a.href)
+    document.title = folder
+    const cli = document.createElement('li')
+    cli.onclick = scrollToFirstTrack
+    cli.className = 'folder'
+    cli.textContent = folder + ' '
+    cli.dataset.source = folder
+    sourceLink = cli.dataset.source
+    const ca = document.createElement('a')
+    ca.innerHTML = '<span class="fa-sharp fa-regular fa-circle-xmark"></span>'
+    ca.onclick = removeTracks
+    cli.appendChild(ca)
     if (!li.querySelector('ol')) {
       await getFolders(li)
     }
-    const tracks = e?.target?.parentNode?.querySelectorAll('.song a')
+    const tracks = e?.target?.closest('.folder')?.querySelectorAll('.song a')
     tracks.forEach((link) => {
       link.click()
     })
+    collection.appendChild(cli)
+    // collection.innerHTML = (parent ? `${parent}: ` : '') + folder
+    // collection.innerHTML = folder
   }
   li.appendChild(document.createTextNode(' '))
   li.appendChild(a)
@@ -529,13 +621,14 @@ function createFolderElement(folder, ol) {
     e.preventDefault()
     e.stopPropagation()
     const isOpen = this.classList.toggle('open')
-    history.pushState(folder, folder, a.href)
+    history.pushState(folder, '', a.href)
+    document.title = folder
     const subLists = this.querySelectorAll('li ol')
     if (subLists.length > 0) {
       for (const subList of subLists) {
         subList.classList.toggle('hidden', !isOpen)
         // subList.onclick = li.onclick
-      }  
+      }
     }
     else {
       getFolders(li)
@@ -555,13 +648,26 @@ async function createSongElement(obj, ol) {
   a.className = 'action'
   a.href = obj.href
   a.title = locale.playSong
-  a.textContent = '⧐' // '⥅' '⏵'
+  // a.textContent = '⧐' // '⥅' '⏵'
+  a.innerHTML = '<span class="fa-solid fa-circle-plus"></span>'
   a.onclick = (e) => {
     e.preventDefault()
     e.stopPropagation()
     if (e?.pointerId > 0) {
-      history.pushState(a.href, a.textContent, `#${obj.Key}`)
-      collection.innerHTML = obj.Key  
+      history.pushState(a.href, '', `#${obj.Key}`)
+      document.title = a.textContent
+      // collection.innerHTML = obj.Key
+      const cli = document.createElement('li')
+      cli.onclick = scrollToFirstTrack
+      cli.className = 'song'
+      cli.textContent = obj.Key + ' '
+      cli.dataset.source = obj.Key
+      sourceLink = cli.dataset.source
+      const ca = document.createElement('a')
+      ca.innerHTML = '<span class="fa-sharp fa-regular fa-circle-xmark"></span>'
+      ca.onclick = removeTracks
+      cli.appendChild(ca)
+      collection.appendChild(cli)
     }
     createAudioTrack(obj)
   }
@@ -579,17 +685,30 @@ async function createPlaylistElement(obj, ol) {
   a.className = 'action'
   a.href = obj.Key
   a.title = locale.playPlaylist
-  a.textContent = '⧐' // '⥅' '⏵'
+  // a.textContent = '⧐' // '⥅' '⏵'
+  a.innerHTML = '<span class="fa-solid fa-circle-plus"></span>'
   a.onclick = async (e) => {
     e.preventDefault()
     e.stopPropagation()
     if (e?.pointerId > 0) {
-      history.pushState(a.href, a.textContent, `#${obj.Key}`)
-      collection.innerHTML = obj.Key  
+      history.pushState(a.href, '', `#${obj.Key}`)
+      document.title = a.textContent
+      // collection.innerHTML = obj.Key
+      const cli = document.createElement('li')
+      cli.onclick = scrollToFirstTrack
+      cli.className = 'playlist'
+      cli.textContent = obj.Key + ' '
+      cli.dataset.source = obj.Key
+      sourceLink = cli.dataset.source
+      const ca = document.createElement('a')
+      ca.innerHTML = '<span class="fa-sharp fa-regular fa-circle-xmark"></span>'
+      ca.onclick = removeTracks
+      cli.appendChild(ca)
+      collection.appendChild(cli)    
     }
     // console.log(obj)
     const getParams = {Bucket: bucketName, Key: obj.Key}
-    const command = new GetObjectCommand(getParams);
+    const command = new GetObjectCommand(getParams)
     const res = await s3.send(command)
     const json = await res.Body.transformToString()
     try {
@@ -598,12 +717,12 @@ async function createPlaylistElement(obj, ol) {
       playlist?.track.forEach(async (track) => {
         const song = {
           Bucket: bucketName,
-          Key: `${base}/${track.url}`,
+          Key: track.url,
           Metadata: track,
         }
         const getParams = {Bucket: bucketName, Key: song.Key}
-        const command = new GetObjectCommand(getParams);
-        song.href = await getSignedUrl(s3, command, { expiresIn: EXPIRE_SECONDS });
+        const command = new GetObjectCommand(getParams)
+        song.href = await getSignedUrl(s3, command, { expiresIn: EXPIRE_SECONDS })
         createAudioTrack(song)
         // console.log(song)
       })
@@ -628,10 +747,10 @@ function getS3Meta(key) {
       const index = cache.index("key")
       const dbRequest = index.get(key)
       dbRequest.onerror = function(event) {
-        reject(new Error(event));
-      };
+        reject(new Error(event))
+      }
       dbRequest.onsuccess = async function() {
-        const matching = dbRequest.result;
+        const matching = dbRequest.result
         if (matching !== undefined) {
           meta = matching
           resolve(meta)
@@ -660,20 +779,20 @@ function getS3Meta(key) {
 async function prepareNext() {
   const current = playerList.querySelector('.playing')
   if (current?.nextElementSibling?.tagName.toLocaleLowerCase() == 'audio-track') {
-    nextTrackRef.className = 'next'
-    nextTrackRef.onloadedmetadata = () => {}
-    nextTrackRef.oncanplay = () => {}
-    nextTrackRef.src = current.nextElementSibling.dataset.src
+    audioRefs.next.className = 'next'
+    audioRefs.next.onloadedmetadata = () => {}
+    audioRefs.next.oncanplay = () => {}
+    audioRefs.next.src = current.nextElementSibling.dataset.src
   }
 }
 
 async function preparePrevious() {
   const current = playerList.querySelector('.playing')
   if (current?.previousElementSibling?.tagName.toLocaleLowerCase() == 'audio-track') {
-    previousTrackRef.className = 'previous'
-    previousTrackRef.onloadedmetadata = () => {}
-    previousTrackRef.oncanplay = () => {}
-    previousTrackRef.src = current.previousElementSibling.dataset.src
+    audioRefs.prev.className = 'previous'
+    audioRefs.prev.onloadedmetadata = () => {}
+    audioRefs.prev.oncanplay = () => {}
+    audioRefs.prev.src = current.previousElementSibling.dataset.src
   }
 }
 
@@ -691,67 +810,115 @@ const playPrevious = () => {
 
 const playTrack = async (track) => {
   if (track) {
+    document.title = track.querySelector('.name').textContent
+    if ('mediaSession' in navigator) {
+      const sessionOpts = {
+        title: document.title,
+        artist: track.querySelector('.artist')?.textContent || 'Unknown Artist',
+        album: track.querySelector('.album')?.textContent || 'Unknown Album',
+      }
+      if (track.dataset.albumArt) {
+        sessionOpts.artwork = [ { src: track.dataset.albumArt } ]
+      }
+      navigator.mediaSession.metadata = new MediaMetadata(sessionOpts);
+    }
+    trackTitle.value = document.title
     playerList.querySelector('.playing')?.classList.remove('playing')
     track.classList.add('playing')
     track.scrollIntoView({block: "nearest", inline: "nearest"})
-    if (track.dataset['src'] == nextTrackRef.src) {
-      let tmpRef = previousTrackRef
-      previousTrackRef = audioRef
-      audioRef = nextTrackRef
-      audioRef.className = 'current'
+    if (track.dataset['src'] == audioRefs.next.src) {
+      let tmpRef = audioRefs.prev
+      audioRefs.prev = audioRefs.current
+      audioRefs.current = audioRefs.next
+      audioRefs.current.className = 'current'
       updateDuration()
       enablePlay()
-      await audioRef.play()
-      play.textContent = '⏸'
-      nextTrackRef = tmpRef
+      await audioRefs.current.play()
+      // play.textContent = '⏸'
+      play.innerHTML = '<span class="fa-solid fa-pause"></span>'
+      audioRefs.next = tmpRef
       await prepareNext()
       await preparePrevious()
     }
-    else if (track.dataset['src'] == previousTrackRef.src) {
-      let tmpRef = nextTrackRef
-      nextTrackRef = audioRef
-      audioRef = previousTrackRef
+    else if (track.dataset['src'] == audioRefs.prev.src) {
+      let tmpRef = audioRefs.next
+      audioRefs.next = audioRefs.current
+      audioRefs.current = audioRefs.prev
       updateDuration()
       enablePlay()
-      await audioRef.play()
-      play.textContent = '⏸'
-      previousTrackRef = tmpRef
+      await audioRefs.current.play()
+      // play.textContent = '⏸'
+      play.innerHTML = '<span class="fa-solid fa-pause"></span>'
+      audioRefs.prev = tmpRef
       await preparePrevious()
       await prepareNext()
     }
     else {
-      nextTrackRef.onloadedmetadata = updateDuration
-      nextTrackRef.ontimeupdate = updateTime
-      nextTrackRef.src = track.dataset['src']
-      nextTrackRef.oncanplay = async (e) => {
-        let tmpRef = previousTrackRef
-        previousTrackRef = audioRef
-        audioRef = nextTrackRef
-        audioRef.className = 'current'
+      let tmpRef = audioRefs.prev
+      audioRefs.prev = audioRefs.current
+      audioRefs.current = audioRefs.next
+      audioRefs.current.className = 'current'
+      audioRefs.current.onloadedmetadata = updateDuration
+      audioRefs.current.ontimeupdate = updateTime
+      audioRefs.current.src = track.dataset['src']
+      audioRefs.current.load()
+      audioRefs.next = tmpRef
+      await prepareNext()
+      await preparePrevious()
+      audioRefs.current.oncanplay = async (e) => {
         enablePlay()
-        await audioRef.play()
-        play.textContent = '⏸'
-        nextTrackRef = tmpRef
-        await  prepareNext()
-        await preparePrevious()
+        await audioRefs.current.play()
+        // play.textContent = '⏸'
+        play.innerHTML = '<span class="fa-solid fa-pause"></span>'
+      }
+    }
+    if (track.style.backgroundImage) {
+      const image = new Image()
+      let url = track.style.backgroundImage
+      url = decodeURIComponent(url)
+      url = url.replace('url("', '').replace('")', '')
+      image.src = url
+      image.crossOrigin = "Anonymous";
+      image.onload = function() {
+        const ctx = document.createElement("canvas").getContext("2d")
+        ctx.drawImage(image, 0, 0, 1, 1)
+        const rgba = ctx.getImageData(0, 0, 1, 1).data
+        const hue = getHue(rgba[0], rgba[1], rgba[2])
+        document.documentElement.style.setProperty('--base-hue', hue)
       }  
     }
-    // if (track.style.backgroundImage) {
-      const image = new Image();
-      image.src = track.style.backgroundImage
-      image.onload = function() {
-        const context = document.createElement("canvas").getContext("2d")
-        context.drawImage(image, 0, 0, 1, 1)
-        const i = ctx.getImageData(0, 0, 1, 1).data
-        const color = `rgba(${i[0]},${i[1]},${i[2]},${i[3]})`
-        console.log(color)
-
-      }  
-    // }
   }
 }
-  
-async function createAudioTrack(obj) {
+
+if ('mediaSession' in navigator) {
+  navigator.mediaSession.setActionHandler('play', audioRefs.current.play)
+  navigator.mediaSession.setActionHandler('pause', audioRefs.current.pause)
+  navigator.mediaSession.setActionHandler('previoustrack', playPrevious)
+  navigator.mediaSession.setActionHandler('nexttrack', playNext)
+  navigator.mediaSession.setActionHandler('stop', audioRefs.current.pause)
+  navigator.mediaSession.setActionHandler('seekto', (details) => {
+    audioRefs.current.currentTime = details.seekTime
+  })
+}
+
+function getHue(r, g, b) {
+  r /= 255, g /= 255, b /= 255
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  let h = 0
+  if(max != min){
+    const d = max - min;
+    switch(max){
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return Math.round(h*360)
+}
+
+async function createAudioTrack(obj, source) {
   let myArtist = ''
   let myAlbum = ''
   let myTitle = ''
@@ -764,12 +931,12 @@ async function createAudioTrack(obj) {
   let myImage = ''
  
   const matches = obj.Key.match(/([^\/]*)\/?([^\/]*)\/([^\/]*)\.mp3/)
-  if (matches.length == 4) {
+  if (matches && matches.length == 4) {
     myArtist = matches[1]
     myAlbum = matches[2]
     myTitle = matches[3]
   }
-  else if (matches.length > 0) {
+  else if (matches && matches.length > 0) {
     myArtist = matches[1]
     myTitle = matches[2]
   }
@@ -794,6 +961,7 @@ async function createAudioTrack(obj) {
   track.itemscope = ''
   track.itemtype = 'https://schema.org/MusicRecording'
   track.dataset.src = obj.href
+  track.dataset.source = sourceLink
 
   if (myImage) {
     const img = {
@@ -801,9 +969,10 @@ async function createAudioTrack(obj) {
       Key: myImage
     }
     const getParams = {Bucket: bucketName, Key: img.Key}
-    const command = new GetObjectCommand(getParams);
-    const url = await getSignedUrl(s3, command, { expiresIn: EXPIRE_SECONDS });
+    const command = new GetObjectCommand(getParams)
+    const url = await getSignedUrl(s3, command, { expiresIn: EXPIRE_SECONDS })
     track.style.backgroundImage = `url(${url})`
+    track.dataset.albumArt = url
   }
 
   const artist = document.createElement('section')
@@ -825,16 +994,16 @@ async function createAudioTrack(obj) {
     playerList.querySelector('.playing')?.classList?.remove('playing')
     track.classList.add('playing')
     play.disabled = true
-    previousTrackRef = audioRef
-    nextTrackRef.src = obj.href
-    console.log(nextTrackRef)
-    nextTrackRef.onloadedmetadata = updateDuration
-    nextTrackRef.ontimeupdate = updateTime
-    nextTrackRef.oncanplay = async (e) => {
-      console.log(nextTrackRef, 'can play')
-      previousTrackRef = audio
-      previousTrackRef.onloadedmetadata = () => {}
-      audioRef = nextTrackRef
+    audioRefs.prev = audioRefs.current
+    audioRefs.next.src = obj.href
+    console.log(audioRefs.next)
+    audioRefs.next.onloadedmetadata = updateDuration
+    audioRefs.next.ontimeupdate = updateTime
+    audioRefs.next.oncanplay = async (e) => {
+      console.log(audioRefs.next, 'can play')
+      audioRefs.prev = audio
+      audioRefs.prev.onloadedmetadata = () => {}
+      audioRefs.current = audioRefs.next
       enablePlay()
       console.log('enabled')
       prepareNext()
@@ -922,7 +1091,7 @@ async function createAudioTrack(obj) {
   if (!playing) {
     trackLink.click()
   }
-  // if (!audioRef.src) {
+  // if (!audioRefs.current.src) {
     // trackLink.click()
   // }
 
