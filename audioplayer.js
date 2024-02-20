@@ -271,6 +271,7 @@ player.appendChild(audio)
 const audioTime = document.createElement('div')
 audioTime.className = 'audio-time'
 const cursor = document.createElement('input')
+cursor.id = 'cursor'
 // cursor.type = 'time'
 // cursor.step = '1'
 // cursor.value = '00:00:00'
@@ -286,6 +287,7 @@ cursor.addEventListener('blur', (e) => {
 audioTime.appendChild(cursor)
 audioTime.appendChild(document.createTextNode(' / '))
 const trackLength = document.createElement('input')
+trackLength.id = 'trackLength'
 // trackLength.type = 'time'
 // trackLength.step = '1'
 trackLength.size = 5
@@ -297,6 +299,7 @@ player.appendChild(audioTime)
 const titleHolder = document.createElement('div')
 titleHolder.className = 'track'
 const trackTitle = document.createElement('input')
+trackTitle.id = 'trackTitle'
 trackTitle.size = 70
 trackTitle.className = 'track-title'
 trackTitle.disabled = true
