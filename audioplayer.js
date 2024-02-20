@@ -114,10 +114,10 @@ catch(e) {
 
     const accessKeyIdInput = document.createElement('input')
     const accessKeyIdLabel = document.createElement('label')
-    accessKeyIdLabel.for = accessKeyIdInput
-    accessKeyIdLabel.textContent = 'accessKeyId'
+    accessKeyIdInput.id = 'accessKeyIdInput'
+    accessKeyIdLabel.for = accessKeyIdInput.id
+    accessKeyIdLabel.textContent = 'S3 accessKeyId'
     f.appendChild(accessKeyIdLabel)
-    accessKeyIdInput.id = 'S3 accessKeyIdInput'
     accessKeyIdInput.type = 'text'
     accessKeyIdInput.size = '40'
     accessKeyIdInput.required = 'required'
@@ -125,10 +125,10 @@ catch(e) {
     
     const secretAccessKeyInput = document.createElement('input')
     const secretAccessKeyLabel = document.createElement('label')
-    secretAccessKeyLabel.for = secretAccessKeyInput
-    secretAccessKeyLabel.textContent = 'secretAccessKey'
+    secretAccessKeyInput.id = 'secretAccessKeyInput'
+    secretAccessKeyLabel.for = secretAccessKeyInput.id
+    secretAccessKeyLabel.textContent = 'S3 secretAccessKey'
     f.appendChild(secretAccessKeyLabel)
-    secretAccessKeyInput.id = 'S3 secretAccessKeyInput'
     secretAccessKeyInput.type = 'password'
     secretAccessKeyInput.size = '40'
     secretAccessKeyInput.required = 'required'
@@ -136,10 +136,10 @@ catch(e) {
     
     const endpointInput = document.createElement('input')
     const endpointLabel = document.createElement('label')
-    endpointLabel.for = endpointInput
-    endpointLabel.textContent = 'endpoint'
+    endpointInput.id = 'endpointInput'
+    endpointLabel.for = endpointInput.id
+    endpointLabel.textContent = 'S3 endpoint'
     f.appendChild(endpointLabel)
-    endpointInput.id = 'S3 endpointInput'
     endpointInput.type = 'text'
     endpointInput.size = '40'
     endpointInput.required = 'required'
@@ -147,10 +147,10 @@ catch(e) {
     
     const regionInput = document.createElement('input')
     const regionLabel = document.createElement('label')
-    regionLabel.for = regionInput
+    regionInput.id = 'regionInput'
+    regionLabel.for = regionInput.id
     regionLabel.textContent = 'S3 region'
     f.appendChild(regionLabel)
-    regionInput.id = 'regionInput'
     regionInput.type = 'text'
     regionInput.size = '40'
     regionInput.required = 'required'
@@ -158,10 +158,10 @@ catch(e) {
     
     const bucketInput = document.createElement('input')
     const bucketLabel = document.createElement('label')
-    bucketLabel.for = bucketInput
+    bucketInput.id = 'bucket'
+    bucketLabel.for = bucketInput.id
     bucketLabel.textContent = 'S3 bucket'
     f.appendChild(bucketLabel)
-    bucketInput.id = 'bucket'
     bucketInput.type = 'text'
     bucketInput.size = '40'
     bucketInput.required = 'required'
@@ -874,6 +874,11 @@ function getHue(r, g, b) {
 }
 
 async function createAudioTrack(obj, source) {
+
+  // pre-fetch content to cache
+  const dummyAudio = document.createElement('audio')
+  dummyAudio.src = obj.href
+  dummyAudio.load()
 
   let myArtist = ''
   let myAlbum = ''
