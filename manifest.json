@@ -1,0 +1,23 @@
+{
+ "id": "?homescreen=1",
+ "short_name": "Audio player",
+ "name": "Ctrl– audio player",
+ "icons": [
+  {
+   "src": "./play-192.png",
+   "type": "image/png",
+   "sizes": "192x192"
+  }
+ ],
+ "background_color": "hsl(180, 25%, 75%)",
+ "display": "fullscreen",
+ "orientation": "natural",
+ "scope": "/",
+ "theme_color": "hsl(180, 25%, 75%)",
+ "shortcuts": [],
+ "description": "Play music from online object storage",
+ "screenshots": [],
+ "categories": [
+  "music"
+ ]
+}
