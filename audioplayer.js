@@ -240,6 +240,7 @@ request.onsuccess = (event) => {
 const enablePlay = async () => {
   play.disabled = false
   // play.textContent = '⏵'
+  play.innerHTML = '<span class="fa-solid fa-play"></span>'
   // play.click()
 }
 
@@ -325,7 +326,7 @@ progress.addEventListener('input', (e) => {
 player.appendChild(progress)
 
 updateDuration = function() {
-  const seconds = parseInt(this?.duration ? this.duration : audioRefs.current.duration)
+  const seconds = parseInt(audioRefs.current.duration)
   progress.max = seconds
   trackLength.value = parseInt(seconds/60) + ':' + parseInt(seconds%60).toString().padStart(2, '0')
   cursor.max = '0:' + trackLength.value
@@ -379,17 +380,19 @@ const updateTime = () => {
       parseInt(seconds%60).toString().padStart(2, '0')
     progress.value = seconds
     if ('setPositionState' in navigator.mediaSession) {
-      navigator.mediaSession.setPositionState({
-        duration: audioRefs.current.duration,
-        position: audioRefs.current.currentTime,
-      })
+      if (audioRefs.current.duration && audioRefs.current.currentTime) {
+        navigator.mediaSession.setPositionState({
+          duration: audioRefs.current.duration,
+          position: audioRefs.current.currentTime,
+        })
+      }
     }
 }
 audioRefs.current.addEventListener("timeupdate", updateTime)
 
-play.onclick = (e) => {
+play.onclick = async (e) => {
   if (audioRefs.current.paused) {
-    audioRefs.current.play()
+    await audioRefs.current.play()
     // play.textContent = '⏸'
     play.innerHTML = '<span class="fa-solid fa-pause"></span>'
   }
@@ -784,7 +787,7 @@ function getS3Meta(key) {
   )
 }
 
-async function prepareNext() {
+function prepareNext() {
   const current = playerList.querySelector('.playing')
   if (current?.nextElementSibling?.tagName.toLocaleLowerCase() == 'audio-track') {
     audioRefs.next.className = 'next'
@@ -794,7 +797,7 @@ async function prepareNext() {
   }
 }
 
-async function preparePrevious() {
+function preparePrevious() {
   const current = playerList.querySelector('.playing')
   if (current?.previousElementSibling?.tagName.toLocaleLowerCase() == 'audio-track') {
     audioRefs.prev.className = 'previous'
@@ -839,27 +842,30 @@ const playTrack = async (track) => {
       audioRefs.prev = audioRefs.current
       audioRefs.current = audioRefs.next
       audioRefs.current.className = 'current'
-      updateDuration()
+      // updateDuration()
+      audioRefs.current.onloadedmetadata = updateDuration
+      audioRefs.next = tmpRef
+      prepareNext()
+      preparePrevious()
       enablePlay()
       await audioRefs.current.play()
       // play.textContent = '⏸'
       play.innerHTML = '<span class="fa-solid fa-pause"></span>'
-      audioRefs.next = tmpRef
-      await prepareNext()
-      await preparePrevious()
     }
     else if (track.dataset['src'] == audioRefs.prev.src) {
       let tmpRef = audioRefs.next
       audioRefs.next = audioRefs.current
       audioRefs.current = audioRefs.prev
-      updateDuration()
+      audioRefs.current.className = 'current'
+      // updateDuration()
+      audioRefs.current.onloadedmetadata = updateDuration
+      audioRefs.prev = tmpRef
+      preparePrevious()
+      prepareNext()
       enablePlay()
       await audioRefs.current.play()
       // play.textContent = '⏸'
       play.innerHTML = '<span class="fa-solid fa-pause"></span>'
-      audioRefs.prev = tmpRef
-      await preparePrevious()
-      await prepareNext()
     }
     else {
       let tmpRef = audioRefs.prev
@@ -871,8 +877,8 @@ const playTrack = async (track) => {
       audioRefs.current.src = track.dataset['src']
       audioRefs.current.load()
       audioRefs.next = tmpRef
-      await prepareNext()
-      await preparePrevious()
+      prepareNext()
+      preparePrevious()
       audioRefs.current.oncanplay = async (e) => {
         enablePlay()
         await audioRefs.current.play()
@@ -896,7 +902,8 @@ const playTrack = async (track) => {
       }  
     }
   }
-}
+  console.dir(audioRefs)
+ }
 
 if ('mediaSession' in navigator) {
   navigator.mediaSession.setActionHandler('play', audioRefs.current.play)
@@ -931,7 +938,7 @@ async function createAudioTrack(obj, source) {
   let myAlbum = ''
   let myTitle = ''
   let myTrackNumber = ''
-  let myDuration = ''
+  let myDuration = '0:00'
   let myYear = ''
   let myPlaylist = ''
   let myGenre = ''
