@@ -17,7 +17,6 @@ locale.jumpTo = `Jump to`
 // locale.playAlbum = `Add all album tracks to queue`
 
 let s3, err, f, bucketName, playerList, browserList, playlistList, db, skipMenu, previousFirst, sourceLink, wakeLock
-const audioRefs = {}
 
 const dbRequest = indexedDB.open("audio-library", 3)
 dbRequest.onupgradeneeded = function(event) {
@@ -264,23 +263,10 @@ next.innerHTML = '<span class="fa-solid fa-forward"></span>'
 buttons.appendChild(next)
 player.appendChild(buttons)
 
-const previousTrack = document.createElement('audio')
-previousTrack.className = 'previous'
-previousTrack.preload = 'auto'
-player.appendChild(previousTrack)
-audioRefs.prev = previousTrack
-
 const audio = document.createElement('audio')
 audio.className = 'current'
 audio.preload = 'auto'
 player.appendChild(audio)
-audioRefs.current = audio
-
-const nextTrack = document.createElement('audio')
-nextTrack.className = 'next'
-nextTrack.preload = 'auto'
-player.appendChild(nextTrack)
-audioRefs.next = nextTrack
 
 const audioTime = document.createElement('div')
 audioTime.className = 'audio-time'
@@ -295,7 +281,7 @@ cursor.disabled = true
 cursor.addEventListener('blur', (e) => {
   const parts = e.target.value.split(':')
   const secs = parseInt(parts[0]) * 60 + parseInt(parts[1])
-  audioRefs.current.currentTime = secs
+  audio.currentTime = secs
 })
 audioTime.appendChild(cursor)
 audioTime.appendChild(document.createTextNode(' / '))
@@ -321,12 +307,12 @@ const progress = document.createElement('input')
 progress.type = 'range'
 progress.id = 'progress'
 progress.addEventListener('input', (e) => {
-  audioRefs.current.currentTime = parseInt(e.target.value)
+  audio.currentTime = parseInt(e.target.value)
 })
 player.appendChild(progress)
 
 updateDuration = function() {
-  const seconds = parseInt(audioRefs.current.duration)
+  const seconds = parseInt(audio.duration)
   progress.max = seconds
   trackLength.value = parseInt(seconds/60) + ':' + parseInt(seconds%60).toString().padStart(2, '0')
   cursor.max = '0:' + trackLength.value
@@ -338,24 +324,26 @@ const requestWakeLock = async () => {
     console.error(`${err.name}: ${err.message}`)
   }
 }
-audioRefs.current.onloadedmetadata = updateDuration
-audioRefs.current.onplay = () => {
+audio.onloadedmetadata = updateDuration
+audio.onplay = () => {
   // play.textContent = '⏸'
   play.innerHTML = '<span class="fa-solid fa-pause"></span>'
   cursor.disabled = true
   requestWakeLock()
 }
-audioRefs.current.onpause = () => {
+audio.onpause = () => {
   // play.textContent = '⏵'
   cursor.disabled = false
   play.innerHTML = '<span class="fa-solid fa-play"></span>'
-  wakeLock.release()
+  wakeLock?.release()
 }
-audioRefs.current.onstalled = audioRefs.current.onsuspend = audioRefs.current.onwaiting = () => {
+audio.onstalled = audio.onsuspend = audio.onwaiting = () => {
+  play.innerHTML = '<span class="fa-solid fa-play"></span>'
   play.classList.add('stalled')
   cursor.disabled = false
 }
-audioRefs.current.onplaying = () => {
+audio.onplaying = () => {
+  play.innerHTML = '<span class="fa-solid fa-pause"></span>'
   play.classList.remove('stalled')
   cursor.disabled = true
 }
@@ -368,7 +356,7 @@ playerList = document.createElement('nav')
 player.appendChild(playerList)
 
 const updateTime = () => {
-    const seconds = parseInt(audioRefs.current.currentTime)
+    const seconds = parseInt(audio.currentTime)
 /*
     cursor.value = [
       '00',
@@ -380,34 +368,39 @@ const updateTime = () => {
       parseInt(seconds%60).toString().padStart(2, '0')
     progress.value = seconds
     if ('setPositionState' in navigator.mediaSession) {
-      if (audioRefs.current.duration && audioRefs.current.currentTime) {
+      if (audio.duration && audio.currentTime) {
         navigator.mediaSession.setPositionState({
-          duration: audioRefs.current.duration,
-          position: audioRefs.current.currentTime,
+          duration: audio.duration,
+          position: audio.currentTime,
         })
       }
     }
 }
-audioRefs.current.addEventListener("timeupdate", updateTime)
-
-play.onclick = async (e) => {
-  if (audioRefs.current.paused) {
-    await audioRefs.current.play()
-    // play.textContent = '⏸'
-    play.innerHTML = '<span class="fa-solid fa-pause"></span>'
-  }
-  else {
-    audioRefs.current.pause()
-    // play.textContent = '⏵'
-    play.innerHTML = '<span class="fa-solid fa-play"></span>'
-  }
+audio.addEventListener("timeupdate", updateTime)
+audio.oncanplay = async (e) => {
+  enablePlay()
+  await audio.play()
+  // play.textContent = '⏸'
+  play.innerHTML = '<span class="fa-solid fa-pause"></span>'
 }
-
-audio.onended = nextTrack.onended = previousTrack.onended = next.onclick = (e) => {
+audio.onended = next.onclick = (e) => {
   playNext()
 }
 prev.onclick = (e) => {
   playPrevious()
+}
+
+play.onclick = async (e) => {
+  if (audio.paused) {
+    await audio.play()
+    // play.textContent = '⏸'
+    // play.innerHTML = '<span class="fa-solid fa-pause"></span>'
+  }
+  else {
+    audio.pause()
+    // play.textContent = '⏵'
+    // play.innerHTML = '<span class="fa-solid fa-play"></span>'
+  }
 }
 
 window.addEventListener('keydown', (e) => {
@@ -417,7 +410,7 @@ window.addEventListener('keydown', (e) => {
     let newCurrent = false
     switch(e.key) {
       case " ": e.preventDefault(); play.click(); break
-      // case "Enter": play.disabled = true; audioRefs.current.src = current.dataset.src; break
+      // case "Enter": play.disabled = true; audio.src = current.dataset.src; break
       case "Enter": current.querySelector('.name a')?.click(); break
       case "ArrowRight": playNext(); break
       case "ArrowLeft": playPrevious(); break
@@ -570,13 +563,14 @@ function removeTracks(e) {
   const tracks = cli.closest('audio-player').querySelectorAll(`audio-track[data-source="${source}"]`)
   for (const track of tracks) {
     if (track.classList.contains('playing')) {
-      // playNext()
-      play.click()
+      if (!audio.paused) {
+        play.click()
+      }
       trackLength.value = progress.value = 0
       // cursor.value = '00:00:00'
       cursor.value = '0:00'
       trackTitle.value = ''
-      audioRefs.current.src = ''
+      audio.src = ''
     }
     track.parentNode.removeChild(track)
   }
@@ -787,26 +781,6 @@ function getS3Meta(key) {
   )
 }
 
-function prepareNext() {
-  const current = playerList.querySelector('.playing')
-  if (current?.nextElementSibling?.tagName.toLocaleLowerCase() == 'audio-track') {
-    audioRefs.next.className = 'next'
-    audioRefs.next.onloadedmetadata = () => {}
-    audioRefs.next.oncanplay = () => {}
-    audioRefs.next.src = current.nextElementSibling.dataset.src
-  }
-}
-
-function preparePrevious() {
-  const current = playerList.querySelector('.playing')
-  if (current?.previousElementSibling?.tagName.toLocaleLowerCase() == 'audio-track') {
-    audioRefs.prev.className = 'previous'
-    audioRefs.prev.onloadedmetadata = () => {}
-    audioRefs.prev.oncanplay = () => {}
-    audioRefs.prev.src = current.previousElementSibling.dataset.src
-  }
-}
-
 const playNext = () => {
   const playing = playerList.querySelector('.playing')
   const candidate = playing?.nextElementSibling
@@ -837,55 +811,8 @@ const playTrack = async (track) => {
     playerList.querySelector('.playing')?.classList.remove('playing')
     track.classList.add('playing')
     track.scrollIntoView({block: "nearest", inline: "nearest"})
-    if (track.dataset['src'] == audioRefs.next.src) {
-      let tmpRef = audioRefs.prev
-      audioRefs.prev = audioRefs.current
-      audioRefs.current = audioRefs.next
-      audioRefs.current.className = 'current'
-      // updateDuration()
-      audioRefs.current.onloadedmetadata = updateDuration
-      audioRefs.next = tmpRef
-      prepareNext()
-      preparePrevious()
-      enablePlay()
-      await audioRefs.current.play()
-      // play.textContent = '⏸'
-      play.innerHTML = '<span class="fa-solid fa-pause"></span>'
-    }
-    else if (track.dataset['src'] == audioRefs.prev.src) {
-      let tmpRef = audioRefs.next
-      audioRefs.next = audioRefs.current
-      audioRefs.current = audioRefs.prev
-      audioRefs.current.className = 'current'
-      // updateDuration()
-      audioRefs.current.onloadedmetadata = updateDuration
-      audioRefs.prev = tmpRef
-      preparePrevious()
-      prepareNext()
-      enablePlay()
-      await audioRefs.current.play()
-      // play.textContent = '⏸'
-      play.innerHTML = '<span class="fa-solid fa-pause"></span>'
-    }
-    else {
-      let tmpRef = audioRefs.prev
-      audioRefs.prev = audioRefs.current
-      audioRefs.current = audioRefs.next
-      audioRefs.current.className = 'current'
-      audioRefs.current.onloadedmetadata = updateDuration
-      audioRefs.current.ontimeupdate = updateTime
-      audioRefs.current.src = track.dataset['src']
-      audioRefs.current.load()
-      audioRefs.next = tmpRef
-      prepareNext()
-      preparePrevious()
-      audioRefs.current.oncanplay = async (e) => {
-        enablePlay()
-        await audioRefs.current.play()
-        // play.textContent = '⏸'
-        play.innerHTML = '<span class="fa-solid fa-pause"></span>'
-      }
-    }
+    audio.src = track.dataset['src']
+    audio.load()
     if (track.style.backgroundImage) {
       const image = new Image()
       let url = track.style.backgroundImage
@@ -902,17 +829,16 @@ const playTrack = async (track) => {
       }  
     }
   }
-  console.dir(audioRefs)
  }
 
 if ('mediaSession' in navigator) {
-  navigator.mediaSession.setActionHandler('play', audioRefs.current.play)
-  navigator.mediaSession.setActionHandler('pause', audioRefs.current.pause)
+  navigator.mediaSession.setActionHandler('play', audio.play)
+  navigator.mediaSession.setActionHandler('pause', audio.pause)
   navigator.mediaSession.setActionHandler('previoustrack', playPrevious)
   navigator.mediaSession.setActionHandler('nexttrack', playNext)
-  navigator.mediaSession.setActionHandler('stop', audioRefs.current.pause)
+  navigator.mediaSession.setActionHandler('stop', audio.pause)
   navigator.mediaSession.setActionHandler('seekto', (details) => {
-    audioRefs.current.currentTime = details.seekTime
+    audio.currentTime = details.seekTime
   })
 }
 
@@ -1005,28 +931,6 @@ async function createAudioTrack(obj, source) {
   trackLink.onclick = (e) => {
     e.preventDefault()
     playTrack(track)
-/*
-    playerList.querySelector('.playing')?.classList?.remove('playing')
-    track.classList.add('playing')
-    play.disabled = true
-    audioRefs.prev = audioRefs.current
-    audioRefs.next.src = obj.href
-    console.log(audioRefs.next)
-    audioRefs.next.onloadedmetadata = updateDuration
-    audioRefs.next.ontimeupdate = updateTime
-    audioRefs.next.oncanplay = async (e) => {
-      console.log(audioRefs.next, 'can play')
-      audioRefs.prev = audio
-      audioRefs.prev.onloadedmetadata = () => {}
-      audioRefs.current = audioRefs.next
-      enablePlay()
-      console.log('enabled')
-      prepareNext()
-      console.log('next prepared')
-      // preparePrevious()
-    }
-    // collection.innerHTML = `${myArtist}: ${myTitle}`
-*/
   }
   const nameSpan = document.createElement('span')
   nameSpan.itemprop = 'name'
@@ -1106,7 +1010,7 @@ async function createAudioTrack(obj, source) {
   if (!playing) {
     trackLink.click()
   }
-  // if (!audioRefs.current.src) {
+  // if (!audio.src) {
     // trackLink.click()
   // }
 
