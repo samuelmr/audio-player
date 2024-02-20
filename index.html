@@ -34,8 +34,8 @@
     }
    </script>
    <title>Ctrl&ndash; music player</title>
+   <link rel="manifest" href="./manifest.json">
 <!--
-  <link rel="manifest" href="./manifest.json">
   <link rel="apple-touch-icon" href="../i/ctrl-icon.png">
   <link rel="shortcut icon" type="image/png" href="../i/favicon.png">
 --> 
@@ -321,34 +321,43 @@
         text-decoration: none;
     }
     .album {
+        font-size: smaller;
         grid-area: album;
     }
     .artist {
         grid-area: artist;
     }
     .duration {
+        font-size: smaller;
         grid-area: duration;
         text-align: right;
     }
     .genre {
+        font-size: smaller;
+        font-style: italic;
         grid-area: genre;
     }
     .keywords {
+        font-size: smaller;
         grid-area: keywords;
     }
     .playlist {
+        font-size: smaller;
         grid-area: playlist;
     }
     .title {
         display: none;
     }
     .track {
-        grid-area: track;
+        font-size: smaller;
+        font-weight: bold;
     }
-    .tracknumber {
+    .trackNumber {
+        font-size: smaller;
         grid-area: tracknumber;
     }
     .published {
+        font-size: smaller;
         grid-area: year;
     }
     storage-settings {
