@@ -391,6 +391,9 @@ prev.onclick = (e) => {
 }
 
 play.onclick = async (e) => {
+  if (!audio.getAttribute('src')) {
+    return playNext()
+  }
   if (audio.paused) {
     await audio.play()
     // play.textContent = '⏸'
@@ -442,7 +445,7 @@ window.addEventListener('keydown', (e) => {
     }
 })
 
-async function getFolders(parentElement=null, token=null) {
+async function getFolders(parentElement=null, autoAdd=false, token=null) {
   const input = {Bucket: bucketName}
   if (token) {
     input.ContinuationToken = token
@@ -523,7 +526,11 @@ async function getFolders(parentElement=null, token=null) {
           const getParams = {Bucket: bucketName, Key: obj.Key}
           const command = new GetObjectCommand(getParams)
           obj.href = await getSignedUrl(s3, command, { expiresIn: EXPIRE_SECONDS })
-          const li = createSongElement(obj, subRef)
+          createSongElement(obj, subRef).then(li => {
+            if (autoAdd) {
+              li.querySelector('a')?.click()
+            }
+          })
         }
         else if (obj.Key.endsWith('.json')) {
           // playlists.push(obj.Key)
@@ -540,7 +547,7 @@ async function getFolders(parentElement=null, token=null) {
     }
     if (response.IsTruncated) {
       // console.log(response)
-      getFolders(parentElement, response.NextContinuationToken)
+      getFolders(parentElement, autoAdd, response.NextContinuationToken)
     }
   }
   catch(e) {
@@ -552,7 +559,8 @@ function scrollToFirstTrack(e) {
   const source = this.dataset.source
   const track = this.closest('audio-player').querySelector(`audio-track[data-source="${source}"]`)
   if (track) {
-    track.scrollIntoView({block: "nearest", inline: "nearest"})
+    track.scrollIntoView({block: "nearest", inline: "nearest", behavior: 'smooth'})
+    track.focus()
   }
 }
 
@@ -610,12 +618,14 @@ function createFolderElement(folder, ol) {
     ca.onclick = removeTracks
     cli.appendChild(ca)
     if (!li.querySelector('ol')) {
-      await getFolders(li)
+      await getFolders(li, true)
     }
-    const tracks = e?.target?.closest('.folder')?.querySelectorAll('.song a')
-    tracks.forEach((link) => {
-      link.click()
-    })
+    else {
+      const tracks = e?.target?.closest('.folder')?.querySelectorAll('.song a')
+      tracks.forEach((link) => {
+        link.click()
+      })
+    }
     collection.appendChild(cli)
     // collection.innerHTML = (parent ? `${parent}: ` : '') + folder
     // collection.innerHTML = folder
@@ -783,7 +793,11 @@ function getS3Meta(key) {
 
 const playNext = () => {
   const playing = playerList.querySelector('.playing')
-  const candidate = playing?.nextElementSibling
+  let candidate = playing?.nextElementSibling
+  if (!candidate) {
+    // pick the first item on the list
+    candidate = playerList.querySelector('audio-track')
+  }
   playTrack(candidate)
 }
 
@@ -860,6 +874,7 @@ function getHue(r, g, b) {
 }
 
 async function createAudioTrack(obj, source) {
+
   let myArtist = ''
   let myAlbum = ''
   let myTitle = ''
