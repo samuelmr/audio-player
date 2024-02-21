@@ -221,6 +221,12 @@
     audio-browser nav ol li.open ol {
         display: block;
     }
+    audio-browser nav ol li.open ol li ol {
+        display: none;
+    }
+    audio-browser nav ol li.open ol li.open ol {
+        display: block;
+    }
     audio-browser nav#skipNav {
         background-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
         border-radius: 0 0 0.5em 0.5em;
