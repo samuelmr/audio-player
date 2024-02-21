@@ -49,6 +49,10 @@ dbRequest.onsuccess = function() {
   db = dbRequest.result
 }
 
+const myUri = new URL(document.location.href)
+let myPath = decodeURIComponent(myUri.hash.replace('#', '')).split(folderDelimiter)
+console.log(myPath)
+
 const player = document.querySelector('audio-player')
 if (!player) {
   throw new Error("Didn't find an audio-player element in HTML document")
@@ -605,7 +609,8 @@ function createFolderElement(folder, ol) {
   li.dataset.folder = folder
   li.textContent = folder.replace(`${parent}/`, '')
   const a = document.createElement('a')
-  a.href = '#' + (parent ? encodeURIComponent(parent) + '/' : '') + encodeURIComponent(folder)
+  // a.href = '#' + (parent ? encodeURIComponent(parent) + '/' : '') + encodeURIComponent(folder)
+  a.href = '#' + encodeURIComponent(folder)
   a.className = 'action'
   a.title = locale.playFolder
   // a.textContent = '⥅' // '⤅' '⧐' '⏵'
@@ -646,7 +651,7 @@ function createFolderElement(folder, ol) {
     e.preventDefault()
     e.stopPropagation()
     const isOpen = this.classList.toggle('open')
-    history.pushState(folder, '', a.href)
+    // history.pushState(folder, '', a.href)
     document.title = folder
     const subLists = this.querySelectorAll('li ol')
     if (subLists.length > 0) {
@@ -660,6 +665,12 @@ function createFolderElement(folder, ol) {
     }
   }
   li.appendChild(a)
+  const pathIndex = myPath.indexOf(folder.trim())
+  if (pathIndex >= 0) {
+    li.click()
+    myPath = myPath.slice(pathIndex)
+    console.log(pathIndex, myPath)
+  }
   ol.appendChild(li)
   return li
 }
@@ -698,6 +709,12 @@ async function createSongElement(obj, ol) {
   }
   li.appendChild(a)
   ol.appendChild(li)
+  const pathIndex = myPath.indexOf(li.textContent.trim())
+  if (pathIndex >= 0) {
+    a.click()
+    myPath = myPath.slice(pathIndex)
+    console.log(pathIndex, myPath)
+  }
   return li
 }
 
