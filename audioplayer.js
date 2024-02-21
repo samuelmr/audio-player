@@ -3,6 +3,7 @@ import { ListObjectsV2Command, HeadObjectCommand, GetObjectCommand } from "@aws-
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
 const EXPIRE_SECONDS = 7 * 24 * 60 * 60
+const WAKELOCK_CLEAR_TIMEOUT = 5 * 60 * 1000
 const folderDelimiter = '/'
 
 const locale = {}
@@ -17,6 +18,9 @@ locale.jumpTo = `Jump to`
 // locale.playAlbum = `Add all album tracks to queue`
 
 let s3, err, f, bucketName, playerList, browserList, playlistList, db, skipMenu, previousFirst, sourceLink, wakeLock
+
+const preloadCache = {}
+let preloading = false
 
 const dbRequest = indexedDB.open("audio-library", 3)
 dbRequest.onupgradeneeded = function(event) {
@@ -332,13 +336,15 @@ audio.onplay = () => {
   // play.textContent = '⏸'
   play.innerHTML = '<span class="fa-solid fa-pause"></span>'
   cursor.disabled = true
+  navigator.mediaSession.playbackState = 'playing'
   requestWakeLock()
 }
 audio.onpause = () => {
   // play.textContent = '⏵'
   cursor.disabled = false
   play.innerHTML = '<span class="fa-solid fa-play"></span>'
-  wakeLock?.release()
+  navigator.mediaSession.playbackState = 'paused'
+  setTimeout(wakeLock?.release, WAKELOCK_CLEAR_TIMEOUT)
 }
 audio.onstalled = audio.onsuspend = audio.onwaiting = () => {
   play.innerHTML = '<span class="fa-solid fa-play"></span>'
@@ -375,6 +381,7 @@ const updateTime = () => {
         navigator.mediaSession.setPositionState({
           duration: audio.duration,
           position: audio.currentTime,
+          playbackRate: audio.playbackRate,
         })
       }
     }
@@ -813,16 +820,13 @@ const playPrevious = () => {
 const playTrack = async (track) => {
   if (track) {
     document.title = track.querySelector('.name').textContent
+    let sessionOpts
     if ('mediaSession' in navigator) {
-      const sessionOpts = {
+      sessionOpts = {
         title: document.title,
         artist: track.querySelector('.artist')?.textContent || 'Unknown Artist',
         album: track.querySelector('.album')?.textContent || 'Unknown Album',
       }
-      if (track.dataset.albumArt) {
-        sessionOpts.artwork = [ { src: track.dataset.albumArt } ]
-      }
-      navigator.mediaSession.metadata = new MediaMetadata(sessionOpts)
     }
     trackTitle.value = document.title
     playerList.querySelector('.playing')?.classList.remove('playing')
@@ -830,14 +834,23 @@ const playTrack = async (track) => {
     track.scrollIntoView({block: "nearest", inline: "nearest"})
     audio.src = track.dataset['src']
     audio.load()
-    if (track.style.backgroundImage) {
+    if (track.dataset.albumArt) {
       const image = new Image()
-      let url = track.style.backgroundImage
-      url = decodeURIComponent(url)
-      url = url.replace('url("', '').replace('")', '')
+      let url = track.dataset.albumArt
       image.src = url
       image.crossOrigin = "Anonymous"
-      image.onload = function() {
+      image.onload = async function() {
+        if ('mediaSession' in navigator) {
+          const response = await fetch(url)
+          const blob = await response.blob()
+          if (blob) {
+            sessionOpts.artwork = [ {
+              src: url,
+              sizes: `${image.naturalWidth}x${image.naturalHeight}`,
+              type: blob.type
+            } ]
+          }
+        }
         const ctx = document.createElement("canvas").getContext("2d")
         ctx.drawImage(image, 0, 0, 1, 1)
         const rgba = ctx.getImageData(0, 0, 1, 1).data
@@ -845,17 +858,26 @@ const playTrack = async (track) => {
         document.documentElement.style.setProperty('--base-hue', hue)
       }  
     }
+    if (sessionOpts) {
+      navigator.mediaSession.metadata = new MediaMetadata(sessionOpts)
+    }
   }
  }
 
 if ('mediaSession' in navigator) {
-  navigator.mediaSession.setActionHandler('play', audio.play)
-  navigator.mediaSession.setActionHandler('pause', audio.pause)
+  navigator.mediaSession.setActionHandler('play', (e) => { audio.play() })
+  navigator.mediaSession.setActionHandler('pause', (e) => { audio.pause() })
   navigator.mediaSession.setActionHandler('previoustrack', playPrevious)
   navigator.mediaSession.setActionHandler('nexttrack', playNext)
-  navigator.mediaSession.setActionHandler('stop', audio.pause)
+  navigator.mediaSession.setActionHandler('stop', (e) => { audio.pause() })
   navigator.mediaSession.setActionHandler('seekto', (details) => {
     audio.currentTime = details.seekTime
+  })
+  navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+    audio.currentTime = Math.max(audio.currentTime - details.seekOffset, 0)
+  })
+  navigator.mediaSession.setActionHandler('seekforward', (details) => {
+    audio.currentTime = Math.min(audio.currentTime + details.seekOffset, audio.duration)
   })
 }
 
@@ -876,12 +898,33 @@ function getHue(r, g, b) {
   return Math.round(h*360)
 }
 
+async function preloadAudio() {
+  const cacheKeys = Object.keys(preloadCache)
+  if (preloading || cacheKeys.length < 1) {
+    return false
+  }
+  const href = cacheKeys[0]
+  delete(preloadCache[href])
+  preloading = href
+  const dummyAudio = document.createElement('audio')
+  dummyAudio.src = href
+  dummyAudio.load()
+  dummyAudio.oncanplay = (e) => {
+    preloading = false
+    preloadAudio()
+    // setTimeout(preloadAudio, PRELOAD_TIMEOUT)
+  }
+}
+
+async function queuePreload(href) {
+  preloadCache[href] = true
+  preloadAudio()
+}
+
 async function createAudioTrack(obj, source) {
 
   // pre-fetch content to cache
-  const dummyAudio = document.createElement('audio')
-  dummyAudio.src = obj.href
-  dummyAudio.load()
+  queuePreload(obj.href)
 
   let myArtist = ''
   let myAlbum = ''
