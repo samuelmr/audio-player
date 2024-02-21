@@ -8,6 +8,7 @@
   <meta name="MobileOptimized" content="width">
   <meta name="theme-color" content="hsl(180, 50%, 75%)" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="hsl(180, 50%, 25%)" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="play-192.png"/>
   <script src="https://kit.fontawesome.com/2f78fce3a3.js" crossorigin="anonymous"></script>
   <script>
     const keys = [
@@ -118,11 +119,11 @@
          "artist track duration"
          "tracknumber album year"
          "genre playlist keywords";
-        grid-template-rows: 2em 2em 2em;
+        grid-template-rows: 1.2em 1em 1em;
         grid-template-columns: 30% 60% 10%;
-        height: 2em;
+        height: 1.5em;
         margin: 0.5em auto;
-        padding: 0 2em 0 0.5em;
+        padding: 0 4em 0 0.5em;
         overflow: hidden;
         transition: all 175ms;
         width: 100%;
@@ -140,8 +141,7 @@
     }
     audio-track:focus, audio-track:focus-within, audio-track:hover {
         background-color: hsla(var(--base-hue), 100%, 100%, 50%);
-        height: 6em;
-        padding-right: 6em;
+        height: 3.5em;
         outline: none;
         transition: all 120ms;
     }
@@ -201,19 +201,20 @@
     section {
         overflow-x: auto;
         overflow-y: hidden;
-        padding: 0.5em;
+        padding: 0 0.5em;
         white-space: nowrap;
+    }
+    audio-track section {
+        display: none;
+    }
+    audio-track.playing section, audio-track:focus section, audio-track:focus-within section, audio-track:hover section, audio-track section.artist, audio-track section.track {
+        display: block;
     }
     audio-browser nav ol, audio-browser nav ol li {
         margin: 0;
         padding: 0;
         scroll-margin-top: 2em;
     }
-    /*
-    audio-browser nav ol.hidden, audio-browser nav .playlist.hidden {
-        display: none;
-    }
-    */
     audio-browser nav ol ol {
         display: none;
     }
@@ -221,7 +222,7 @@
         display: block;
     }
     audio-browser nav#skipNav {
-        background-color: hsla(var(--base-hue), 60%, 98%, 90%);
+        background-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
         border-radius: 0 0 0.5em 0.5em;
         margin: 0;
         padding: 0 0.5em;
@@ -230,7 +231,10 @@
         z-index: 2;
     }
     audio-browser nav#skipNav a {
-        color: hsl(var(--base-hue), 75%, 2%);
+        color: hsla(var(--base-hue), 60%, 98%, 90%);
+        display: inline-block;
+        font-weight: bold;
+        padding: 0.25em;
     }
     audio-browser nav#skipNav ol {
         display: flex;
@@ -240,21 +244,8 @@
         padding: 0;
     }
     audio-browser nav#skipNav li {
-/*
-        flex: inline;
-*/
         list-style-type: none;
     }
-/*
-    audio-browser nav#skipNav:before {
-        content: '[';
-        display: inline;
-    }
-    audio-browser nav#skipNav:after {
-        content: ']';
-        display: inline;
-    }
-*/
     audio-browser nav ol li {
         list-style-type: none;
         padding: 0 0.5em;
@@ -349,7 +340,6 @@
         display: none;
     }
     .track {
-        font-size: smaller;
         font-weight: bold;
     }
     .trackNumber {
