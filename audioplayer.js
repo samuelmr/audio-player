@@ -51,7 +51,6 @@ dbRequest.onsuccess = function() {
 
 const myUri = new URL(document.location.href)
 let myPath = decodeURIComponent(myUri.hash.replace('#', '')).split(folderDelimiter)
-console.log(myPath)
 
 const player = document.querySelector('audio-player')
 if (!player) {
@@ -227,7 +226,6 @@ function initS3() {
   a.href = document.location.href
   const query = new URLSearchParams(params).toString()
   a.search += (a?.search.includes('?') ? '&' : '?') + query
-  // console.log(a.href)
 }
 
 /*
@@ -243,13 +241,6 @@ request.onsuccess = (event) => {
   db = event.target.result
 }
 */
-
-const enablePlay = async () => {
-  play.disabled = false
-  // play.textContent = '⏵'
-  play.innerHTML = '<span class="fa-solid fa-play"></span>'
-  // play.click()
-}
 
 const buttons = document.createElement('div')
 buttons.id = 'buttons'
@@ -322,6 +313,10 @@ progress.addEventListener('input', (e) => {
 })
 player.appendChild(progress)
 
+const enablePlay = () => {
+  play.disabled = false
+}
+
 updateDuration = function() {
   const seconds = parseInt(audio.duration)
   progress.max = seconds
@@ -341,6 +336,7 @@ audio.onplay = () => {
   play.innerHTML = '<span class="fa-solid fa-pause"></span>'
   cursor.disabled = true
   navigator.mediaSession.playbackState = 'playing'
+  play.classList.remove('stalled')
   requestWakeLock()
 }
 audio.onpause = () => {
@@ -350,7 +346,7 @@ audio.onpause = () => {
   navigator.mediaSession.playbackState = 'paused'
   setTimeout(wakeLock?.release, WAKELOCK_CLEAR_TIMEOUT)
 }
-audio.onstalled = audio.onsuspend = audio.onwaiting = () => {
+audio.onstalled = audio.onsuspend = audio.onwaiting = (e) => {
   play.innerHTML = '<span class="fa-solid fa-play"></span>'
   play.classList.add('stalled')
   cursor.disabled = false
@@ -395,7 +391,7 @@ audio.oncanplay = async (e) => {
   enablePlay()
   await audio.play()
   // play.textContent = '⏸'
-  play.innerHTML = '<span class="fa-solid fa-pause"></span>'
+  // play.innerHTML = '<span class="fa-solid fa-pause"></span>'
 }
 audio.onended = next.onclick = (e) => {
   playNext()
@@ -470,21 +466,7 @@ async function getFolders(parentElement=null, autoAdd=false, token=null) {
   else {
     input['Delimiter'] = folderDelimiter
   }
-  // console.log(parentElement)
-  // console.log(input)
   try {
-/*
-    let olRef
-    const candidate = parentElement.querySelector('ol')
-    if (candidate) {
-      olRef = candidate
-    }
-    else {
-      const ol = document.createElement('ol')
-      parentElement.appendChild(ol)
-      olRef = ol
-    }
-*/
     let olRef = parentElement.querySelector('ol:not(.playlists)')
     if (!olRef) {
       const ol = document.createElement('ol')
@@ -536,7 +518,6 @@ async function getFolders(parentElement=null, autoAdd=false, token=null) {
         }
         if (obj.Key.endsWith('.mp3')) {
           obj.Metadata = await getS3Meta(obj.Key)
-          // obj.href = `?play#${encodeURIComponent(obj.Key)}`
           const getParams = {Bucket: bucketName, Key: obj.Key}
           const command = new GetObjectCommand(getParams)
           obj.href = await getSignedUrl(s3, command, { expiresIn: EXPIRE_SECONDS })
@@ -547,12 +528,9 @@ async function getFolders(parentElement=null, autoAdd=false, token=null) {
           })
         }
         else if (obj.Key.endsWith('.json')) {
-          // playlists.push(obj.Key)
           const getParams = {Bucket: bucketName, Key: obj.Key}
           const command = new GetObjectCommand(getParams)
-          // obj.href = await getSignedUrl(s3, command, { expiresIn: EXPIRE_SECONDS })
           const li = createPlaylistElement(obj, playlistList)
-          // console.log(playlistList)
         }
         else if (obj.Key.endsWith('.m3u')) {
           // playlists.push(obj.Key)
@@ -560,7 +538,6 @@ async function getFolders(parentElement=null, autoAdd=false, token=null) {
       }
     }
     if (response.IsTruncated) {
-      // console.log(response)
       getFolders(parentElement, autoAdd, response.NextContinuationToken)
     }
   }
@@ -657,7 +634,6 @@ function createFolderElement(folder, ol) {
     if (subLists.length > 0) {
       for (const subList of subLists) {
         subList.classList.toggle('hidden', !isOpen)
-        // subList.onclick = li.onclick
       }
     }
     else {
@@ -669,7 +645,6 @@ function createFolderElement(folder, ol) {
   if (pathIndex >= 0) {
     li.click()
     myPath = myPath.slice(pathIndex)
-    console.log(pathIndex, myPath)
   }
   ol.appendChild(li)
   return li
@@ -713,7 +688,6 @@ async function createSongElement(obj, ol) {
   if (pathIndex >= 0) {
     a.click()
     myPath = myPath.slice(pathIndex)
-    console.log(pathIndex, myPath)
   }
   return li
 }
@@ -748,7 +722,6 @@ async function createPlaylistElement(obj, ol) {
       cli.appendChild(ca)
       collection.appendChild(cli)    
     }
-    // console.log(obj)
     const getParams = {Bucket: bucketName, Key: obj.Key}
     const command = new GetObjectCommand(getParams)
     const res = await s3.send(command)
@@ -766,14 +739,11 @@ async function createPlaylistElement(obj, ol) {
         const command = new GetObjectCommand(getParams)
         song.href = await getSignedUrl(s3, command, { expiresIn: EXPIRE_SECONDS })
         createAudioTrack(song)
-        // console.log(song)
       })
     }
     catch(e) {
       console.error(e)
     }
-    // console.log(playlist)
-    // createAudioTrack(obj)
   }
   li.appendChild(a)
   ol.appendChild(li)
@@ -803,7 +773,6 @@ function getS3Meta(key) {
             meta = metaQuery.Metadata
             meta.key = key
             putx = db.transaction("meta", "readwrite")
-            // console.log(meta, putx)
             putx.objectStore("meta").put(meta)
             resolve(meta)
           }
@@ -929,7 +898,6 @@ async function preloadAudio() {
   dummyAudio.oncanplay = (e) => {
     preloading = false
     preloadAudio()
-    // setTimeout(preloadAudio, PRELOAD_TIMEOUT)
   }
 }
 
@@ -1093,8 +1061,5 @@ async function createAudioTrack(obj, source) {
   if (!playing) {
     trackLink.click()
   }
-  // if (!audio.src) {
-    // trackLink.click()
-  // }
 
 }
