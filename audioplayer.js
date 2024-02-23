@@ -643,7 +643,7 @@ function createFolderElement(folder, ol) {
   li.appendChild(a)
   const pathIndex = myPath.indexOf(folder.trim())
   if (pathIndex >= 0) {
-    li.click()
+    a.click()
     myPath = myPath.slice(pathIndex)
   }
   ol.appendChild(li)
