@@ -17,7 +17,8 @@ locale.playPlaylist = `Add playlist contents to queue`
 locale.jumpTo = `Jump to`
 // locale.playAlbum = `Add all album tracks to queue`
 
-let s3, err, f, bucketName, playerList, browserList, playlistList, db, skipMenu, previousFirst, sourceLink, wakeLock
+let s3, err, f, bucketName, playerList, browserList, playlistList, db
+let skipMenu, previousFirst, sourceLink, wakeLock, wakelockCooldown
 
 const preloadCache = {}
 let preloading = false
@@ -324,6 +325,9 @@ updateDuration = function() {
   cursor.max = '0:' + trackLength.value
 }
 const requestWakeLock = async () => {
+  if (wakelockCooldown) {
+    wakelockCooldown = clearTimeout(wakelockCooldown) // returns undefined
+  }
   try {
     wakeLock = await navigator.wakeLock.request("screen")
   } catch (err) {
@@ -344,7 +348,7 @@ audio.onpause = () => {
   cursor.disabled = false
   play.innerHTML = '<span class="fa-solid fa-play"></span>'
   navigator.mediaSession.playbackState = 'paused'
-  setTimeout(wakeLock?.release, WAKELOCK_CLEAR_TIMEOUT)
+  wakelockCooldown = setTimeout(wakeLock?.release, WAKELOCK_CLEAR_TIMEOUT)
 }
 audio.onstalled = audio.onsuspend = audio.onwaiting = (e) => {
   play.innerHTML = '<span class="fa-solid fa-play"></span>'
