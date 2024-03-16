@@ -725,7 +725,6 @@ async function createPlaylistElement(obj, ol) {
       ca.onclick = removeTracks
       cli.appendChild(ca)
       collection.appendChild(cli)
-      console.log(cli)
     }
     const getParams = {Bucket: bucketName, Key: obj.Key}
     const command = new GetObjectCommand(getParams)
