@@ -4,6 +4,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
 const EXPIRE_SECONDS = 7 * 24 * 60 * 60
 const WAKELOCK_CLEAR_TIMEOUT = 5 * 60 * 1000
+const SEEK_TARGET_TIMEOUT = 100
 const folderDelimiter = '/'
 
 const locale = {}
@@ -19,6 +20,7 @@ locale.jumpTo = `Jump to`
 
 let s3, err, f, bucketName, playerList, browserList, playlistList, db
 let skipMenu, previousFirst, sourceLink, wakeLock, wakelockCooldown
+let seekTarget, seekTimeout
 
 const preloadCache = {}
 let preloading = false
@@ -310,13 +312,19 @@ const progress = document.createElement('input')
 progress.type = 'range'
 progress.id = 'progress'
 progress.addEventListener('input', (e) => {
-  audio.currentTime = parseInt(e.target.value)
+  // Safari gets confused from scrubbing
+  // too many concurrent seek requests set currentTime to 0
+  // avoid many seeks by setting currentTime on a timeOut
+  seekTarget = parseInt(e.target.value)
+  if (seekTimeout) {
+    // cancel previous seek request
+    clearTimeout(seekTimeout)
+  }
+  seekTimeout = setTimeout(function() {
+    audio.currentTime = seekTarget
+  }, SEEK_TARGET_TIMEOUT)
 })
 player.appendChild(progress)
-
-const enablePlay = () => {
-  play.disabled = false
-}
 
 updateDuration = function() {
   const seconds = parseInt(audio.duration)
@@ -335,6 +343,10 @@ const requestWakeLock = async () => {
   }
 }
 audio.onloadedmetadata = updateDuration
+audio.oncanplay = (e) => {
+  audio.play()
+  play.disabled = false
+}
 audio.onplay = () => {
   // play.textContent = '⏸'
   play.innerHTML = '<span class="fa-solid fa-pause"></span>'
@@ -350,15 +362,30 @@ audio.onpause = () => {
   navigator.mediaSession.playbackState = 'paused'
   wakelockCooldown = setTimeout(wakeLock?.release, WAKELOCK_CLEAR_TIMEOUT)
 }
-audio.onstalled = audio.onsuspend = audio.onwaiting = (e) => {
+audio.onwaiting = (e) => {
+  cursor.disabled = false
   play.innerHTML = '<span class="fa-solid fa-play"></span>'
+  navigator.mediaSession.playbackState = 'paused'
+}
+audio.onplaying = (e) => {
+  play.innerHTML = '<span class="fa-solid fa-pause"></span>'
+  play.classList.remove('stalled')
+  navigator.mediaSession.playbackState = 'playing'
+  cursor.disabled = true
+}
+audio.onstalled = (e) => {
+  // play.innerHTML = '<span class="fa-solid fa-play"></span>'
   play.classList.add('stalled')
   cursor.disabled = false
 }
-audio.onplaying = () => {
-  play.innerHTML = '<span class="fa-solid fa-pause"></span>'
-  play.classList.remove('stalled')
-  cursor.disabled = true
+audio.onseeking = audio.onseeked = (e) => {
+  // console.log(e.timeStamp, e.target.currentTime, e.target.seekable, e)
+  // for (let i=0; i<e.target.seekable.length; i++) {
+  //   console.log(e.target.seekable.start(i), e.target.seekable.end(i))
+  // }
+}
+audio.onended = next.onclick = (e) => {
+  playNext()
 }
 
 const collection = document.createElement('ol')
@@ -391,15 +418,7 @@ const updateTime = () => {
     }
 }
 audio.addEventListener("timeupdate", updateTime)
-audio.oncanplay = async (e) => {
-  enablePlay()
-  await audio.play()
-  // play.textContent = '⏸'
-  // play.innerHTML = '<span class="fa-solid fa-pause"></span>'
-}
-audio.onended = next.onclick = (e) => {
-  playNext()
-}
+
 prev.onclick = (e) => {
   playPrevious()
 }
@@ -710,7 +729,7 @@ async function createPlaylistElement(obj, ol) {
   a.onclick = async (e) => {
     e.preventDefault()
     e.stopPropagation()
-    if (e?.pointerId > 0) {
+    // if (e?.pointerId > 0) {
       history.pushState(a.href, '', `#${obj.Key}`)
       document.title = a.textContent
       // collection.innerHTML = obj.Key
@@ -725,7 +744,7 @@ async function createPlaylistElement(obj, ol) {
       ca.onclick = removeTracks
       cli.appendChild(ca)
       collection.appendChild(cli)
-    }
+    // }
     const getParams = {Bucket: bucketName, Key: obj.Key}
     const command = new GetObjectCommand(getParams)
     const res = await s3.send(command)
