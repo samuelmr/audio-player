@@ -135,13 +135,14 @@
         border-style: outset;
         border-width: 2px;
         color: hsla(var(--base-hue), 75%, 10%, 99%);
+        height: auto;
     }
     audio-track.playing a {
         color: hsla(var(--base-hue), 75%, 10%, 99%);
     }
     audio-track:focus, audio-track:focus-within, audio-track:hover {
         background-color: hsla(var(--base-hue), 100%, 100%, 50%);
-        height: 3.5em;
+        height: auto;
         outline: none;
         transition: all 120ms;
     }
@@ -465,7 +466,7 @@
             grid-template-columns: 2.5ex 1fr 4.5ex;
             padding: 0 0.5em;
         }
-        audio-player audio-track.playing, audio-player audio-track:focus, audio-player audio-track:hover {
+        audio-player audio-track.playing, audio-player audio-track:focus, audio-player audio-track:focus-within, audio-player audio-track:hover {
             height: auto;
             padding-right: 0.5em;
         }
