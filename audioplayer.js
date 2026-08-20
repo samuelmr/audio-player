@@ -21,6 +21,7 @@ locale.jumpTo = `Jump to`
 let s3, err, f, bucketName, playerList, browserList, playlistList, db
 let skipMenu, previousFirst, sourceLink, wakeLock, wakelockCooldown
 let seekTarget, seekTimeout
+let autoPlayOnLoad = false
 
 const preloadCache = {}
 let preloading = false
@@ -119,13 +120,13 @@ catch(e) {
   }
   err.textContent = e.toString()
   if (!f) {
-    ss = document.createElement('storage-settings')
+    const ss = document.createElement('storage-settings')
     f = document.createElement('form')
 
     const accessKeyIdInput = document.createElement('input')
     const accessKeyIdLabel = document.createElement('label')
     accessKeyIdInput.id = 'accessKeyIdInput'
-    accessKeyIdLabel.for = accessKeyIdInput.id
+    accessKeyIdLabel.htmlFor = accessKeyIdInput.id
     accessKeyIdLabel.textContent = 'S3 accessKeyId'
     f.appendChild(accessKeyIdLabel)
     accessKeyIdInput.type = 'text'
@@ -136,7 +137,7 @@ catch(e) {
     const secretAccessKeyInput = document.createElement('input')
     const secretAccessKeyLabel = document.createElement('label')
     secretAccessKeyInput.id = 'secretAccessKeyInput'
-    secretAccessKeyLabel.for = secretAccessKeyInput.id
+    secretAccessKeyLabel.htmlFor = secretAccessKeyInput.id
     secretAccessKeyLabel.textContent = 'S3 secretAccessKey'
     f.appendChild(secretAccessKeyLabel)
     secretAccessKeyInput.type = 'password'
@@ -147,7 +148,7 @@ catch(e) {
     const endpointInput = document.createElement('input')
     const endpointLabel = document.createElement('label')
     endpointInput.id = 'endpointInput'
-    endpointLabel.for = endpointInput.id
+    endpointLabel.htmlFor = endpointInput.id
     endpointLabel.textContent = 'S3 endpoint'
     f.appendChild(endpointLabel)
     endpointInput.type = 'text'
@@ -158,7 +159,7 @@ catch(e) {
     const regionInput = document.createElement('input')
     const regionLabel = document.createElement('label')
     regionInput.id = 'regionInput'
-    regionLabel.for = regionInput.id
+    regionLabel.htmlFor = regionInput.id
     regionLabel.textContent = 'S3 region'
     f.appendChild(regionLabel)
     regionInput.type = 'text'
@@ -169,7 +170,7 @@ catch(e) {
     const bucketInput = document.createElement('input')
     const bucketLabel = document.createElement('label')
     bucketInput.id = 'bucket'
-    bucketLabel.for = bucketInput.id
+    bucketLabel.htmlFor = bucketInput.id
     bucketLabel.textContent = 'S3 bucket'
     f.appendChild(bucketLabel)
     bucketInput.type = 'text'
@@ -344,8 +345,11 @@ const requestWakeLock = async () => {
 }
 audio.onloadedmetadata = updateDuration
 audio.oncanplay = (e) => {
-  audio.play()
   play.disabled = false
+  if (autoPlayOnLoad) {
+    autoPlayOnLoad = false
+    audio.play().catch(err => console.warn('Playback failed:', err))
+  }
 }
 audio.onplay = () => {
   // play.textContent = '⏸'
@@ -428,14 +432,11 @@ play.onclick = async (e) => {
     return playNext()
   }
   if (audio.paused) {
-    await audio.play()
-    // play.textContent = '⏸'
-    // play.innerHTML = '<span class="fa-solid fa-pause"></span>'
+    await audio.play().catch(err => console.warn('Playback failed:', err))
   }
   else {
+    autoPlayOnLoad = false
     audio.pause()
-    // play.textContent = '⏵'
-    // play.innerHTML = '<span class="fa-solid fa-play"></span>'
   }
 }
 
@@ -792,10 +793,10 @@ function getS3Meta(key) {
         } else {
           try {
             const get = new HeadObjectCommand({Bucket: bucketName, Key: key})
-            metaQuery = await s3.send(get)
+            const metaQuery = await s3.send(get)
             meta = metaQuery.Metadata
             meta.key = key
-            putx = db.transaction("meta", "readwrite")
+            const putx = db.transaction("meta", "readwrite")
             putx.objectStore("meta").put(meta)
             resolve(meta)
           }
@@ -841,6 +842,7 @@ const playTrack = async (track) => {
     playerList.querySelector('.playing')?.classList.remove('playing')
     track.classList.add('playing')
     track.scrollIntoView({block: "nearest", inline: "nearest"})
+    autoPlayOnLoad = true
     audio.src = track.dataset['src']
     audio.load()
     if (track.dataset.albumArt) {
@@ -874,7 +876,7 @@ const playTrack = async (track) => {
  }
 
 if ('mediaSession' in navigator) {
-  navigator.mediaSession.setActionHandler('play', (e) => { audio.play() })
+  navigator.mediaSession.setActionHandler('play', (e) => { audio.play().catch(err => console.warn('Playback failed:', err)) })
   navigator.mediaSession.setActionHandler('pause', (e) => { audio.pause() })
   navigator.mediaSession.setActionHandler('previoustrack', playPrevious)
   navigator.mediaSession.setActionHandler('nexttrack', playNext)
@@ -919,6 +921,7 @@ async function preloadAudio() {
   dummyAudio.src = href
   dummyAudio.load()
   dummyAudio.oncanplay = (e) => {
+    dummyAudio.src = ''
     preloading = false
     preloadAudio()
   }
@@ -1052,7 +1055,7 @@ async function createAudioTrack(obj, source) {
   publishedSpan.itemprop = 'datePublished'
   publishedSpan.textContent = myYear
   published.appendChild(publishedSpan)
-  track.appendChild(trackNumber)
+  track.appendChild(published)
 
   const playlist = document.createElement('section')
   playlist.className = 'playlist'
