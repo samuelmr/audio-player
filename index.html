@@ -31,7 +31,7 @@
     })
     if (keysFound) {
       // redirect to hide secret params
-      // document.location.href = a.href
+      document.location.href = a.href
     }
    </script>
    <title>Ctrl&ndash; music player</title>
@@ -47,7 +47,7 @@
     @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200;400;600;700&display=swap');
     :root {
         --base-hue: 180;
-        --base-saturation: 25%;
+        --base-saturation: 45%;
         --base-lightness: 75%;
         --text-color: hsl(var(--base-hue), 50%, 0.5%);
     }
@@ -202,6 +202,7 @@
         max-width: 96%;
     }
     #progress {
+        accent-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
         clear: both;
         display: block;
         margin: 1em auto;
@@ -299,12 +300,12 @@
     audio-browser nav .folder.open:before {
         transform: rotate(90deg);
     }
-    .song {
 /*
+    .song {
         position: relative;
         left: 26em;
-*/
     }
+*/
     a {
         color: var(--text-color);
         text-decoration: none;
@@ -370,36 +371,57 @@
         grid-area: year;
         text-align: right;
     }
-    storage-settings {
+    button.gear {
         background-color: hsla(var(--base-hue), var(--base-saturation), 15%, 25%);
         height: 2em;
         overflow: hidden;
-        padding: 2em;
         position: absolute;
         right: 2em;
         top: 2em;
         transition: all 120ms;
         width: 2em;
     }
-    storage-settings:before {
-        content: '⚙';
+    button.gear {
+        background: none;
+        border: none;
+        color: var(--text-color);
+        cursor: pointer;
         font-size: 2em;
-        display: block;
-        position: absolute;
         height: 1em;
+        line-height: 1;
+        padding: 0;
         width: 1em;
     }
-    storage-settings:focus, storage-settings:focus-within {
+/*
+    storage-settings.open {
         height: 100vh;
+        overflow-y: auto;
+        padding: 2em;
         right: 0;
         top: 0;
         width: 100%;
     }
-    storage-settings:focus:before, storage-settings:focus-within:before {
+    storage-settings.open button.gear {
         display: none;
     }
-    storage-settings label {
+*/
+    dialog#settings {
+        background-color: hsl(var(--base-hue), 50%, 95%);
+        border-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
+        border-radius: 0.5em;
+        margin: auto;
+        padding: 1em;
+    }
+    dialog#settings input#playerColor {
+        accent-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
+    }
+    dialog#settings label, dialog#settings input[type="submit"] {
+        color: hsl(var(--base-hue), 50%, 5%);
         display: block;
+        margin-top: 0.5em;
+    }
+    dialog#settings .error {
+        color: red;
     }
     @media (min-width: 60em) {
       audio-browser nav .folder {
@@ -453,12 +475,12 @@
             margin: 0 0 1em 0;
             width: 100%;
         }
-        audio-player {
 /*
+        audio-player {
             position: sticky;
             top: 0;
-*/
         }
+*/
         audio-player nav {
             padding: 0.5em;
         }

@@ -25,13 +25,18 @@ locale.playPlaylist = `Add playlist contents to queue`
 locale.jumpTo = `Jump to`
 // locale.playAlbum = `Add all album tracks to queue`
 
-let s3, err, f, bucketName, playerList, browserList, playlistList, db
+let s3, bucketName, playerList, browserList, playlistList, db
 let skipMenu, previousFirst, sourceLink, wakeLock, wakelockCooldown
 let seekTarget, seekTimeout
 let autoPlayOnLoad = false
 
 const preloadCache = {}
 let preloading = false
+
+const storedColor = localStorage.getItem('playerColor')
+if (storedColor) {
+  document.documentElement.style.setProperty('--base-hue', storedColor);
+}
 
 const dbRequest = indexedDB.open("audio-library", 3)
 dbRequest.onupgradeneeded = function(event) {
@@ -116,91 +121,89 @@ else {
   browser.appendChild(browserList)
 }
 
+const ss = document.createElement('dialog')
+ss.id = 'settings'
+ss.setAttribute('closedby', 'any')
+const gearBtn = document.createElement('button')
+gearBtn.className = 'gear'
+gearBtn.type = 'button'
+gearBtn.textContent = '⚙'
+gearBtn.onclick = () => ss.showModal()
+
+const settingsForm = document.createElement('form')
+settingsForm.method = 'dialog'
+
+const makeField = (id, labelText, type, autocompleteType, storageKey) => {
+  const label = document.createElement('label')
+  label.htmlFor = id
+  label.textContent = labelText
+  settingsForm.appendChild(label)
+  const input = document.createElement('input')
+  input.id = id
+  input.type = type
+  input.size = 40
+  input.required = true
+  input.autocomplete = autocompleteType
+  input.value = localStorage.getItem(storageKey) || ''
+  settingsForm.appendChild(input)
+  return input
+}
+
+const accessKeyIdInput     = makeField('accessKeyIdInput',     'S3 accessKeyId',     'text',     'on',               'accessKeyId')
+const secretAccessKeyInput = makeField('secretAccessKeyInput', 'S3 secretAccessKey', 'password', 'current-password', 'secretAccessKey')
+const endpointInput        = makeField('endpointInput',        'S3 endpoint',        'text',     'url',              'endpoint')
+const regionInput          = makeField('regionInput',          'S3 region',          'text',     'on',               'region')
+const bucketInput          = makeField('bucketInput',          'S3 bucket',          'text',     'on',               'bucketName')
+const playerColor          = makeField('playerColor',          'Player color',       'range',    'off',              'playerColor')
+playerColor.min = 0
+playerColor.max = 360
+
+var style = window.getComputedStyle(document.body)
+console.log( style.getPropertyValue('--base-hue') )
+playerColor.value = localStorage.getItem('playerColor') || style.getPropertyValue('--base-hue')
+playerColor.oninput = playerColor.onchange = (e) => {
+  playerColor.style.accentColor = `hsl(${e.target.value}, var(--base-saturation), calc(100% - var(--base-lightness)))`
+  document.documentElement.style.setProperty('--base-hue', e.target.value);
+}
+
+const submit = document.createElement('input')
+submit.type = 'submit'
+submit.value = 'Save'
+// submit.setAttribute('commandfor', 'settings')
+// submit.setAttribute('command', 'close')
+settingsForm.appendChild(submit)
+
+const settingsError = document.createElement('div')
+settingsError.className = 'error'
+settingsForm.appendChild(settingsError)
+
+settingsForm.onsubmit = (e) => {
+  e.preventDefault()
+  localStorage.setItem('accessKeyId', accessKeyIdInput.value)
+  localStorage.setItem('secretAccessKey', secretAccessKeyInput.value)
+  localStorage.setItem('endpoint', endpointInput.value)
+  localStorage.setItem('region', regionInput.value)
+  localStorage.setItem('bucketName', bucketInput.value)
+  localStorage.setItem('playerColor', playerColor.value)
+  try {
+    initS3()
+    settingsError.textContent = ''
+    // ss.classList.remove('open')
+    ss.close()
+  } catch(e) {
+    settingsError.textContent = e.toString()
+  }
+}
+ss.appendChild(settingsForm)
+document.body.appendChild(ss)
+document.body.appendChild(gearBtn)
+
 try {
   initS3()
-}
-catch(e) {
-  if (!err) {
-    err = document.createElement('div')
-    err.className = 'error'
-    document.body.appendChild(err)
-  }
-  err.textContent = e.toString()
-  if (!f) {
-    const ss = document.createElement('storage-settings')
-    f = document.createElement('form')
-
-    const accessKeyIdInput = document.createElement('input')
-    const accessKeyIdLabel = document.createElement('label')
-    accessKeyIdInput.id = 'accessKeyIdInput'
-    accessKeyIdLabel.htmlFor = accessKeyIdInput.id
-    accessKeyIdLabel.textContent = 'S3 accessKeyId'
-    f.appendChild(accessKeyIdLabel)
-    accessKeyIdInput.type = 'text'
-    accessKeyIdInput.size = '40'
-    accessKeyIdInput.required = 'required'
-    f.appendChild(accessKeyIdInput)
-    
-    const secretAccessKeyInput = document.createElement('input')
-    const secretAccessKeyLabel = document.createElement('label')
-    secretAccessKeyInput.id = 'secretAccessKeyInput'
-    secretAccessKeyLabel.htmlFor = secretAccessKeyInput.id
-    secretAccessKeyLabel.textContent = 'S3 secretAccessKey'
-    f.appendChild(secretAccessKeyLabel)
-    secretAccessKeyInput.type = 'password'
-    secretAccessKeyInput.size = '40'
-    secretAccessKeyInput.required = 'required'
-    f.appendChild(secretAccessKeyInput)
-    
-    const endpointInput = document.createElement('input')
-    const endpointLabel = document.createElement('label')
-    endpointInput.id = 'endpointInput'
-    endpointLabel.htmlFor = endpointInput.id
-    endpointLabel.textContent = 'S3 endpoint'
-    f.appendChild(endpointLabel)
-    endpointInput.type = 'text'
-    endpointInput.size = '40'
-    endpointInput.required = 'required'
-    f.appendChild(endpointInput)
-    
-    const regionInput = document.createElement('input')
-    const regionLabel = document.createElement('label')
-    regionInput.id = 'regionInput'
-    regionLabel.htmlFor = regionInput.id
-    regionLabel.textContent = 'S3 region'
-    f.appendChild(regionLabel)
-    regionInput.type = 'text'
-    regionInput.size = '40'
-    regionInput.required = 'required'
-    f.appendChild(regionInput)
-    
-    const bucketInput = document.createElement('input')
-    const bucketLabel = document.createElement('label')
-    bucketInput.id = 'bucket'
-    bucketLabel.htmlFor = bucketInput.id
-    bucketLabel.textContent = 'S3 bucket'
-    f.appendChild(bucketLabel)
-    bucketInput.type = 'text'
-    bucketInput.size = '40'
-    bucketInput.required = 'required'
-    f.appendChild(bucketInput)
-
-    const submit = document.createElement('input')
-    submit.type = 'submit'
-    submit.value = 'Submit'
-    f.appendChild(submit)
-
-    f.onsubmit = () => {
-      localStorage.setItem('accessKeyId', accessKeyIdInput.value)
-      localStorage.setItem('secretAccessKey', secretAccessKeyInput.value)
-      localStorage.setItem('endpoint', endpointInput.value)
-      localStorage.setItem('region', regionInput.value)
-      localStorage.setItem('bucketName', bucketInput.value)
-      initS3()
-    }
-    ss.appendChild(f)
-    document.body.appendChild(ss)
-  }
+} catch(e) {
+  // ss.classList.add('open')
+  ss.showModal()
+  settingsError.textContent = e.toString()
 }
 
 function initS3() {
