@@ -7,6 +7,13 @@ const WAKELOCK_CLEAR_TIMEOUT = 5 * 60 * 1000
 const SEEK_TARGET_TIMEOUT = 100
 const folderDelimiter = '/'
 
+const pauseSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M176 96C149.5 96 128 117.5 128 144L128 496C128 522.5 149.5 544 176 544L240 544C266.5 544 288 522.5 288 496L288 144C288 117.5 266.5 96 240 96L176 96zM400 96C373.5 96 352 117.5 352 144L352 496C352 522.5 373.5 544 400 544L464 544C490.5 544 512 522.5 512 496L512 144C512 117.5 490.5 96 464 96L400 96z"/></svg>'
+const playSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M187.2 100.9C174.8 94.1 159.8 94.4 147.6 101.6C135.4 108.8 128 121.9 128 136L128 504C128 518.1 135.5 531.2 147.6 538.4C159.7 545.6 174.8 545.9 187.2 539.1L523.2 355.1C536 348.1 544 334.6 544 320C544 305.4 536 291.9 523.2 284.9L187.2 100.9z"/></svg>'
+const returnSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M236.3 107.1C247.9 96 265 92.9 279.7 99.2C294.4 105.5 304 120 304 136L304 272.3L476.3 107.2C487.9 96 505 92.9 519.7 99.2C534.4 105.5 544 120 544 136L544 504C544 520 534.4 534.5 519.7 540.8C505 547.1 487.9 544 476.3 532.9L304 367.7L304 504C304 520 294.4 534.5 279.7 540.8C265 547.1 247.9 544 236.3 532.9L44.3 348.9C36.5 341.3 32 330.9 32 320C32 309.1 36.5 298.7 44.3 291.1L236.3 107.1z"/></svg>'
+const forwardSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M403.7 107.1C392.1 96 375 92.9 360.3 99.2C345.6 105.5 336 120 336 136L336 272.3L163.7 107.2C152.1 96 135 92.9 120.3 99.2C105.6 105.5 96 120 96 136L96 504C96 520 105.6 534.5 120.3 540.8C135 547.1 152.1 544 163.7 532.9L336 367.7L336 504C336 520 345.6 534.5 360.3 540.8C375 547.1 392.1 544 403.7 532.9L595.7 348.9C603.5 341.3 608 330.9 608 320C608 309.1 603.5 298.7 595.7 291.1L403.7 107.1z"/></svg>'
+const addSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M320 576C461.4 576 576 461.4 576 320C576 178.6 461.4 64 320 64C178.6 64 64 178.6 64 320C64 461.4 178.6 576 320 576zM296 408L296 344L232 344C218.7 344 208 333.3 208 320C208 306.7 218.7 296 232 296L296 296L296 232C296 218.7 306.7 208 320 208C333.3 208 344 218.7 344 232L344 296L408 296C421.3 296 432 306.7 432 320C432 333.3 421.3 344 408 344L344 344L344 408C344 421.3 333.3 432 320 432C306.7 432 296 421.3 296 408z"/></svg>'
+const removeSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M320 576C461.4 576 576 461.4 576 320C576 178.6 461.4 64 320 64C178.6 64 64 178.6 64 320C64 461.4 178.6 576 320 576zM231 231C240.4 221.6 255.6 221.6 264.9 231L319.9 286L374.9 231C384.3 221.6 399.5 221.6 408.8 231C418.1 240.4 418.2 255.6 408.8 264.9L353.8 319.9L408.8 374.9C418.2 384.3 418.2 399.5 408.8 408.8C399.4 418.1 384.2 418.2 374.9 408.8L319.9 353.8L264.9 408.8C255.5 418.2 240.3 418.2 231 408.8C221.7 399.4 221.6 384.2 231 374.9L286 319.9L231 264.9C221.6 255.5 221.6 240.3 231 231z"/></svg>'
+
 const locale = {}
 locale.play = 'Play'
 locale.previous = 'Previous'
@@ -251,18 +258,18 @@ buttons.id = 'buttons'
 const prev = document.createElement('button')
 prev.title = locale.previous
 // prev.textContent = '⏮'
-prev.innerHTML = '<span class="fa-solid fa-backward"></span>'
+prev.innerHTML = returnSVG
 buttons.appendChild(prev)
 const play = document.createElement('button')
 play.title = locale.play
 // play.textContent = '⏵'
-play.innerHTML = '<span class="fa-solid fa-play"></span>'
+play.innerHTML = playSVG
 play.disabled = true
 buttons.appendChild(play)
 const next = document.createElement('button')
 next.title = locale.next
 // next.textContent = '⏭'
-next.innerHTML = '<span class="fa-solid fa-forward"></span>'
+next.innerHTML = forwardSVG
 buttons.appendChild(next)
 player.appendChild(buttons)
 
@@ -353,7 +360,7 @@ audio.oncanplay = (e) => {
 }
 audio.onplay = () => {
   // play.textContent = '⏸'
-  play.innerHTML = '<span class="fa-solid fa-pause"></span>'
+  play.innerHTML = pauseSVG
   cursor.disabled = true
   navigator.mediaSession.playbackState = 'playing'
   play.classList.remove('stalled')
@@ -362,17 +369,17 @@ audio.onplay = () => {
 audio.onpause = () => {
   // play.textContent = '⏵'
   cursor.disabled = false
-  play.innerHTML = '<span class="fa-solid fa-play"></span>'
+  play.innerHTML = playSVG
   navigator.mediaSession.playbackState = 'paused'
   wakelockCooldown = setTimeout(wakeLock?.release, WAKELOCK_CLEAR_TIMEOUT)
 }
 audio.onwaiting = (e) => {
   cursor.disabled = false
-  play.innerHTML = '<span class="fa-solid fa-play"></span>'
+  play.innerHTML = playSVG
   navigator.mediaSession.playbackState = 'paused'
 }
 audio.onplaying = (e) => {
-  play.innerHTML = '<span class="fa-solid fa-pause"></span>'
+  play.innerHTML = pauseSVG
   play.classList.remove('stalled')
   navigator.mediaSession.playbackState = 'playing'
   cursor.disabled = true
@@ -616,7 +623,7 @@ function createFolderElement(folder, ol) {
   a.title = locale.playFolder
   // a.textContent = '⥅' // '⤅' '⧐' '⏵'
   // a.innerHTML = '<i class="fa-solid fa-album-circle-plus"></i>'
-  a.innerHTML = '<span class="fa-solid fa-circle-play"></span>'
+  a.innerHTML = addSVG
   a.onclick = async function(e) {
     e.preventDefault()
     e.stopPropagation()
@@ -630,7 +637,7 @@ function createFolderElement(folder, ol) {
     cli.dataset.source = folder
     sourceLink = cli.dataset.source
     const ca = document.createElement('a')
-    ca.innerHTML = '<span class="fa-sharp fa-regular fa-circle-xmark"></span>'
+    ca.innerHTML = removeSVG
     ca.onclick = removeTracks
     cli.appendChild(ca)
     if (!li.querySelector('ol')) {
@@ -684,7 +691,7 @@ async function createSongElement(obj, ol) {
   a.href = obj.href
   a.title = locale.playSong
   // a.textContent = '⧐' // '⥅' '⏵'
-  a.innerHTML = '<span class="fa-solid fa-circle-plus"></span>'
+  a.innerHTML = addSVG
   a.onclick = (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -699,7 +706,7 @@ async function createSongElement(obj, ol) {
       cli.dataset.source = obj.Key
       sourceLink = cli.dataset.source
       const ca = document.createElement('a')
-      ca.innerHTML = '<span class="fa-sharp fa-regular fa-circle-xmark"></span>'
+      ca.innerHTML = removeSVG
       ca.onclick = removeTracks
       cli.appendChild(ca)
       collection.appendChild(cli)
@@ -726,7 +733,7 @@ async function createPlaylistElement(obj, ol) {
   a.href = obj.Key
   a.title = locale.playPlaylist
   // a.textContent = '⧐' // '⥅' '⏵'
-  a.innerHTML = '<span class="fa-solid fa-circle-plus"></span>'
+  a.innerHTML = addSVG
   a.onclick = async (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -741,7 +748,7 @@ async function createPlaylistElement(obj, ol) {
       cli.dataset.source = obj.Key
       sourceLink = cli.dataset.source
       const ca = document.createElement('a')
-      ca.innerHTML = '<span class="fa-sharp fa-regular fa-circle-xmark"></span>'
+      ca.innerHTML = removeSVG
       ca.onclick = removeTracks
       cli.appendChild(ca)
       collection.appendChild(cli)
