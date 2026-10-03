@@ -38,5 +38,6 @@ locale.exit = `Exit`
 locale.adding = (name) => `Adding ${name}…`
 locale.added = (name, count) => `Added ${name}: ${count} ${count == 1 ? 'track' : 'tracks'}`
 locale.addedNothing = (name) => `Nothing to add from ${name}`
+locale.upNext = `Up next`
 locale.queue = (count) => `Queue: ${count} ${count == 1 ? 'track' : 'tracks'}`
 // locale.playAlbum = `Add all album tracks to queue`

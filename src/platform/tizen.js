@@ -4,6 +4,7 @@ import { audio, play, playerList, playNext, playPrevious } from '../player.js'
 import { initSpatialNavigation } from '../spatial-navigation.js'
 import { initLibrary, addFocusedAndPlay, focusPlayer, focusShortcut } from './tizen-library.js'
 import { initQueue, inQueue, focusSummary } from './tizen-queue.js'
+import { initNowPlaying } from './tizen-now-playing.js'
 
 const BACK_KEY = 10009 // always delivered, needs no registration
 const SEEK_SECONDS = 10
@@ -17,6 +18,9 @@ const mediaKeys = {
   MediaStop: () => audio.pause(),
   MediaTrackPrevious: () => playPrevious(),
   MediaTrackNext: () => playNext(),
+  // the channel keys aren't otherwise used
+  ChannelUp: () => playNext(),
+  ChannelDown: () => playPrevious(),
   MediaRewind: () => { audio.currentTime = Math.max(audio.currentTime - SEEK_SECONDS, 0) },
   MediaFastForward: () => { audio.currentTime = Math.min(audio.currentTime + SEEK_SECONDS, audio.duration) },
 }
@@ -25,6 +29,8 @@ let exitDialog
 
 export function init() {
   exitDialog = createExitDialog()
+  // first, so that its key handler goes before the others while it's open
+  initNowPlaying()
   initSpatialNavigation()
   initLibrary(document.querySelector('audio-browser'), playerList)
   initQueue(document.querySelector('audio-player'), playerList)

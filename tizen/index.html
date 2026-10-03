@@ -109,6 +109,127 @@
         display: none;
     }
 
+    /* Now Playing (tizen-now-playing.js): the album art large, and blurred
+       behind everything; without art, a gradient of the player's hue */
+    #now-playing {
+        align-items: center;
+        background-color: hsl(var(--base-hue), 40%, 10%);
+        color: hsl(var(--base-hue), 30%, 96%);
+        display: flex;
+        gap: 4em;
+        inset: 0;
+        overflow: hidden;
+        padding: 0 6em;
+        position: fixed;
+        z-index: 20;
+    }
+    #now-playing[hidden], #now-playing .paused[hidden], #now-playing .up-next-title[hidden] {
+        display: none;
+    }
+    #now-playing .background {
+        background-position: center;
+        background-size: cover;
+        filter: blur(60px) brightness(40%) saturate(130%);
+        inset: -10%;
+        position: absolute;
+        z-index: -1;
+    }
+    #now-playing.no-art {
+        background: radial-gradient(circle at 30% 40%, hsl(var(--base-hue), 50%, 30%), hsl(var(--base-hue), 40%, 8%));
+    }
+    #now-playing.no-art .background, #now-playing.no-art .cover {
+        display: none;
+    }
+    #now-playing .cover {
+        flex: none;
+        height: 65vh;
+        position: relative;
+        width: 65vh;
+    }
+    #now-playing .cover img {
+        border-radius: 1em;
+        box-shadow: 0 2em 4em hsla(0, 0%, 0%, 60%);
+        height: 100%;
+        object-fit: cover;
+        width: 100%;
+    }
+    #now-playing .paused {
+        align-items: center;
+        background-color: hsla(0, 0%, 0%, 35%);
+        border-radius: 1em;
+        display: flex;
+        inset: 0;
+        justify-content: center;
+        position: absolute;
+    }
+    #now-playing .paused svg {
+        fill: hsla(0, 0%, 100%, 85%);
+        width: 25%;
+    }
+    #now-playing .details {
+        flex: 1;
+        min-width: 0;
+    }
+    #now-playing .np-title {
+        font-size: 4em;
+        font-weight: 700;
+        line-height: 1.1;
+        margin-bottom: 0.3em;
+        overflow-wrap: anywhere;
+    }
+    #now-playing.no-art .np-title {
+        font-size: 5em;
+    }
+    #now-playing .np-artist {
+        font-size: 2.5em;
+    }
+    #now-playing .np-album {
+        font-size: 1.75em;
+        margin-top: 0.3em;
+        opacity: 75%;
+    }
+    #now-playing .progress {
+        align-items: center;
+        display: flex;
+        gap: 1em;
+        margin: 2em 0 3em 0;
+    }
+    #now-playing .bar {
+        background-color: hsla(0, 0%, 100%, 25%);
+        border-radius: 0.3em;
+        flex: 1;
+        height: 0.6em;
+        overflow: hidden;
+    }
+    #now-playing .fill {
+        background-color: hsl(var(--base-hue), 80%, 70%);
+        height: 100%;
+        width: 0;
+    }
+    #now-playing .time {
+        font-size: 1.5em;
+        font-variant-numeric: tabular-nums;
+    }
+    #now-playing .up-next-title {
+        font-size: 1.25em;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.5em;
+        opacity: 70%;
+        text-transform: uppercase;
+    }
+    #now-playing .up-next {
+        font-size: 1.5em;
+        list-style: none;
+    }
+    #now-playing .up-next li {
+        margin-bottom: 0.3em;
+        opacity: 85%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     /* tells what OK added to the queue */
     .toast {
         background-color: var(--focus-background);
