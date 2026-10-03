@@ -266,6 +266,54 @@
         list-style-type: none;
         padding: 0 0.5em;
     }
+    audio-browser nav#skipNav .search {
+        padding: 0 0.25em 0.5em 0.25em;
+    }
+    audio-browser nav#skipNav input[type=search] {
+        background-color: hsla(var(--base-hue), 100%, 100%, 75%);
+        border-color: hsla(var(--base-hue), 50%, 5%, 50%);
+        border-radius: 0.2em;
+        color: hsla(var(--base-hue), 75%, 10%, 99%);
+        font-family: inherit;
+        font-size: 1.25em;
+        padding: 0 0.25em;
+        width: 100%;
+    }
+    audio-browser nav#skipNav ul.search-results {
+        list-style: none;
+        max-height: 50vh;
+        overflow-y: auto;
+        padding: 0;
+    }
+    audio-browser nav#skipNav ul.search-results:empty {
+        display: none;
+    }
+    audio-browser nav#skipNav ul.search-results li {
+        background-color: hsla(var(--base-hue), 60%, 98%, 90%);
+        border-radius: 0.5em;
+        color: hsl(var(--base-hue), 75%, 2%);
+        margin: 0.25em 0;
+        padding: 0.25em 0.5em;
+    }
+    audio-browser nav#skipNav ul.search-results li.result-folder .name, audio-browser nav#skipNav ul.search-results li.result-playlist .name {
+        font-weight: bold;
+    }
+    audio-browser nav#skipNav ul.search-results li.empty {
+        font-style: italic;
+    }
+    audio-browser nav#skipNav ul.search-results small {
+        opacity: 75%;
+    }
+    audio-browser nav#skipNav ul.search-results a {
+        color: inherit;
+        font-weight: normal;
+        padding: 0;
+    }
+    audio-browser nav#skipNav ul.search-results svg {
+        height: 1.5em;
+        margin: 0 0 -0.4em 0.25em;
+        width: 1.5em;
+    }
     audio-browser nav ol li.folder {
         border-color: hsla(var(--base-hue), 50%, 5%, 50%);
         border-radius: 0.5em;
