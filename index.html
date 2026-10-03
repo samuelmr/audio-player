@@ -373,13 +373,7 @@
     }
     button.gear {
         background-color: hsla(var(--base-hue), var(--base-saturation), 15%, 25%);
-        height: 2em;
-        overflow: hidden;
-        position: absolute;
-        right: 2em;
-        top: 2em;
-        transition: all 120ms;
-        width: 2em;
+        float: right;
     }
     button.gear {
         background: none;
@@ -415,9 +409,14 @@
     dialog#settings input#playerColor {
         accent-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
     }
-    dialog#settings label, dialog#settings input[type="submit"] {
+    dialog#settings label {
         color: hsl(var(--base-hue), 50%, 5%);
         display: block;
+        margin-top: 0.5em;
+    }
+    dialog#settings .buttons {
+        display: flex;
+        gap: 0.5em;
         margin-top: 0.5em;
     }
     dialog#settings .error {
@@ -427,15 +426,21 @@
         border-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
         border-radius: 0.5em;
         color: hsl(var(--base-hue), 50%, 5%);
+        display: flex;
+        flex-flow: row wrap;
+        gap: 0.5em;
         margin-top: 1em;
+        padding: 0.5em;
     }
-    dialog#settings fieldset.transfer button {
-        margin: 0.25em 0.25em 0.25em 0;
+    dialog#settings fieldset.transfer .qr {
+        flex-basis: 100%;
+    }
+    dialog#settings fieldset.transfer .qr:empty {
+        display: none;
     }
     dialog#settings .qr svg, dialog#settings .qr video {
         background-color: white;
         display: block;
-        margin-top: 0.5em;
         max-width: 100%;
         width: 20em;
     }

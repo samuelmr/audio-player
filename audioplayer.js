@@ -25,6 +25,8 @@ locale.playSong = `Add track to queue`
 locale.playlistTitle = `Playlists`
 locale.playPlaylist = `Add playlist contents to queue`
 locale.jumpTo = `Jump to`
+locale.save = `Save`
+locale.reset = `Reset`
 locale.transferTitle = `Transfer settings`
 locale.copySettings = `Copy settings code`
 locale.pasteSettings = `Paste settings code`
@@ -172,7 +174,8 @@ playerColor.max = 360
 
 var style = window.getComputedStyle(document.body)
 console.log( style.getPropertyValue('--base-hue') )
-playerColor.value = localStorage.getItem('playerColor') || style.getPropertyValue('--base-hue')
+const defaultHue = style.getPropertyValue('--base-hue')
+playerColor.value = localStorage.getItem('playerColor') || defaultHue
 playerColor.oninput = playerColor.onchange = (e) => {
   playerColor.style.accentColor = `hsl(${e.target.value}, var(--base-saturation), calc(100% - var(--base-lightness)))`
   document.documentElement.style.setProperty('--base-hue', e.target.value);
@@ -180,10 +183,17 @@ playerColor.oninput = playerColor.onchange = (e) => {
 
 const submit = document.createElement('input')
 submit.type = 'submit'
-submit.value = 'Save'
+submit.value = locale.save
 // submit.setAttribute('commandfor', 'settings')
 // submit.setAttribute('command', 'close')
-settingsForm.appendChild(submit)
+const reset = document.createElement('input')
+reset.type = 'reset'
+reset.value = locale.reset
+const formButtons = document.createElement('div')
+formButtons.className = 'buttons'
+formButtons.appendChild(submit)
+formButtons.appendChild(reset)
+settingsForm.appendChild(formButtons)
 
 const settingsError = document.createElement('div')
 settingsError.className = 'error'
@@ -355,6 +365,18 @@ ss.addEventListener('close', () => {
   stopScan()
 })
 
+// native reset would empty the fields, so restore the saved values instead
+settingsForm.onreset = (e) => {
+  e.preventDefault()
+  for (const [key, input] of Object.entries(settingsInputs)) {
+    input.value = localStorage.getItem(key) || ''
+  }
+  playerColor.value = localStorage.getItem('playerColor') || defaultHue
+  playerColor.dispatchEvent(new Event('input'))
+  settingsError.textContent = ''
+  ss.close()
+}
+
 settingsForm.onsubmit = (e) => {
   e.preventDefault()
   localStorage.setItem('accessKeyId', accessKeyIdInput.value)
@@ -375,7 +397,7 @@ settingsForm.onsubmit = (e) => {
 ss.appendChild(settingsForm)
 ss.appendChild(transfer)
 document.body.appendChild(ss)
-document.body.appendChild(gearBtn)
+player.appendChild(gearBtn)
 
 try {
   initS3()
@@ -449,6 +471,7 @@ next.title = locale.next
 // next.textContent = '⏭'
 next.innerHTML = forwardSVG
 buttons.appendChild(next)
+
 player.appendChild(buttons)
 
 const audio = document.createElement('audio')
