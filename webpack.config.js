@@ -35,6 +35,13 @@ export default {
       // chunks: ['main']
     })
   ],
+  devServer: {
+    // serve manifest.json and icons from the project root
+    static: {
+      directory: __dirname,
+      watch: false,
+    },
+  },
   experiments: {
     outputModule: true,
   },
