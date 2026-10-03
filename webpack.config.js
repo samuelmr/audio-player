@@ -31,6 +31,7 @@ export default {
     new HtmlWebpackPlugin({
       filename: 'index.html',
       template: 'index.html',
+      scriptLoading: 'module',
       // chunks: ['main']
     })
   ],
