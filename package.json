@@ -12,7 +12,9 @@
   "dependencies": {
     "@aws-sdk/client-s3": "latest",
     "@aws-sdk/credential-providers": "latest",
-    "@aws-sdk/s3-request-presigner": "latest"
+    "@aws-sdk/s3-request-presigner": "latest",
+    "jsqr": "^1.4.0",
+    "qrcode-generator": "^2.0.4"
   },
   "devDependencies": {
     "html-webpack-plugin": "latest",

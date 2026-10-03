@@ -1,6 +1,8 @@
 import { S3Client } from "@aws-sdk/client-s3"
 import { ListObjectsV2Command, HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
+import qrcode from "qrcode-generator"
+import jsQR from "jsqr"
 
 const EXPIRE_SECONDS = 7 * 24 * 60 * 60
 const WAKELOCK_CLEAR_TIMEOUT = 5 * 60 * 1000
@@ -23,6 +25,16 @@ locale.playSong = `Add track to queue`
 locale.playlistTitle = `Playlists`
 locale.playPlaylist = `Add playlist contents to queue`
 locale.jumpTo = `Jump to`
+locale.transferTitle = `Transfer settings`
+locale.copySettings = `Copy settings code`
+locale.pasteSettings = `Paste settings code`
+locale.showQR = `Show QR code`
+locale.hideQR = `Hide QR code`
+locale.scanQR = `Scan QR code`
+locale.stopScan = `Stop scanning`
+locale.copied = `Settings code copied. It contains your secret key, so keep it safe.`
+locale.pastePrompt = `Paste settings code`
+locale.invalidCode = `Not a valid settings code`
 // locale.playAlbum = `Add all album tracks to queue`
 
 let s3, bucketName, playerList, browserList, playlistList, db
@@ -177,6 +189,172 @@ const settingsError = document.createElement('div')
 settingsError.className = 'error'
 settingsForm.appendChild(settingsError)
 
+// Home screen web apps on iOS have their own storage, separate from the browser,
+// so settings are moved over with a settings code (clipboard or QR code)
+const SETTINGS_CODE_PREFIX = 'ctrl-audio-settings:'
+const settingsInputs = {
+  accessKeyId: accessKeyIdInput,
+  secretAccessKey: secretAccessKeyInput,
+  endpoint: endpointInput,
+  region: regionInput,
+  bucketName: bucketInput,
+  playerColor: playerColor
+}
+
+function exportSettingsCode() {
+  const settings = {}
+  for (const [key, input] of Object.entries(settingsInputs)) {
+    settings[key] = input.value
+  }
+  const bytes = new TextEncoder().encode(JSON.stringify(settings))
+  return SETTINGS_CODE_PREFIX + btoa(String.fromCharCode(...bytes))
+}
+
+function importSettingsCode(code) {
+  code = (code || '').trim()
+  if (!code.startsWith(SETTINGS_CODE_PREFIX)) {
+    throw new Error(locale.invalidCode)
+  }
+  let settings
+  try {
+    const bytes = Uint8Array.from(atob(code.slice(SETTINGS_CODE_PREFIX.length)), c => c.charCodeAt(0))
+    settings = JSON.parse(new TextDecoder().decode(bytes))
+  } catch(e) {
+    throw new Error(locale.invalidCode)
+  }
+  for (const [key, input] of Object.entries(settingsInputs)) {
+    if (typeof settings[key] === 'string') {
+      input.value = settings[key]
+    }
+  }
+  playerColor.dispatchEvent(new Event('input'))
+  settingsForm.requestSubmit()
+}
+
+const transfer = document.createElement('fieldset')
+transfer.className = 'transfer'
+const transferLegend = document.createElement('legend')
+transferLegend.textContent = locale.transferTitle
+transfer.appendChild(transferLegend)
+
+const makeButton = (text, onclick) => {
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.textContent = text
+  button.onclick = async () => {
+    try {
+      settingsError.textContent = ''
+      await onclick(button)
+    } catch(e) {
+      settingsError.textContent = e.message || e.toString()
+    }
+  }
+  transfer.appendChild(button)
+  return button
+}
+
+makeButton(locale.copySettings, async () => {
+  await navigator.clipboard.writeText(exportSettingsCode())
+  settingsError.textContent = locale.copied
+})
+
+makeButton(locale.pasteSettings, async () => {
+  let code
+  try {
+    code = await navigator.clipboard.readText()
+  } catch(e) {
+    // clipboard read not allowed, let the user paste manually
+  }
+  if (!code?.startsWith(SETTINGS_CODE_PREFIX)) {
+    code = prompt(locale.pastePrompt)
+  }
+  if (code) {
+    importSettingsCode(code)
+  }
+})
+
+const qrContainer = document.createElement('div')
+qrContainer.className = 'qr'
+
+const hideQR = () => {
+  qrContainer.innerHTML = ''
+  qrButton.textContent = locale.showQR
+}
+
+const qrButton = makeButton(locale.showQR, () => {
+  if (qrContainer.firstChild) {
+    hideQR()
+    return
+  }
+  stopScan()
+  const qr = qrcode(0, 'M')
+  qr.addData(exportSettingsCode())
+  qr.make()
+  qrContainer.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 4, scalable: true })
+  qrButton.textContent = locale.hideQR
+})
+
+const scanVideo = document.createElement('video')
+scanVideo.setAttribute('playsinline', '')
+scanVideo.muted = true
+const scanCanvas = document.createElement('canvas')
+let scanStream
+
+const stopScan = () => {
+  if (scanStream) {
+    scanStream.getTracks().forEach(track => track.stop())
+    scanStream = null
+  }
+  scanVideo.srcObject = null
+  scanVideo.remove()
+  scanButton.textContent = locale.scanQR
+}
+
+const scanFrame = () => {
+  if (!scanStream) {
+    return
+  }
+  if (scanVideo.readyState >= scanVideo.HAVE_ENOUGH_DATA) {
+    scanCanvas.width = scanVideo.videoWidth
+    scanCanvas.height = scanVideo.videoHeight
+    const ctx = scanCanvas.getContext('2d', { willReadFrequently: true })
+    ctx.drawImage(scanVideo, 0, 0)
+    const image = ctx.getImageData(0, 0, scanCanvas.width, scanCanvas.height)
+    const result = jsQR(image.data, image.width, image.height, { inversionAttempts: 'dontInvert' })
+    if (result?.data?.startsWith(SETTINGS_CODE_PREFIX)) {
+      stopScan()
+      try {
+        importSettingsCode(result.data)
+      } catch(e) {
+        settingsError.textContent = e.message
+      }
+      return
+    }
+  }
+  requestAnimationFrame(scanFrame)
+}
+
+const scanButton = makeButton(locale.scanQR, async () => {
+  if (scanStream) {
+    stopScan()
+    return
+  }
+  hideQR()
+  scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+  scanVideo.srcObject = scanStream
+  qrContainer.appendChild(scanVideo)
+  await scanVideo.play()
+  scanButton.textContent = locale.stopScan
+  requestAnimationFrame(scanFrame)
+})
+
+transfer.appendChild(qrContainer)
+
+ss.addEventListener('close', () => {
+  hideQR()
+  stopScan()
+})
+
 settingsForm.onsubmit = (e) => {
   e.preventDefault()
   localStorage.setItem('accessKeyId', accessKeyIdInput.value)
@@ -195,6 +373,7 @@ settingsForm.onsubmit = (e) => {
   }
 }
 ss.appendChild(settingsForm)
+ss.appendChild(transfer)
 document.body.appendChild(ss)
 document.body.appendChild(gearBtn)
 
@@ -236,10 +415,6 @@ function initS3() {
   if (browserList) {
     getFolders(browserList)
   }
-  const a = document.createElement('a')
-  a.href = document.location.href
-  const query = new URLSearchParams(params).toString()
-  a.search += (a?.search.includes('?') ? '&' : '?') + query
 }
 
 /*

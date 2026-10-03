@@ -423,6 +423,22 @@
     dialog#settings .error {
         color: red;
     }
+    dialog#settings fieldset.transfer {
+        border-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
+        border-radius: 0.5em;
+        color: hsl(var(--base-hue), 50%, 5%);
+        margin-top: 1em;
+    }
+    dialog#settings fieldset.transfer button {
+        margin: 0.25em 0.25em 0.25em 0;
+    }
+    dialog#settings .qr svg, dialog#settings .qr video {
+        background-color: white;
+        display: block;
+        margin-top: 0.5em;
+        max-width: 100%;
+        width: 20em;
+    }
     @media (min-width: 60em) {
       audio-browser nav .folder {
         height: 2em;
