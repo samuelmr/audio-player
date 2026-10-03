@@ -18,6 +18,7 @@
     "qrcode-generator": "latest"
   },
   "devDependencies": {
+    "copy-webpack-plugin": "latest",
     "html-webpack-plugin": "latest",
     "terser-webpack-plugin": "latest",
     "webpack": "latest",

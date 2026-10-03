@@ -188,6 +188,61 @@
     #buttons button.stalled {
         animation: 3s infinite alternate fadeInOut;
     }
+    @keyframes pulse {
+        from { opacity: 100%; }
+        to { opacity: 20%; }
+    }
+    button.save-offline {
+        background-color: hsla(var(--base-hue), 100%, 100%, 25%);
+        border: none;
+        border-radius: 0.5em;
+        color: var(--text-color);
+        cursor: pointer;
+        float: right;
+        font-family: inherit;
+        font-size: inherit;
+        margin: 0 0 0.5em 0;
+        padding: 0 0.5em;
+    }
+    button.save-offline:focus, button.save-offline:hover {
+        background-color: hsla(var(--base-hue), 100%, 100%, 50%);
+        outline: none;
+    }
+    button.save-offline svg, audio-track .offline-icon svg {
+        fill: currentColor;
+        height: 1em;
+        vertical-align: -0.25em;
+    }
+    button.save-offline svg {
+        height: 1.5em;
+        vertical-align: -0.125em;
+    }
+    button.save-offline[hidden], audio-browser ol.playlists[hidden] {
+        display: none;
+    }
+    audio-track .offline-icon {
+        display: none;
+        margin-right: 0.25em;
+    }
+    audio-track.offline-saved .offline-icon, audio-track.offline-downloading .offline-icon, audio-track.offline-failed .offline-icon {
+        display: inline;
+    }
+    audio-track.offline-downloading .offline-icon {
+        animation: 0.8s infinite alternate pulse;
+    }
+    audio-track.offline-failed .offline-icon {
+        color: red;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        audio-track.offline-downloading .offline-icon {
+            animation: none;
+            opacity: 50%;
+        }
+    }
+    audio-browser .offline-status, audio-browser .offline-message {
+        font-size: smaller;
+        opacity: 75%;
+    }
     .audio-time {
         text-wrap: nowrap;
         width: 11em;
@@ -452,7 +507,7 @@
         display: none;
     }
 */
-    dialog#settings {
+    dialog#settings, dialog#save-offline {
         background-color: hsl(var(--base-hue), 50%, 95%);
         border-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
         border-radius: 0.5em;
@@ -462,12 +517,12 @@
     dialog#settings input#playerColor {
         accent-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
     }
-    dialog#settings label {
+    dialog#settings label, dialog#save-offline label {
         color: hsl(var(--base-hue), 50%, 5%);
         display: block;
         margin-top: 0.5em;
     }
-    dialog#settings .buttons {
+    dialog#settings .buttons, dialog#save-offline .buttons {
         display: flex;
         gap: 0.5em;
         margin-top: 0.5em;

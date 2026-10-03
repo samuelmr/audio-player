@@ -14,6 +14,7 @@ const playSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><
 const returnSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M236.3 107.1C247.9 96 265 92.9 279.7 99.2C294.4 105.5 304 120 304 136L304 272.3L476.3 107.2C487.9 96 505 92.9 519.7 99.2C534.4 105.5 544 120 544 136L544 504C544 520 534.4 534.5 519.7 540.8C505 547.1 487.9 544 476.3 532.9L304 367.7L304 504C304 520 294.4 534.5 279.7 540.8C265 547.1 247.9 544 236.3 532.9L44.3 348.9C36.5 341.3 32 330.9 32 320C32 309.1 36.5 298.7 44.3 291.1L236.3 107.1z"/></svg>'
 const forwardSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M403.7 107.1C392.1 96 375 92.9 360.3 99.2C345.6 105.5 336 120 336 136L336 272.3L163.7 107.2C152.1 96 135 92.9 120.3 99.2C105.6 105.5 96 120 96 136L96 504C96 520 105.6 534.5 120.3 540.8C135 547.1 152.1 544 163.7 532.9L336 367.7L336 504C336 520 345.6 534.5 360.3 540.8C375 547.1 392.1 544 403.7 532.9L595.7 348.9C603.5 341.3 608 330.9 608 320C608 309.1 603.5 298.7 595.7 291.1L403.7 107.1z"/></svg>'
 const addSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M320 576C461.4 576 576 461.4 576 320C576 178.6 461.4 64 320 64C178.6 64 64 178.6 64 320C64 461.4 178.6 576 320 576zM296 408L296 344L232 344C218.7 344 208 333.3 208 320C208 306.7 218.7 296 232 296L296 296L296 232C296 218.7 306.7 208 320 208C333.3 208 344 218.7 344 232L344 296L408 296C421.3 296 432 306.7 432 320C432 333.3 421.3 344 408 344L344 344L344 408C344 421.3 333.3 432 320 432C306.7 432 296 421.3 296 408z"/></svg>'
+const offlineSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM7 3h2v5.6l2.3-2.3 1.4 1.4L8 12.4 3.3 7.7l1.4-1.4L7 8.6z"/></svg>'
 const removeSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M320 576C461.4 576 576 461.4 576 320C576 178.6 461.4 64 320 64C178.6 64 64 178.6 64 320C64 461.4 178.6 576 320 576zM231 231C240.4 221.6 255.6 221.6 264.9 231L319.9 286L374.9 231C384.3 221.6 399.5 221.6 408.8 231C418.1 240.4 418.2 255.6 408.8 264.9L353.8 319.9L408.8 374.9C418.2 384.3 418.2 399.5 408.8 408.8C399.4 418.1 384.2 418.2 374.9 408.8L319.9 353.8L264.9 408.8C255.5 418.2 240.3 418.2 231 408.8C221.7 399.4 221.6 384.2 231 374.9L286 319.9L231 264.9C221.6 255.5 221.6 240.3 231 231z"/></svg>'
 
 const locale = {}
@@ -40,6 +41,16 @@ locale.invalidCode = `Not a valid settings code`
 locale.search = `Search`
 locale.searchPlaceholder = `Search artists, albums, tracks…`
 locale.noResults = `No matches`
+locale.saveOffline = `Save offline`
+locale.offlineName = `Name`
+locale.offlinePlaylistsTitle = `Offline playlists`
+locale.playOfflinePlaylist = `Add playlist contents to queue`
+locale.removeOffline = `Remove from offline storage`
+locale.confirmRemoveOffline = (name) => `Remove "${name}" from offline storage?`
+locale.offlineSaved = `Saved offline`
+locale.offlineDownloading = `Saving offline…`
+locale.offlineFailed = `Saving offline failed`
+locale.storageFull = `Storage is full, downloads paused`
 // locale.playAlbum = `Add all album tracks to queue`
 
 const MAX_SEARCH_RESULTS = 50
@@ -52,6 +63,18 @@ let skipMenu, previousFirst, sourceLink, wakeLock, wakelockCooldown
 let seekTarget, seekTimeout
 let searchInput, searchResults, searchTimeout, searchKeys, searchKeysPromise
 let searchRun = 0
+let offlineParent, offlineList, offlineMessage
+
+// offline playlists use the same format as the .json playlists in S3:
+// {title, track: [{url: <S3 key>, ...metadata}]}, plus id and created
+const OFFLINE_PLAYLISTS = 'offlinePlaylists'
+const OFFLINE_AUDIO = 'offlineAudio'
+const offlineKeys = new Set() // keys of the tracks stored in OFFLINE_AUDIO
+const offlineUrls = new Map() // key -> object URL of the stored blob
+const failedKeys = new Set() // not retried until the next start or 'online' event
+const trackMeta = new WeakMap() // audio-track -> metadata, for saving playlists
+let downloadRunning = false
+let downloadKey, downloadController
 
 const preloadCache = {}
 let preloading = false
@@ -61,7 +84,7 @@ if (storedColor) {
   document.documentElement.style.setProperty('--base-hue', storedColor);
 }
 
-const dbRequest = indexedDB.open("audio-library", 3)
+const dbRequest = indexedDB.open("audio-library", 4)
 dbRequest.onupgradeneeded = function(event) {
   const db = dbRequest.result
   if (event.oldVersion < 1) {
@@ -83,10 +106,18 @@ dbRequest.onupgradeneeded = function(event) {
     const cache = dbRequest.transaction.objectStore("meta")
     const commentIndex = cache.createIndex("image", "image")
   }
+  if (event.oldVersion < 4) {
+    db.createObjectStore(OFFLINE_PLAYLISTS, {keyPath: "id", autoIncrement: true})
+    db.createObjectStore(OFFLINE_AUDIO, {keyPath: "key"})
+  }
 }
-dbRequest.onsuccess = function() {
-  db = dbRequest.result
-}
+const dbReady = new Promise((resolve, reject) => {
+  dbRequest.onsuccess = function() {
+    db = dbRequest.result
+    resolve(db)
+  }
+  dbRequest.onerror = () => reject(dbRequest.error)
+})
 
 const myUri = new URL(document.location.href)
 let myPath = decodeURIComponent(myUri.hash.replace('#', '')).split(folderDelimiter)
@@ -131,6 +162,26 @@ else {
   playlistList.className = 'playlists'
   pli.appendChild(playlistList)
   playlistParent.appendChild(pli)
+  // class 'playlists' keeps getFolders from using these lists for folders
+  offlineParent = document.createElement('ol')
+  offlineParent.id = 'offline-playlists'
+  offlineParent.className = 'playlists'
+  offlineParent.hidden = true
+  const oli = document.createElement('li')
+  oli.className = 'folder'
+  oli.textContent = locale.offlinePlaylistsTitle + ' '
+  oli.onclick = function(e) {
+    e.preventDefault()
+    e.stopPropagation()
+    this.classList.toggle('open')
+  }
+  offlineMessage = document.createElement('span')
+  offlineMessage.className = 'offline-message'
+  oli.appendChild(offlineMessage)
+  offlineList = document.createElement('ol')
+  offlineList.className = 'playlists'
+  oli.appendChild(offlineList)
+  offlineParent.appendChild(oli)
   const mli = document.createElement('li')
   const pa = document.createElement('a')
   pa.title = `#${locale.jumpTo} ${locale.playlistTitle}`
@@ -162,6 +213,7 @@ else {
   skipNav.appendChild(searchBox)
   browser.innerHTML = ''
   browser.appendChild(skipNav)
+  browserList.appendChild(offlineParent)
   browserList.appendChild(playlistParent)
   browser.appendChild(browserList)
 }
@@ -418,6 +470,7 @@ settingsForm.onsubmit = (e) => {
   localStorage.setItem('playerColor', playerColor.value)
   try {
     initS3()
+    runDownloads()
     settingsError.textContent = ''
     // ss.classList.remove('open')
     ss.close()
@@ -631,12 +684,68 @@ audio.onended = next.onclick = (e) => {
   playNext()
 }
 
+const saveOfflineButton = document.createElement('button')
+saveOfflineButton.type = 'button'
+saveOfflineButton.className = 'save-offline'
+saveOfflineButton.innerHTML = offlineSVG + ' ' + locale.saveOffline
+saveOfflineButton.hidden = true
+player.appendChild(saveOfflineButton)
+
 const collection = document.createElement('ol')
 collection.className = 'collection'
 player.appendChild(collection)
 
 playerList = document.createElement('nav')
 player.appendChild(playerList)
+new MutationObserver(() => {
+  saveOfflineButton.hidden = !playerList.querySelector('audio-track')
+}).observe(playerList, {childList: true})
+
+const saveOfflineDialog = document.createElement('dialog')
+saveOfflineDialog.id = 'save-offline'
+saveOfflineDialog.setAttribute('closedby', 'any')
+const saveOfflineForm = document.createElement('form')
+saveOfflineForm.method = 'dialog'
+const offlineNameLabel = document.createElement('label')
+offlineNameLabel.htmlFor = 'offlineNameInput'
+offlineNameLabel.textContent = locale.offlineName
+const offlineNameInput = document.createElement('input')
+offlineNameInput.id = 'offlineNameInput'
+offlineNameInput.type = 'text'
+offlineNameInput.size = 40
+offlineNameInput.required = true
+const saveOfflineSubmit = document.createElement('input')
+saveOfflineSubmit.type = 'submit'
+saveOfflineSubmit.value = locale.saveOffline
+const saveOfflineCancel = document.createElement('input')
+saveOfflineCancel.type = 'reset'
+saveOfflineCancel.value = locale.reset
+const saveOfflineButtons = document.createElement('div')
+saveOfflineButtons.className = 'buttons'
+saveOfflineButtons.appendChild(saveOfflineSubmit)
+saveOfflineButtons.appendChild(saveOfflineCancel)
+saveOfflineForm.appendChild(offlineNameLabel)
+saveOfflineForm.appendChild(offlineNameInput)
+saveOfflineForm.appendChild(saveOfflineButtons)
+saveOfflineDialog.appendChild(saveOfflineForm)
+document.body.appendChild(saveOfflineDialog)
+
+saveOfflineButton.onclick = () => {
+  offlineNameInput.value = [...collection.querySelectorAll('li')]
+    .map(li => li.textContent.trim())
+    .filter(Boolean)
+    .join(', ')
+  saveOfflineDialog.showModal()
+}
+saveOfflineForm.onreset = (e) => {
+  e.preventDefault()
+  saveOfflineDialog.close()
+}
+saveOfflineForm.onsubmit = async (e) => {
+  e.preventDefault()
+  saveOfflineDialog.close()
+  await saveOfflinePlaylist(offlineNameInput.value.trim())
+}
 
 const updateTime = () => {
     const seconds = parseInt(audio.currentTime)
@@ -1228,19 +1337,29 @@ async function queueKeys(keys, source, className) {
   }
 }
 
+// offline, only the tracks saved to offline storage can be played
+const isPlayable = (track) => {
+  return track.classList.contains('offline-saved') || (navigator.onLine && Boolean(track.dataset.src))
+}
+
 const playNext = () => {
   const playing = playerList.querySelector('.playing')
-  let candidate = playing?.nextElementSibling
-  if (!candidate) {
-    // pick the first item on the list
-    candidate = playerList.querySelector('audio-track')
+  const tracks = [...playerList.querySelectorAll('audio-track')]
+  const start = tracks.indexOf(playing) + 1
+  // wrap around to the beginning of the list
+  for (let i = 0; i < tracks.length; i++) {
+    const candidate = tracks[(start + i) % tracks.length]
+    if (isPlayable(candidate)) {
+      return playTrack(candidate)
+    }
   }
-  playTrack(candidate)
 }
 
 const playPrevious = () => {
-  const playing = playerList.querySelector('.playing')
-  const candidate = playing?.previousElementSibling
+  let candidate = playerList.querySelector('.playing')?.previousElementSibling
+  while (candidate && !isPlayable(candidate)) {
+    candidate = candidate.previousElementSibling
+  }
   playTrack(candidate)
 }
 
@@ -1330,7 +1449,8 @@ function getHue(r, g, b) {
 
 async function preloadAudio() {
   const cacheKeys = Object.keys(preloadCache)
-  if (preloading || cacheKeys.length < 1) {
+  // saving offline playlists goes first
+  if (preloading || downloadRunning || !navigator.onLine || cacheKeys.length < 1) {
     return false
   }
   const href = cacheKeys[0]
@@ -1347,14 +1467,19 @@ async function preloadAudio() {
 }
 
 async function queuePreload(href) {
+  if (!href) return
   preloadCache[href] = true
   preloadAudio()
 }
 
 async function createAudioTrack(obj, source) {
 
+  await offlineReady
+
   // pre-fetch content to cache
-  queuePreload(obj.href)
+  if (!offlineKeys.has(obj.Key)) {
+    queuePreload(obj.href)
+  }
 
   let myArtist = ''
   let myAlbum = ''
@@ -1398,9 +1523,23 @@ async function createAudioTrack(obj, source) {
   track.itemscope = ''
   track.itemtype = 'https://schema.org/MusicRecording'
   track.dataset.src = obj.href
+  track.dataset.href = obj.href
+  track.dataset.key = obj.Key
   track.dataset.source = sourceLink
+  trackMeta.set(track, obj.Metadata)
+  if (offlineKeys.has(obj.Key)) {
+    track.classList.add('offline-saved')
+    track.dataset.src = await getOfflineUrl(obj.Key)
+  }
+  else if (obj.Key == downloadKey) {
+    track.classList.add('offline-downloading')
+  }
+  else if (failedKeys.has(obj.Key)) {
+    track.classList.add('offline-failed')
+  }
 
-  if (myImage) {
+  // album art is not stored offline
+  if (myImage && navigator.onLine && s3) {
     const img = {
       Bucket: bucketName,
       Key: myImage
@@ -1432,6 +1571,10 @@ async function createAudioTrack(obj, source) {
   nameSpan.itemprop = 'name'
   trackLink.appendChild(nameSpan)
   trackLink.textContent = myTitle
+  const offlineIcon = document.createElement('span')
+  offlineIcon.className = 'offline-icon'
+  offlineIcon.innerHTML = offlineSVG
+  trackName.appendChild(offlineIcon)
   trackName.appendChild(trackLink)
   track.appendChild(trackName)
 
@@ -1503,8 +1646,293 @@ async function createAudioTrack(obj, source) {
   playerList.appendChild(track)
 
   const playing = playerList.querySelector('.playing')
-  if (!playing) {
+  if (!playing && isPlayable(track)) {
     trackLink.click()
   }
 
+}
+
+// Offline playlists
+//
+// A saved playlist is a fixed list of S3 keys. The downloader saves the tracks
+// one at a time, in the order the playlists were saved, until every saved
+// playlist is complete. Downloading goes before preloading.
+
+const requestResult = (request) => new Promise((resolve, reject) => {
+  request.onsuccess = () => resolve(request.result)
+  request.onerror = () => reject(request.error)
+})
+
+const playlistKeys = (playlists) => new Set(playlists.flatMap(p => p.track.map(t => t.url)))
+
+const getOfflinePlaylists = () => {
+  return requestResult(db.transaction(OFFLINE_PLAYLISTS).objectStore(OFFLINE_PLAYLISTS).getAll())
+}
+
+const offlineReady = dbReady.then(async () => {
+  const keys = await requestResult(db.transaction(OFFLINE_AUDIO).objectStore(OFFLINE_AUDIO).getAllKeys())
+  keys.forEach(key => offlineKeys.add(key))
+}).catch(e => console.error(e))
+
+async function getOfflineUrl(key) {
+  if (!offlineUrls.has(key)) {
+    const stored = await requestResult(db.transaction(OFFLINE_AUDIO).objectStore(OFFLINE_AUDIO).get(key))
+    offlineUrls.set(key, URL.createObjectURL(stored.blob))
+  }
+  return offlineUrls.get(key)
+}
+
+function tracksWithKey(key) {
+  return playerList.querySelectorAll(`audio-track[data-key="${CSS.escape(key)}"]`)
+}
+
+function setOfflineState(key, state) {
+  for (const track of tracksWithKey(key)) {
+    track.classList.toggle('offline-saved', state == 'saved')
+    track.classList.toggle('offline-downloading', state == 'downloading')
+    track.classList.toggle('offline-failed', state == 'failed')
+    const icon = track.querySelector('.offline-icon')
+    if (icon) {
+      icon.title = {
+        saved: locale.offlineSaved,
+        downloading: locale.offlineDownloading,
+        failed: locale.offlineFailed
+      }[state] || ''
+    }
+  }
+}
+
+async function saveOfflinePlaylist(title) {
+  const track = [...playerList.querySelectorAll('audio-track')].map(t => {
+    return {...trackMeta.get(t), url: t.dataset.key}
+  })
+  if (!title || track.length < 1) return
+  await requestResult(db.transaction(OFFLINE_PLAYLISTS, 'readwrite')
+    .objectStore(OFFLINE_PLAYLISTS).add({title, track, created: Date.now()}))
+  // ask the browser not to evict offline storage under storage pressure
+  navigator.storage?.persist?.()
+  await renderOfflinePlaylists()
+  runDownloads()
+}
+
+function removeOfflinePlaylist(id) {
+  // one transaction, so that a download finishing at the same time
+  // can't store a track that is no longer needed
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([OFFLINE_PLAYLISTS, OFFLINE_AUDIO], 'readwrite')
+    const playlistStore = tx.objectStore(OFFLINE_PLAYLISTS)
+    const audioStore = tx.objectStore(OFFLINE_AUDIO)
+    const removed = []
+    let keep
+    playlistStore.delete(id)
+    playlistStore.getAll().onsuccess = (e) => {
+      keep = playlistKeys(e.target.result)
+      audioStore.getAllKeys().onsuccess = (e) => {
+        for (const key of e.target.result) {
+          if (!keep.has(key)) {
+            audioStore.delete(key)
+            removed.push(key)
+          }
+        }
+      }
+    }
+    tx.oncomplete = () => resolve({removed, keep})
+    tx.onerror = tx.onabort = () => reject(tx.error)
+  }).then(({removed, keep}) => {
+    for (const key of removed) {
+      offlineKeys.delete(key)
+      const url = offlineUrls.get(key)
+      offlineUrls.delete(key)
+      for (const track of tracksWithKey(key)) {
+        track.dataset.src = track.dataset.href
+      }
+      setOfflineState(key, null)
+      // the current track keeps playing from its blob
+      if (url && audio.src != url) {
+        URL.revokeObjectURL(url)
+      }
+    }
+    if (downloadKey && !keep.has(downloadKey)) {
+      downloadController?.abort()
+    }
+    offlineMessage.textContent = ''
+    renderOfflinePlaylists()
+    runDownloads()
+  })
+}
+
+function storeDownload(key, blob) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([OFFLINE_PLAYLISTS, OFFLINE_AUDIO], 'readwrite')
+    let stored = false
+    // the playlist may have been removed during the download
+    tx.objectStore(OFFLINE_PLAYLISTS).getAll().onsuccess = (e) => {
+      if (playlistKeys(e.target.result).has(key)) {
+        tx.objectStore(OFFLINE_AUDIO).put({key, blob, type: blob.type, size: blob.size})
+        stored = true
+      }
+    }
+    tx.oncomplete = () => resolve(stored)
+    tx.onerror = tx.onabort = () => reject(tx.error)
+  })
+}
+
+async function nextMissingKey() {
+  for (const playlist of await getOfflinePlaylists()) {
+    for (const entry of playlist.track) {
+      if (!offlineKeys.has(entry.url) && !failedKeys.has(entry.url)) {
+        return entry.url
+      }
+    }
+  }
+}
+
+async function downloadTrack(key) {
+  const command = new GetObjectCommand({Bucket: bucketName, Key: key})
+  const url = await getSignedUrl(s3, command, { expiresIn: EXPIRE_SECONDS })
+  downloadController = new AbortController()
+  const response = await fetch(url, {signal: downloadController.signal})
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`)
+  }
+  let blob = await response.blob()
+  // Safari won't play a blob without an audio type
+  if (!blob.type.startsWith('audio/')) {
+    blob = new Blob([blob], {type: key.endsWith('.mp3') ? 'audio/mpeg' : 'audio/*'})
+  }
+  return storeDownload(key, blob)
+}
+
+async function runDownloads() {
+  if (downloadRunning || !s3) return
+  downloadRunning = true
+  try {
+    await offlineReady
+    let key
+    while (navigator.onLine && (key = await nextMissingKey())) {
+      downloadKey = key
+      setOfflineState(key, 'downloading')
+      try {
+        if (await downloadTrack(key)) {
+          offlineKeys.add(key)
+          const url = await getOfflineUrl(key)
+          for (const track of tracksWithKey(key)) {
+            track.dataset.src = url
+          }
+          setOfflineState(key, 'saved')
+        }
+        else {
+          setOfflineState(key, null)
+        }
+      }
+      catch (e) {
+        if (e.name == 'QuotaExceededError') {
+          setOfflineState(key, null)
+          offlineMessage.textContent = locale.storageFull
+          break
+        }
+        if (e.name == 'AbortError' || !navigator.onLine) {
+          setOfflineState(key, null)
+          continue
+        }
+        console.warn(`Saving '${key}' offline failed`, e)
+        failedKeys.add(key)
+        setOfflineState(key, 'failed')
+      }
+      renderOfflinePlaylists()
+    }
+  }
+  catch (e) {
+    console.error(e)
+  }
+  finally {
+    downloadKey = downloadController = null
+    downloadRunning = false
+    preloadAudio()
+  }
+}
+
+async function queueOfflinePlaylist(playlist) {
+  const source = `offline:${playlist.id}`
+  const cli = document.createElement('li')
+  cli.onclick = scrollToFirstTrack
+  cli.className = 'playlist'
+  cli.textContent = playlist.title + ' '
+  cli.dataset.source = source
+  const ca = document.createElement('a')
+  ca.innerHTML = removeSVG
+  ca.onclick = removeTracks
+  cli.appendChild(ca)
+  collection.appendChild(cli)
+  // one at a time, to keep the queue in the listed order
+  for (const entry of playlist.track) {
+    const song = {Key: entry.url, Metadata: entry, href: ''}
+    if (s3) {
+      // signing doesn't need the network
+      const command = new GetObjectCommand({Bucket: bucketName, Key: entry.url})
+      song.href = await getSignedUrl(s3, command, { expiresIn: EXPIRE_SECONDS })
+    }
+    sourceLink = source
+    await createAudioTrack(song)
+  }
+}
+
+async function renderOfflinePlaylists() {
+  const playlists = await getOfflinePlaylists()
+  offlineParent.hidden = playlists.length < 1
+  offlineList.innerHTML = ''
+  for (const playlist of playlists) {
+    const keys = playlistKeys([playlist])
+    const saved = [...keys].filter(key => offlineKeys.has(key)).length
+    const li = document.createElement('li')
+    li.className = 'playlist'
+    li.textContent = playlist.title + ' '
+    const status = document.createElement('span')
+    status.className = 'offline-status'
+    status.textContent = `${saved}/${keys.size}`
+    li.appendChild(status)
+    const a = document.createElement('a')
+    a.className = 'action'
+    a.href = '#'
+    a.title = locale.playOfflinePlaylist
+    a.innerHTML = addSVG
+    a.onclick = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      queueOfflinePlaylist(playlist)
+    }
+    li.appendChild(a)
+    const remove = document.createElement('a')
+    remove.className = 'action'
+    remove.href = '#'
+    remove.title = locale.removeOffline
+    remove.innerHTML = removeSVG
+    remove.onclick = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (confirm(locale.confirmRemoveOffline(playlist.title))) {
+        removeOfflinePlaylist(playlist.id)
+      }
+    }
+    li.appendChild(remove)
+    offlineList.appendChild(li)
+  }
+}
+
+offlineReady.then(async () => {
+  await renderOfflinePlaylists()
+  // offline, the offline playlists are all there is to play
+  if (!navigator.onLine) {
+    offlineParent.querySelector('.folder').classList.add('open')
+  }
+  runDownloads()
+})
+
+window.addEventListener('online', () => {
+  failedKeys.clear()
+  runDownloads()
+})
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(e => console.warn('Service worker registration failed:', e))
 }

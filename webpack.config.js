@@ -1,5 +1,6 @@
 import HtmlWebpackPlugin from "html-webpack-plugin";
 import TerserPlugin from "terser-webpack-plugin";
+import CopyPlugin from "copy-webpack-plugin";
 import path from "path";
 import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -33,7 +34,11 @@ export default {
       template: 'index.html',
       scriptLoading: 'module',
       // chunks: ['main']
-    })
+    }),
+    // the service worker must be served next to index.html, unbundled
+    new CopyPlugin({
+      patterns: ['sw.js'],
+    }),
   ],
   devServer: {
     // serve manifest.json and icons from the project root
