@@ -8,8 +8,11 @@
   "scripts": {
     "build": "webpack",
     "build:pwa": "webpack --config-name pwa",
+    "build:tizen": "webpack --config-name tizen",
     "start": "webpack serve --config-name pwa --open",
-    "test-deploy": "npm run build:pwa && scp dist/pwa/* ctrldash.app:/www/ctrldash/music/test/"
+    "test-deploy": "npm run build:pwa && scp dist/pwa/* ctrldash.app:/www/ctrldash/music/test/",
+    "package:tizen": "npm run build:tizen && ${TIZEN_STUDIO:-$HOME/tizen-studio}/tools/ide/bin/tizen package -t wgt -- dist/tizen && mv 'dist/tizen/Ctrl music.wgt' dist/tizen/CtrlMusic.wgt",
+    "install:tv": "${TIZEN_STUDIO:-$HOME/tizen-studio}/tools/sdb connect $TV_IP && ${TIZEN_STUDIO:-$HOME/tizen-studio}/tools/ide/bin/tizen install -n CtrlMusic.wgt -- dist/tizen"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "latest",

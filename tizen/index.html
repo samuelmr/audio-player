@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <meta charset="UTF-8">
+  <title>Ctrl&ndash; music player</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200;400;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+<%= htmlWebpackPlugin.options.styles %>
+  </style>
+  <style>
+    /* The remote moves the focus, so it must stand out: the player's hue at
+       the opposite lightness from the panels (dark on the light theme, light
+       on the dark one), and text at the far end of the scale from that */
+    :root {
+        --focus-background: hsl(var(--base-hue), 60%, calc(100% - var(--base-lightness)));
+        --focus-outline: var(--focus-background);
+        --focus-text: hsl(var(--base-hue), 75%, clamp(5%, (var(--base-lightness) - 50%) * 100 + 50%, 95%));
+    }
+    :focus {
+        outline: 0.2em solid var(--focus-outline) !important;
+        outline-offset: 0.1em;
+    }
+    /* the add and remove buttons are faint until focused */
+    a.action:focus, .collection a:focus, button.gear:focus {
+        background-color: var(--focus-background) !important;
+        border-radius: 0.3em;
+        color: var(--focus-text) !important;
+        opacity: 100% !important;
+        padding: 0.1em 0.3em;
+    }
+    a.action:focus svg, .collection a:focus svg {
+        fill: var(--focus-text);
+    }
+    a:focus, li.folder:focus, li.playlist:focus, li.song:focus, .collection li:focus, audio-track:focus, .queue-summary:focus,
+    audio-browser nav#skipNav ul.search-results li:focus,
+    button:focus, input[type=submit]:focus, input[type=reset]:focus, #buttons button:focus {
+        background-color: var(--focus-background) !important;
+        color: var(--focus-text) !important;
+    }
+
+    /* the shortcut bar has the focus color as its background, so its
+       focus is the other way around: the panels' lightness */
+    audio-browser nav#skipNav a:focus {
+        background-color: hsl(var(--base-hue), 60%, var(--base-lightness)) !important;
+        border-radius: 0.3em;
+        color: hsl(var(--base-hue), 75%, clamp(5%, (50% - var(--base-lightness)) * 100 + 50%, 95%)) !important;
+        outline-color: hsl(var(--base-hue), 60%, var(--base-lightness)) !important;
+        text-decoration: none;
+        transform: scale(1.4);
+    }
+
+    /* An open folder's own row is highlighted, not its contents: the
+       highlight is a band at the top, and the contents keep their color */
+    li.folder.open:focus, li.playlist.open:focus {
+        background-color: transparent !important;
+        background-image: linear-gradient(var(--focus-background), var(--focus-background));
+        background-position: top;
+        background-repeat: no-repeat;
+        background-size: 100% 2em;
+    }
+    li.folder.open:focus > ol, li.playlist.open:focus > ol {
+        color: hsl(var(--base-hue), 75%, 2%);
+    }
+
+    /* OK adds the focused item, so the add buttons aren't needed */
+    audio-browser a.action.add {
+        display: none !important;
+    }
+    /* without the buttons, the rows need padding of their own,
+       and the arrow is lined up with the name */
+    audio-browser nav ol li.folder, audio-browser nav ol li.playlist {
+        padding-bottom: 0.5em;
+        padding-top: 0.5em;
+    }
+    audio-browser nav .folder:before {
+        line-height: 1;
+        top: 0.3em;
+    }
+
+    /* collapsed, the queue shows only the playing track (tizen-queue.js) */
+    audio-player nav.collapsed audio-track:not(.playing) {
+        display: none;
+    }
+    audio-player nav.collapsed.idle {
+        display: none;
+    }
+    .queue-summary {
+        clear: both;
+        cursor: pointer;
+        margin: 0.5em 0;
+        padding: 0.25em 0.5em 0.25em 1.5em;
+        position: relative;
+    }
+    .queue-summary:before {
+        content: "›";
+        font-size: x-large;
+        left: 0.4em;
+        line-height: 1;
+        position: absolute;
+        top: 0.1em;
+        transition: all 120ms;
+    }
+    .queue-summary.open:before {
+        transform: rotate(90deg);
+    }
+    .queue-summary[hidden] {
+        display: none;
+    }
+
+    /* tells what OK added to the queue */
+    .toast {
+        background-color: var(--focus-background);
+        border-radius: 0.5em;
+        bottom: 2em;
+        box-shadow: 0 0.2em 1em hsla(0, 0%, 0%, 40%);
+        color: var(--focus-text);
+        font-size: 1.5em;
+        left: 50%;
+        padding: 0.5em 1.5em;
+        position: fixed;
+        transform: translateX(-50%);
+        z-index: 10;
+    }
+    .toast[hidden] {
+        display: none;
+    }
+
+    /* the whole width of the screen */
+    body {
+        margin: 0;
+    }
+    audio-player, audio-browser {
+        border-radius: 0;
+        border-width: 0;
+        margin: 0;
+        max-width: none;
+        width: 100%;
+    }
+
+    /* Two columns for the library: folders on the left, and the songs of the
+       selected folder on the right, level with it. The two-column layout of
+       wide screens is undone first: it puts subfolders beside and above their
+       folder, where the arrows can't follow them. */
+    audio-browser nav .folder {
+        height: auto;
+        left: auto;
+        width: auto;
+    }
+    audio-browser nav > ol > li.folder {
+        left: auto;
+    }
+    audio-browser nav > ol > li.folder.open {
+        width: auto;
+    }
+    audio-browser nav > ol > li.folder > ol > li.folder {
+        right: auto;
+        top: auto;
+    }
+    audio-browser nav ol.playlists li.playlist {
+        left: auto;
+        top: auto;
+        width: auto;
+    }
+    audio-browser nav:not(#skipNav) > ol {
+        width: 50%;
+    }
+    audio-browser nav ol li.playlist {
+        position: relative;
+    }
+    /* important: the shared rules for open folders show their lists */
+    audio-browser nav ol li.folder > ol.songs, audio-browser nav ol li.playlist > ol.songs {
+        display: none !important;
+    }
+    /* left and width come from tizen-library.js */
+    audio-browser nav ol li.open.selected > ol.songs {
+        background-color: hsla(var(--base-hue), 60%, 98%, 90%);
+        border-radius: 0.5em;
+        color: hsl(var(--base-hue), 75%, 2%);
+        display: block !important;
+        margin-left: 1em;
+        padding: 0.5em 1em;
+        position: absolute;
+        top: 0;
+        z-index: 1;
+    }
+    audio-browser nav ol.songs li.song {
+        padding: 0.25em 0.5em;
+    }
+
+    dialog#exit-confirm {
+        background-color: hsl(var(--base-hue), 50%, 95%);
+        border-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
+        border-radius: 0.5em;
+        color: hsl(var(--base-hue), 50%, 5%);
+        font-size: 1.5em;
+        margin: auto;
+        padding: 1em;
+    }
+    dialog#exit-confirm .buttons {
+        display: flex;
+        gap: 1em;
+        justify-content: center;
+        margin-top: 1em;
+    }
+    dialog#exit-confirm button {
+        font-size: inherit;
+        padding: 0.25em 1em;
+    }
+  </style>
+ </head>
+ <body>
+  <audio-player id="ap" name="Player" track="" next="" previous="">
+  </audio-player>
+  <audio-browser>
+    Loading...
+  </audio-browser>
+ </body>
+</html>

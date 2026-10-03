@@ -332,7 +332,7 @@ async function renderOfflinePlaylists() {
     status.textContent = `${saved}/${keys.size}`
     li.appendChild(status)
     const a = document.createElement('a')
-    a.className = 'action'
+    a.className = 'action add'
     a.href = '#'
     a.title = locale.playOfflinePlaylist
     a.innerHTML = addSVG
@@ -343,7 +343,7 @@ async function renderOfflinePlaylists() {
     }
     li.appendChild(a)
     const remove = document.createElement('a')
-    remove.className = 'action'
+    remove.className = 'action remove'
     remove.href = '#'
     remove.title = locale.removeOffline
     remove.innerHTML = removeSVG

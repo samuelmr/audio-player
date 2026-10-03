@@ -1,7 +1,7 @@
 import { ListObjectsV2Command } from "@aws-sdk/client-s3"
 import { folderDelimiter } from './constants.js'
 import { locale } from './locale.js'
-import { addSVG } from './icons.js'
+import { addSVG, playSVG } from './icons.js'
 import { s3, bucketName, signedUrl, getObjectText, getS3Meta } from './s3.js'
 import { collection, createAudioTrack, createSourceItem, setSourceLink } from './player.js'
 
@@ -20,7 +20,8 @@ export function initBrowser(browser, player) {
   const a = document.createElement('a')
   a.href = `#${player.id}`
   a.title = `#${locale.jumpTo} ${locale.play}`
-  a.innerHTML = '⏵'
+  // an image: not every font has the play symbol
+  a.innerHTML = playSVG
   li.appendChild(a)
   skipMenu.appendChild(li)
   skipNav.appendChild(skipMenu)
@@ -152,7 +153,7 @@ function createFolderElement(folder, ol) {
   const a = document.createElement('a')
   // a.href = '#' + (parent ? encodeURIComponent(parent) + '/' : '') + encodeURIComponent(folder)
   a.href = '#' + encodeURIComponent(folder)
-  a.className = 'action'
+  a.className = 'action add'
   a.title = locale.playFolder
   // a.textContent = '⥅' // '⤅' '⧐' '⏵'
   // a.innerHTML = '<i class="fa-solid fa-album-circle-plus"></i>'
@@ -213,7 +214,7 @@ async function createSongElement(obj, ol) {
   li.className = 'song'
   li.textContent = obj.Key.replace(`${parent}/`, '') + ' '
   const a = document.createElement('a')
-  a.className = 'action'
+  a.className = 'action add'
   a.href = obj.href
   a.title = locale.playSong
   // a.textContent = '⧐' // '⥅' '⏵'
@@ -247,7 +248,7 @@ async function createPlaylistElement(obj, ol) {
   li.className = 'playlist'
   li.textContent = obj.Key.replace(`${parent}/`, '') + ' '
   const a = document.createElement('a')
-  a.className = 'action'
+  a.className = 'action add'
   a.href = obj.Key
   a.title = locale.playPlaylist
   // a.textContent = '⧐' // '⥅' '⏵'

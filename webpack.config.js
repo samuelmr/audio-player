@@ -1,15 +1,16 @@
 import HtmlWebpackPlugin from "html-webpack-plugin";
 import TerserPlugin from "terser-webpack-plugin";
 import CopyPlugin from "copy-webpack-plugin";
+import webpack from "webpack";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// the stylesheet is inlined into the HTML
+// both apps inline the same stylesheet into their HTML
 const styles = fs.readFileSync(path.resolve(__dirname, "src/styles.css"), "utf8");
 
-// '#platform' picks the platform-specific module
+// '#platform' picks the platform-specific module of each app
 const shared = (name) => ({
   name,
   mode: "production",
@@ -68,4 +69,30 @@ const pwa = {
   },
 };
 
-export default [pwa];
+// The TV app is packaged into a .wgt and loaded from local files,
+// so it's one classic script without lazy-loaded chunks
+const tizen = {
+  ...shared("tizen"),
+  output: {
+    filename: "audioplayer.js",
+    path: path.resolve(__dirname, "dist/tizen"),
+    clean: true,
+  },
+  plugins: [
+    new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
+    new HtmlWebpackPlugin({
+      filename: 'index.html',
+      template: 'tizen/index.html',
+      scriptLoading: 'defer',
+      styles,
+    }),
+    new CopyPlugin({
+      patterns: [
+        'tizen/config.xml',
+        {from: 'pwa/play-192.png', to: 'icon.png'},
+      ].map(p => typeof p == 'string' ? {from: p, to: '[name][ext]'} : p),
+    }),
+  ],
+};
+
+export default [pwa, tizen];

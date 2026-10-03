@@ -113,6 +113,8 @@ audio-track:focus, audio-track:focus-within, audio-track:hover {
     border-color: hsla(var(--base-hue), 50%, 5%, 50%);
     border-radius: 0.2em;
     color: hsla(var(--base-hue), 75%, 10%, 99%);
+    /* inputs don't inherit the font, and the fallback may be much wider */
+    font-family: inherit;
     font-size: 1.5em;
     height: 1.5em;
     margin: 0;
@@ -198,11 +200,12 @@ audio-browser .offline-status, audio-browser .offline-message {
     opacity: 75%;
 }
 .audio-time {
+    margin-right: 0.5em;
     text-wrap: nowrap;
-    width: 11em;
 }
 .audio-time input {
     text-align: center;
+    width: 3.5em;
 }
 .audio-time span {
     font-size: 2em;
@@ -260,6 +263,11 @@ audio-browser nav#skipNav a {
     display: inline-block;
     font-weight: bold;
     padding: 0.25em;
+}
+audio-browser nav#skipNav a svg {
+    fill: currentColor;
+    height: 1em;
+    vertical-align: -0.125em;
 }
 audio-browser nav#skipNav ol {
     display: flex;
@@ -329,7 +337,7 @@ audio-browser nav ol li.folder {
     border-style: outset;
     border-width: 1px;
     margin: 0.5em 0;
-    padding: 0 0 1em 1em;
+    padding: 0 1em 1em 1em;
 }
 audio-browser .playlists .folder {
     padding-top: 0.5em;

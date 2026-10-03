@@ -9,8 +9,15 @@ aws --endpoint-url $S3ENDPOINT s3api put-object --bucket $S3BUCKET --key sw.js -
 ```
 
 #layout
-- `src/` the app's modules; `src/platform/` has what is specific to a platform
+- `src/` code shared by both apps; `src/platform/` has what differs between them
 - `pwa/` the web app's HTML template, service worker, manifest and icon
+- `tizen/` the Samsung TV app's HTML template and `config.xml`
 
-`npm run build` builds the web app into `dist/pwa`.
+`npm run build` builds both apps, into `dist/pwa` and `dist/tizen`.
 
+#tv
+`npm run package:tizen` builds and signs `dist/tizen/CtrlMusic.wgt` with the active
+certificate profile of Tizen Studio (set `TIZEN_STUDIO` if it's not in `~/tizen-studio`).
+`TV_IP=192.168.x.x npm run install:tv` installs it on a TV in developer mode.
+On the TV, open the settings and paste a settings code copied from the web app
+into the text field, using the SmartThings app's keyboard on your phone.

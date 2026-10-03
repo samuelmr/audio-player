@@ -123,7 +123,9 @@ async function runSearch() {
     }
   }
   const folderMatches = [...folders].filter(matches).slice(0, MAX_FOLDER_RESULTS)
-  const playlistMatches = [...playlistList.querySelectorAll('li.playlist')].filter(li => matches(li.textContent))
+  // by name only: the TV app may list the playlist's tracks inside its item
+  const playlistName = (li) => li.firstChild.textContent.trim()
+  const playlistMatches = [...playlistList.querySelectorAll('li.playlist')].filter(li => matches(playlistName(li)))
 
   searchResults.innerHTML = ''
   for (const folder of folderMatches) {
@@ -133,7 +135,7 @@ async function runSearch() {
     })
   }
   for (const li of playlistMatches) {
-    addSearchResult('result-playlist', li.textContent.trim(), '', () => li.querySelector('a')?.click())
+    addSearchResult('result-playlist', playlistName(li), '', () => li.querySelector(':scope > a.add')?.click())
   }
   for (const {key, record} of tracks) {
     const path = key.split(folderDelimiter)
@@ -165,7 +167,7 @@ function addSearchResult(className, name, details, onAdd) {
     li.appendChild(small)
   }
   const a = document.createElement('a')
-  a.className = 'action'
+  a.className = 'action add'
   a.href = '#'
   a.title = className == 'result-track' ? locale.playSong : locale.playFolder
   a.innerHTML = addSVG
@@ -179,7 +181,7 @@ function addSearchResult(className, name, details, onAdd) {
   searchResults.appendChild(li)
 }
 
-async function queueKeys(keys, source, className) {
+export async function queueKeys(keys, source, className) {
   collection.appendChild(createSourceItem(className, source, source))
   // one at a time, to keep the queue in the listed order
   for (const key of keys) {
