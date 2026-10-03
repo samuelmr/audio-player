@@ -29,7 +29,7 @@ const NEARBY = 40
 // added to the score of anything not in the same row or column
 const OUT_OF_LINE = 100000
 
-let lastMove = 0
+let lastMove = -Infinity // performance.now() starts from 0 when the app loads
 let cached, cachedScope
 
 const isTextField = (element) => element?.tagName == 'INPUT' && TEXT_TYPES.includes(element.type)
