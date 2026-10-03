@@ -52,7 +52,6 @@ let skipMenu, previousFirst, sourceLink, wakeLock, wakelockCooldown
 let seekTarget, seekTimeout
 let searchInput, searchResults, searchTimeout, searchKeys, searchKeysPromise
 let searchRun = 0
-let autoPlayOnLoad = false
 
 const preloadCache = {}
 let preloading = false
@@ -587,10 +586,6 @@ const requestWakeLock = async () => {
 audio.onloadedmetadata = updateDuration
 audio.oncanplay = (e) => {
   play.disabled = false
-  if (autoPlayOnLoad) {
-    autoPlayOnLoad = false
-    audio.play().catch(err => console.warn('Playback failed:', err))
-  }
 }
 audio.onplay = () => {
   // play.textContent = '⏸'
@@ -601,11 +596,14 @@ audio.onplay = () => {
   requestWakeLock()
 }
 audio.onpause = () => {
+  // 'pause' also fires when a track ends; the next track starts right away,
+  // so don't tell iOS that the session is paused
+  if (audio.ended) return
   // play.textContent = '⏵'
   cursor.disabled = false
   play.innerHTML = playSVG
   navigator.mediaSession.playbackState = 'paused'
-  wakelockCooldown = setTimeout(wakeLock?.release, WAKELOCK_CLEAR_TIMEOUT)
+  wakelockCooldown = setTimeout(() => wakeLock?.release(), WAKELOCK_CLEAR_TIMEOUT)
 }
 audio.onwaiting = (e) => {
   cursor.disabled = false
@@ -676,7 +674,6 @@ play.onclick = async (e) => {
     await audio.play().catch(err => console.warn('Playback failed:', err))
   }
   else {
-    autoPlayOnLoad = false
     audio.pause()
   }
 }
@@ -1262,9 +1259,11 @@ const playTrack = async (track) => {
     playerList.querySelector('.playing')?.classList.remove('playing')
     track.classList.add('playing')
     track.scrollIntoView({block: "nearest", inline: "nearest"})
-    autoPlayOnLoad = true
     audio.src = track.dataset['src']
-    audio.load()
+    // call play() synchronously instead of waiting for 'canplay': on iOS a
+    // backgrounded PWA is suspended as soon as audio stops, so an async gap
+    // between tracks would stop playback at the end of the first track
+    audio.play().catch(err => console.warn('Playback failed:', err))
     if (track.dataset.albumArt) {
       const image = new Image()
       let url = track.dataset.albumArt
