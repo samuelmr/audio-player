@@ -13,11 +13,12 @@
     "@aws-sdk/client-s3": "latest",
     "@aws-sdk/credential-providers": "latest",
     "@aws-sdk/s3-request-presigner": "latest",
-    "jsqr": "^1.4.0",
-    "qrcode-generator": "^2.0.4"
+    "jsqr": "latest",
+    "qrcode-generator": "latest"
   },
   "devDependencies": {
     "html-webpack-plugin": "latest",
+    "terser-webpack-plugin": "latest",
     "webpack": "latest",
     "webpack-cli": "latest"
   }
