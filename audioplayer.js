@@ -512,7 +512,7 @@ progress.addEventListener('input', (e) => {
 })
 player.appendChild(progress)
 
-updateDuration = function() {
+const updateDuration = function() {
   const seconds = parseInt(audio.duration)
   progress.max = seconds
   trackLength.value = parseInt(seconds/60) + ':' + parseInt(seconds%60).toString().padStart(2, '0')
