@@ -1,18 +1,22 @@
 import HtmlWebpackPlugin from "html-webpack-plugin";
 import TerserPlugin from "terser-webpack-plugin";
 import CopyPlugin from "copy-webpack-plugin";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export default {
-  mode: "production",     
-  entry: "./audioplayer.js",
-  output: {
-    filename: "audioplayer.js",
-    path: path.resolve(__dirname, "dist"),
-    library: {
-      type: "module",
+// the stylesheet is inlined into the HTML
+const styles = fs.readFileSync(path.resolve(__dirname, "src/styles.css"), "utf8");
+
+// '#platform' picks the platform-specific module
+const shared = (name) => ({
+  name,
+  mode: "production",
+  entry: "./src/main.js",
+  resolve: {
+    alias: {
+      "#platform": path.resolve(__dirname, `src/platform/${name}.js`),
     },
   },
   optimization: {
@@ -28,22 +32,34 @@ export default {
       }),
     ],
   },
+});
+
+const pwa = {
+  ...shared("pwa"),
+  output: {
+    filename: "audioplayer.js",
+    path: path.resolve(__dirname, "dist/pwa"),
+    clean: true,
+    library: {
+      type: "module",
+    },
+  },
   plugins: [
     new HtmlWebpackPlugin({
       filename: 'index.html',
-      template: 'index.html',
+      template: 'pwa/index.html',
       scriptLoading: 'module',
-      // chunks: ['main']
+      styles,
     }),
     // the service worker must be served next to index.html, unbundled
     new CopyPlugin({
-      patterns: ['sw.js'],
+      patterns: ['pwa/sw.js', 'pwa/manifest.json', 'pwa/play-192.png'].map(from => ({from, to: '[name][ext]'})),
     }),
   ],
   devServer: {
-    // serve manifest.json and icons from the project root
+    // serve manifest.json and icons from the PWA folder
     static: {
-      directory: __dirname,
+      directory: path.resolve(__dirname, "pwa"),
       watch: false,
     },
   },
@@ -51,16 +67,5 @@ export default {
     outputModule: true,
   },
 };
-/**
-var path = require("path");
-module.exports = {
-  entry: [path.join(__dirname, "audioplayer.js")],
-  output: {
-    path: __dirname,
-    filename: 'audioplayer.js'
-  },
-   resolve:{
-  fallback: { path: require.resolve("path-browserify")}
-  }
-};
-**/
+
+export default [pwa];

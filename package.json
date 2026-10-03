@@ -2,13 +2,14 @@
   "name": "audio-player",
   "version": "1.0.0",
   "type": "module",
-  "main": "audioplayer.js",
+  "main": "src/main.js",
   "license": "Unlicense",
   "author": "Samuel Rinnetmäki <samuel@iki.fi>",
   "scripts": {
     "build": "webpack",
-    "start": "webpack serve --open",
-    "test-deploy": "npm run build && scp dist/* ctrldash.app:/www/ctrldash/music/test/"
+    "build:pwa": "webpack --config-name pwa",
+    "start": "webpack serve --config-name pwa --open",
+    "test-deploy": "npm run build:pwa && scp dist/pwa/* ctrldash.app:/www/ctrldash/music/test/"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "latest",

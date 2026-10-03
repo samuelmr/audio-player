@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="width">
+  <meta name="theme-color" content="hsl(180, 50%, 75%)" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="hsl(180, 50%, 25%)" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="play-192.png"/>
+  <script>
+    const keys = [
+     'accessKeyId',
+     'secretAccessKey',
+     'endpoint',
+     'region',
+     'bucketName'
+    ]
+    const params = new URLSearchParams(document.location.search)
+    const a = document.createElement('a')
+    a.href = document.location.href
+    let keysFound = false
+    keys.forEach(key => {
+      if (params.get(key)) {
+        keysFound = true
+        localStorage.setItem(key, params.get(key))
+        a.search = a.search.replace(new RegExp(`${key}=[^&]*&?`), '')
+      }
+    })
+    if (keysFound) {
+      // redirect to hide secret params
+      document.location.href = a.href
+    }
+   </script>
+   <title>Ctrl&ndash; music player</title>
+   <link rel="manifest" href="./manifest.json">
+<!--
+  <link rel="apple-touch-icon" href="../i/ctrl-icon.png">
+  <link rel="shortcut icon" type="image/png" href="../i/favicon.png">
+--> 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200;400;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+<%= htmlWebpackPlugin.options.styles %>
+  </style>
+ </head>
+ <body>
+  <audio-player id="ap" name="Player" track="" next="" previous="">
+  </audio-player>
+  <audio-browser>
+    Loading...
+  </audio-browser>
+ </body>
+</html>
