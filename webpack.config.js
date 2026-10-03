@@ -69,10 +69,27 @@ const pwa = {
   },
 };
 
+// The oldest TVs supported (2021 models, Tizen 6.0) run Chromium 76.
+// tests/build/tv-compat.test.js checks the built TV app against it
+export const TV_CHROME = 76
+
 // The TV app is packaged into a .wgt and loaded from local files,
 // so it's one classic script without lazy-loaded chunks
 const tizen = {
   ...shared("tizen"),
+  // the dependencies too: most of the newer syntax comes from the AWS SDK
+  module: {
+    rules: [{
+      test: /\.m?js$/,
+      use: {
+        loader: "babel-loader",
+        options: {
+          sourceType: "unambiguous",
+          presets: [["@babel/preset-env", { targets: { chrome: TV_CHROME } }]],
+        },
+      },
+    }],
+  },
   output: {
     filename: "audioplayer.js",
     path: path.resolve(__dirname, "dist/tizen"),

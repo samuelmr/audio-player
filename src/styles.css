@@ -27,7 +27,7 @@ body {
 audio-player, audio-browser {
     background-color: hsl(var(--base-hue), var(--base-saturation), var(--base-lightness));
     background: linear-gradient(209deg, hsl(var(--base-hue), var(--base-saturation), var(--base-lightness)), hsl(var(--base-hue), var(--base-saturation), calc(0.9 * var(--base-lightness))));
-    border-color: hsla(var(--base-hue), 50%, 5%, 50%);
+    border-color: hsla(var(--base-hue), 50%, 5%, 0.5);
     border-radius: 0.5em;
     border-style: outset;
     border-width: 2px;
@@ -47,14 +47,14 @@ audio-player ol.collection {
     flex-wrap: wrap;
 }
 audio-player ol.collection li {
-    background-color: hsla(var(--base-hue), 100%, 100%, 25%);
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.25);
     border-radius: 0.5em;
     margin: 0 0.5em 0.5em 0;
     padding: 0 0.5em;
 }
 audio-player nav {
-    background-color: hsla(var(--base-hue), 100%, 10%, 75%);
-    border-color: hsla(var(--base-hue), 75%, 10%, 25%);
+    background-color: hsla(var(--base-hue), 100%, 10%, 0.75);
+    border-color: hsla(var(--base-hue), 75%, 10%, 0.25);
     border-radius: 0.5em;
     border-style: inset;
     border-width: 2px;
@@ -63,7 +63,7 @@ audio-player nav {
     padding: 0.5em 1em;
 }
 audio-track {
-    background-color: hsla(var(--base-hue), 100%, 100%, 25%);
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.25);
     background-position: top right;
     background-repeat: no-repeat;
     background-size: contain;
@@ -83,19 +83,19 @@ audio-track {
     width: 100%;
 }
 audio-track.playing {
-    background-color: hsla(var(--base-hue), 100%, 100%, 75%);
-    border-color: hsla(var(--base-hue), 50%, 5%, 50%);
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.75);
+    border-color: hsla(var(--base-hue), 50%, 5%, 0.5);
     border-radius: 0.5em;
     border-style: outset;
     border-width: 2px;
-    color: hsla(var(--base-hue), 75%, 10%, 99%);
+    color: hsla(var(--base-hue), 75%, 10%, 0.99);
     height: auto;
 }
 audio-track.playing a {
-    color: hsla(var(--base-hue), 75%, 10%, 99%);
+    color: hsla(var(--base-hue), 75%, 10%, 0.99);
 }
 audio-track:focus, audio-track:focus-within, audio-track:hover {
-    background-color: hsla(var(--base-hue), 100%, 100%, 50%);
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.5);
     height: auto;
     outline: none;
     transition: all 120ms;
@@ -109,10 +109,10 @@ audio-track:focus, audio-track:focus-within, audio-track:hover {
 */
 }
 #buttons button, .audio-time input, .track-title {
-    background-color: hsla(var(--base-hue), 100%, 100%, 75%);
-    border-color: hsla(var(--base-hue), 50%, 5%, 50%);
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.75);
+    border-color: hsla(var(--base-hue), 50%, 5%, 0.5);
     border-radius: 0.2em;
-    color: hsla(var(--base-hue), 75%, 10%, 99%);
+    color: hsla(var(--base-hue), 75%, 10%, 0.99);
     /* inputs don't inherit the font, and the fallback may be much wider */
     font-family: inherit;
     font-size: 1.5em;
@@ -134,22 +134,22 @@ audio-track:focus, audio-track:focus-within, audio-track:hover {
     transform: scale(0.75);
 }
 #buttons button svg path {
-    fill: hsla(var(--base-hue), 75%, 10%, 99%);
+    fill: hsla(var(--base-hue), 75%, 10%, 0.99);
 }
 #buttons button:focus, #buttons button:hover {
     outline: none;
-    background-color: hsla(var(--base-hue), 100%, 100%, 50%);
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.5);
     transition: all 120ms;
 }
 #buttons button.stalled {
     animation: 3s infinite alternate fadeInOut;
 }
 @keyframes pulse {
-    from { opacity: 100%; }
-    to { opacity: 20%; }
+    from { opacity: 1; }
+    to { opacity: 0.2; }
 }
 button.save-offline {
-    background-color: hsla(var(--base-hue), 100%, 100%, 25%);
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.25);
     border: none;
     border-radius: 0.5em;
     color: var(--text-color);
@@ -161,7 +161,7 @@ button.save-offline {
     padding: 0 0.5em;
 }
 button.save-offline:focus, button.save-offline:hover {
-    background-color: hsla(var(--base-hue), 100%, 100%, 50%);
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.5);
     outline: none;
 }
 button.save-offline svg, audio-track .offline-icon svg {
@@ -192,12 +192,12 @@ audio-track.offline-failed .offline-icon {
 @media (prefers-reduced-motion: reduce) {
     audio-track.offline-downloading .offline-icon {
         animation: none;
-        opacity: 50%;
+        opacity: 0.5;
     }
 }
 audio-browser .offline-status, audio-browser .offline-message {
     font-size: smaller;
-    opacity: 75%;
+    opacity: 0.75;
 }
 .audio-time {
     margin-right: 0.5em;
@@ -259,7 +259,7 @@ audio-browser nav#skipNav {
     z-index: 2;
 }
 audio-browser nav#skipNav a {
-    color: hsla(var(--base-hue), 60%, 98%, 90%);
+    color: hsla(var(--base-hue), 60%, 98%, 0.9);
     display: inline-block;
     font-weight: bold;
     padding: 0.25em;
@@ -287,10 +287,10 @@ audio-browser nav#skipNav .search {
     padding: 0 0.25em 0.5em 0.25em;
 }
 audio-browser nav#skipNav input[type=search] {
-    background-color: hsla(var(--base-hue), 100%, 100%, 75%);
-    border-color: hsla(var(--base-hue), 50%, 5%, 50%);
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.75);
+    border-color: hsla(var(--base-hue), 50%, 5%, 0.5);
     border-radius: 0.2em;
-    color: hsla(var(--base-hue), 75%, 10%, 99%);
+    color: hsla(var(--base-hue), 75%, 10%, 0.99);
     font-family: inherit;
     font-size: 1.25em;
     padding: 0 0.25em;
@@ -306,7 +306,7 @@ audio-browser nav#skipNav ul.search-results:empty {
     display: none;
 }
 audio-browser nav#skipNav ul.search-results li {
-    background-color: hsla(var(--base-hue), 60%, 98%, 90%);
+    background-color: hsla(var(--base-hue), 60%, 98%, 0.9);
     border-radius: 0.5em;
     color: hsl(var(--base-hue), 75%, 2%);
     margin: 0.25em 0;
@@ -319,7 +319,7 @@ audio-browser nav#skipNav ul.search-results li.empty {
     font-style: italic;
 }
 audio-browser nav#skipNav ul.search-results small {
-    opacity: 75%;
+    opacity: 0.75;
 }
 audio-browser nav#skipNav ul.search-results a {
     color: inherit;
@@ -332,7 +332,7 @@ audio-browser nav#skipNav ul.search-results svg {
     width: 1.5em;
 }
 audio-browser nav ol li.folder {
-    border-color: hsla(var(--base-hue), 50%, 5%, 50%);
+    border-color: hsla(var(--base-hue), 50%, 5%, 0.5);
     border-radius: 0.5em;
     border-style: outset;
     border-width: 1px;
@@ -352,7 +352,7 @@ audio-browser nav .folder svg, .collection svg {
     margin: 0 0.5em -0.5em 0.5em;
 }
 audio-browser nav ol li.folder.open, audio-browser nav ol li.folder.open a, audio-browser nav ol li.folder.open li.folder, audio-browser nav ol li.folder.open li.playlist {
-    background-color: hsla(var(--base-hue), 60%, 98%, 90%);
+    background-color: hsla(var(--base-hue), 60%, 98%, 0.9);
     color: hsl(var(--base-hue), 75%, 2%);
 }
 audio-browser nav > ol > li.folder.open {
@@ -390,14 +390,14 @@ a.action {
     left: 0.125em;
     line-height: 0.5em;
 */
-    opacity: 25%;
+    opacity: 0.25;
 /*
     position: relative;
     top: 0.125em;
 */
 }
 a.action:hover, a.action:active {
-    opacity: 100%;
+    opacity: 1;
     text-decoration: none;
 }
 .album {
@@ -442,7 +442,7 @@ a.action:hover, a.action:active {
     text-align: right;
 }
 button.gear {
-    background-color: hsla(var(--base-hue), var(--base-saturation), 15%, 25%);
+    background-color: hsla(var(--base-hue), var(--base-saturation), 15%, 0.25);
     float: right;
 }
 button.gear {
@@ -484,9 +484,12 @@ dialog#settings label, dialog#save-offline label {
     display: block;
     margin-top: 0.5em;
 }
+/* a grid, as the oldest TVs (Chromium 76) have no gap in flexbox */
 dialog#settings .buttons, dialog#save-offline .buttons {
-    display: flex;
+    display: grid;
     gap: 0.5em;
+    grid-auto-flow: column;
+    justify-content: start;
     margin-top: 0.5em;
 }
 dialog#settings .error {
@@ -498,9 +501,13 @@ dialog#settings fieldset.transfer {
     color: hsl(var(--base-hue), 50%, 5%);
     display: flex;
     flex-flow: row wrap;
-    gap: 0.5em;
     margin-top: 1em;
-    padding: 0.5em;
+    padding: 0.5em 0 0 0.5em;
+}
+/* margins, as Chromium 76 has no gap in flexbox and no flexbox in a fieldset;
+   in rem, as the buttons' em is smaller than the fieldset's */
+dialog#settings fieldset.transfer > :not(legend) {
+    margin: 0 0.5rem 0.5rem 0;
 }
 dialog#settings fieldset.transfer .qr {
     flex-basis: 100%;

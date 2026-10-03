@@ -16,7 +16,15 @@
     :root {
         --focus-background: hsl(var(--base-hue), 60%, calc(100% - var(--base-lightness)));
         --focus-outline: var(--focus-background);
-        --focus-text: hsl(var(--base-hue), 75%, clamp(5%, (var(--base-lightness) - 50%) * 100 + 50%, 95%));
+        --focus-text: hsl(var(--base-hue), 75%, 95%);
+        --shortcut-focus-text: hsl(var(--base-hue), 75%, 5%);
+    }
+    /* per theme, as Chromium 76 lacks clamp() to derive them from the lightness */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --focus-text: hsl(var(--base-hue), 75%, 5%);
+            --shortcut-focus-text: hsl(var(--base-hue), 75%, 95%);
+        }
     }
     :focus {
         outline: 0.2em solid var(--focus-outline) !important;
@@ -27,7 +35,7 @@
         background-color: var(--focus-background) !important;
         border-radius: 0.3em;
         color: var(--focus-text) !important;
-        opacity: 100% !important;
+        opacity: 1 !important;
         padding: 0.1em 0.3em;
     }
     a.action:focus svg, .collection a:focus svg {
@@ -45,7 +53,7 @@
     audio-browser nav#skipNav a:focus {
         background-color: hsl(var(--base-hue), 60%, var(--base-lightness)) !important;
         border-radius: 0.3em;
-        color: hsl(var(--base-hue), 75%, clamp(5%, (50% - var(--base-lightness)) * 100 + 50%, 95%)) !important;
+        color: var(--shortcut-focus-text) !important;
         outline-color: hsl(var(--base-hue), 60%, var(--base-lightness)) !important;
         text-decoration: none;
         transform: scale(1.4);
@@ -115,12 +123,14 @@
         align-items: center;
         background-color: hsl(var(--base-hue), 40%, 10%);
         color: hsl(var(--base-hue), 30%, 96%);
+        bottom: 0;
         display: flex;
-        gap: 4em;
-        inset: 0;
+        left: 0;
         overflow: hidden;
         padding: 0 6em;
         position: fixed;
+        right: 0;
+        top: 0;
         z-index: 20;
     }
     #now-playing[hidden], #now-playing .paused[hidden], #now-playing .up-next-title[hidden] {
@@ -129,9 +139,12 @@
     #now-playing .background {
         background-position: center;
         background-size: cover;
+        bottom: -10%;
         filter: blur(60px) brightness(40%) saturate(130%);
-        inset: -10%;
+        left: -10%;
         position: absolute;
+        right: -10%;
+        top: -10%;
         z-index: -1;
     }
     #now-playing.no-art {
@@ -143,27 +156,31 @@
     #now-playing .cover {
         flex: none;
         height: 65vh;
+        margin-right: 4em;
         position: relative;
         width: 65vh;
     }
     #now-playing .cover img {
         border-radius: 1em;
-        box-shadow: 0 2em 4em hsla(0, 0%, 0%, 60%);
+        box-shadow: 0 2em 4em hsla(0, 0%, 0%, 0.6);
         height: 100%;
         object-fit: cover;
         width: 100%;
     }
     #now-playing .paused {
         align-items: center;
-        background-color: hsla(0, 0%, 0%, 35%);
+        background-color: hsla(0, 0%, 0%, 0.35);
         border-radius: 1em;
+        bottom: 0;
         display: flex;
-        inset: 0;
         justify-content: center;
+        left: 0;
         position: absolute;
+        right: 0;
+        top: 0;
     }
     #now-playing .paused svg {
-        fill: hsla(0, 0%, 100%, 85%);
+        fill: hsla(0, 0%, 100%, 0.85);
         width: 25%;
     }
     #now-playing .details {
@@ -176,6 +193,7 @@
         line-height: 1.1;
         margin-bottom: 0.3em;
         overflow-wrap: anywhere;
+        word-break: break-word; /* for Chromium 76, which lacks 'anywhere' */
     }
     #now-playing.no-art .np-title {
         font-size: 5em;
@@ -186,16 +204,15 @@
     #now-playing .np-album {
         font-size: 1.75em;
         margin-top: 0.3em;
-        opacity: 75%;
+        opacity: 0.75;
     }
     #now-playing .progress {
         align-items: center;
         display: flex;
-        gap: 1em;
         margin: 2em 0 3em 0;
     }
     #now-playing .bar {
-        background-color: hsla(0, 0%, 100%, 25%);
+        background-color: hsla(0, 0%, 100%, 0.25);
         border-radius: 0.3em;
         flex: 1;
         height: 0.6em;
@@ -208,6 +225,7 @@
     }
     #now-playing .time {
         font-size: 1.5em;
+        margin-left: 0.67em;
         font-variant-numeric: tabular-nums;
     }
     #now-playing .up-next-title {
@@ -215,7 +233,7 @@
         font-weight: 600;
         letter-spacing: 0.1em;
         margin-bottom: 0.5em;
-        opacity: 70%;
+        opacity: 0.7;
         text-transform: uppercase;
     }
     #now-playing .up-next {
@@ -224,7 +242,7 @@
     }
     #now-playing .up-next li {
         margin-bottom: 0.3em;
-        opacity: 85%;
+        opacity: 0.85;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -235,7 +253,7 @@
         background-color: var(--focus-background);
         border-radius: 0.5em;
         bottom: 2em;
-        box-shadow: 0 0.2em 1em hsla(0, 0%, 0%, 40%);
+        box-shadow: 0 0.2em 1em hsla(0, 0%, 0%, 0.4);
         color: var(--focus-text);
         font-size: 1.5em;
         left: 50%;
@@ -296,7 +314,7 @@
     }
     /* left and width come from tizen-library.js */
     audio-browser nav ol li.open.selected > ol.songs {
-        background-color: hsla(var(--base-hue), 60%, 98%, 90%);
+        background-color: hsla(var(--base-hue), 60%, 98%, 0.9);
         border-radius: 0.5em;
         color: hsl(var(--base-hue), 75%, 2%);
         display: block !important;
@@ -320,8 +338,9 @@
         padding: 1em;
     }
     dialog#exit-confirm .buttons {
-        display: flex;
+        display: grid;
         gap: 1em;
+        grid-auto-flow: column;
         justify-content: center;
         margin-top: 1em;
     }

@@ -22,6 +22,9 @@
     "qrcode-generator": "latest"
   },
   "devDependencies": {
+    "@babel/core": "latest",
+    "@babel/preset-env": "latest",
+    "babel-loader": "latest",
     "copy-webpack-plugin": "latest",
     "html-webpack-plugin": "latest",
     "terser-webpack-plugin": "latest",

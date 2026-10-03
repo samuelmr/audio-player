@@ -21,3 +21,7 @@ certificate profile of Tizen Studio (set `TIZEN_STUDIO` if it's not in `~/tizen-
 `TV_IP=192.168.x.x npm run install:tv` installs it on a TV in developer mode.
 On the TV, open the settings and paste a settings code copied from the web app
 into the text field, using the SmartThings app's keyboard on your phone.
+
+The TV app runs on Tizen 6.0 and later, which means Samsung TVs from 2021 on. The oldest
+of these have Chromium 76, so Babel compiles the TV app's script for it, and the
+stylesheets avoid what it lacks (such as `gap` in flexbox, `inset` and `clamp()`).
