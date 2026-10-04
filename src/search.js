@@ -8,6 +8,8 @@ import { playlistList } from './browser.js'
 import { collection, createAudioTrack, createSourceItem, setSourceLink } from './player.js'
 
 let searchInput, searchResults, searchTimeout, searchKeys, searchKeysPromise
+// when each listed key was last modified, for the metadata cache
+const searchModified = new Map()
 let searchRun = 0
 
 export function initSearch(skipNav) {
@@ -38,6 +40,7 @@ export function initSearch(skipNav) {
 // the bucket may have changed
 export function resetSearchKeys() {
   searchKeys = searchKeysPromise = null
+  searchModified.clear()
 }
 
 // list every track key in the bucket once, so search also covers unopened folders
@@ -55,6 +58,7 @@ function getSearchKeys() {
         for (const obj of response.Contents || []) {
           if (obj.Key.endsWith('.mp3')) {
             keys.push(obj.Key)
+            searchModified.set(obj.Key, obj.LastModified)
           }
         }
         token = response.IsTruncated ? response.NextContinuationToken : null
@@ -187,7 +191,7 @@ export async function queueKeys(keys, source, className) {
   for (const key of keys) {
     const obj = {Key: key}
     try {
-      obj.Metadata = await getS3Meta(key)
+      obj.Metadata = await getS3Meta(key, searchModified.get(key))
     } catch(e) {
       obj.Metadata = {}
     }

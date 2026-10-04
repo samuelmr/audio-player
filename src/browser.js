@@ -8,8 +8,10 @@ import { collection, createAudioTrack, createSourceItem, setSourceLink } from '.
 export let browserList, playlistList
 let skipMenu, previousFirst
 
+// a link to a folder or a song adds it to the queue on load. The folders
+// above it are opened first, and their listing has the link's own element.
 const myUri = new URL(document.location.href)
-let myPath = decodeURIComponent(myUri.hash.replace('#', '')).split(folderDelimiter)
+let linked = decodeURIComponent(myUri.hash.replace('#', ''))
 
 // returns the skip navigation bar, for the search box
 export function initBrowser(browser, player) {
@@ -117,7 +119,7 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
           subRef = ol
         }
         if (obj.Key.endsWith('.mp3')) {
-          obj.Metadata = await getS3Meta(obj.Key)
+          obj.Metadata = await getS3Meta(obj.Key, obj.LastModified)
           obj.href = await signedUrl(obj.Key)
           createSongElement(obj, subRef).then(li => {
             if (autoAdd) {
@@ -134,7 +136,7 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
       }
     }
     if (response.IsTruncated) {
-      getFolders(parentElement, autoAdd, response.NextContinuationToken)
+      await getFolders(parentElement, autoAdd, response.NextContinuationToken)
     }
   }
   catch(e) {
@@ -198,11 +200,18 @@ function createFolderElement(folder, ol) {
     }
   }
   li.appendChild(a)
-  const pathIndex = myPath.indexOf(folder.trim())
-  if (pathIndex >= 0) {
-    // not toSpliced(), the TV's browser engine predates it
-    myPath = myPath.filter((_, i) => i != pathIndex)
+  if (linked == folder) {
+    linked = ''
     a.click()
+  }
+  else if (linked.startsWith(folder + folderDelimiter)) {
+    const target = linked
+    linked = ''
+    li.classList.add('open')
+    getFolders(li).then(() => {
+      const item = li.querySelector(`li.folder[data-folder="${CSS.escape(target)}"], li.song[data-key="${CSS.escape(target)}"]`)
+      item?.querySelector(':scope > a.add')?.click()
+    })
   }
   ol.appendChild(li)
   return li
@@ -212,6 +221,7 @@ async function createSongElement(obj, ol) {
   const parent = ol.parentNode.dataset.folder
   const li = document.createElement('li')
   li.className = 'song'
+  li.dataset.key = obj.Key
   li.textContent = obj.Key.replace(`${parent}/`, '') + ' '
   const a = document.createElement('a')
   a.className = 'action add'
@@ -234,10 +244,9 @@ async function createSongElement(obj, ol) {
   }
   li.appendChild(a)
   ol.appendChild(li)
-  const pathIndex = myPath.indexOf(li.textContent.trim())
-  if (pathIndex >= 0) {
+  if (linked == obj.Key) {
+    linked = ''
     a.click()
-    myPath = myPath.slice(pathIndex)
   }
   return li
 }

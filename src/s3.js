@@ -47,8 +47,13 @@ export async function getObjectText(key) {
   return res.Body.transformToString()
 }
 
-// the bucket listing may arrive before the database has opened
-export async function getS3Meta(key) {
+// the bucket listing may arrive before the database has opened.
+// The metadata is cached with the time the object was last modified, from the
+// listing: an object uploaded again is newer, and its metadata is fetched
+// again. Not its ETag, which stays the same when only the metadata changes.
+// Without the time, the cached metadata is used.
+export async function getS3Meta(key, lastModified) {
+  const modified = lastModified ? new Date(lastModified).toISOString() : ''
   await dbReady
   return new Promise(
     function(resolve, reject) {
@@ -62,7 +67,7 @@ export async function getS3Meta(key) {
       }
       dbRequest.onsuccess = async function() {
         const matching = dbRequest.result
-        if (matching !== undefined) {
+        if (matching !== undefined && (!modified || matching.modified == modified)) {
           meta = matching
           resolve(meta)
         } else {
@@ -71,6 +76,7 @@ export async function getS3Meta(key) {
             const metaQuery = await s3.send(get)
             meta = metaQuery.Metadata
             meta.key = key
+            meta.modified = modified || metaQuery.LastModified?.toISOString()
             const putx = db.transaction("meta", "readwrite")
             putx.objectStore("meta").put(meta)
             resolve(meta)

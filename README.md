@@ -123,41 +123,31 @@ aws --endpoint-url "$S3ENDPOINT" s3 cp "01 Dancing Queen.mp3" \
   --metadata "artist=ABBA,album=Arrival,title=Dancing%20Queen,tracknumber=1,year=1976,length=230000,image=ABBA%2FArrival%2Fcover.jpg"
 ```
 
-To upload a whole library, use a script that reads each file's tags. Here is
-one that uses `ffprobe` (from [FFmpeg](https://ffmpeg.org/)) and Python. Save it
-as `upload.sh` and run it in a folder organized as `Artist/Album/Track.mp3`. It
-uses a `cover.jpg` next to the tracks as the album art, when there is one:
+To upload a whole library, use [`scripts/upload.sh`](scripts/upload.sh). It
+reads the tags of each file with `ffprobe` (from [FFmpeg](https://ffmpeg.org/))
+and uploads them as the metadata. A `cover.jpg` next to the tracks is uploaded
+too, and becomes their album art.
+
+Run it in the folder that has the artist folders: the path of each file under
+it becomes its key in the bucket. Name folders to upload only those:
 
 ```sh
-#!/bin/sh
-# Uploads every .mp3 under the current folder, with its tags as metadata
-upload() {
-  file="${1#./}"
-  tag() { ffprobe -v error -show_entries "format_tags=$1" -of default=nw=1:nk=1 "$file" | head -n 1; }
-  enc() { python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$1"; }
-  ms=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$file" | awk '{printf "%d", $1 * 1000}')
-  meta="artist=$(enc "$(tag artist)"),album=$(enc "$(tag album)"),title=$(enc "$(tag title)")"
-  meta="$meta,tracknumber=$(enc "$(tag track)"),year=$(enc "$(tag date)"),genre=$(enc "$(tag genre)"),length=$ms"
-  cover="$(dirname "$file")/cover.jpg"
-  [ -f "$cover" ] && meta="$meta,image=$(enc "$cover")"
-  aws --endpoint-url "$S3ENDPOINT" s3 cp "$file" "s3://$S3BUCKET/$file" \
-    --content-type audio/mpeg --metadata "$meta"
-}
-find . -name '*.mp3' | while read -r f; do upload "$f"; done
+cd /path/to/your/music
+/path/to/audio-player/scripts/upload.sh                    # everything
+/path/to/audio-player/scripts/upload.sh "ABBA/Arrival"     # one album
 ```
 
-Upload the album art and playlists with `aws s3 cp` or `aws s3 sync`:
+It needs `S3BUCKET` and `S3ENDPOINT` set, and tells you how if they aren't.
+
+Upload playlists with `aws s3 cp`:
 
 ```sh
-aws --endpoint-url "$S3ENDPOINT" s3 sync . "s3://$S3BUCKET" \
-  --exclude "*" --include "*/cover.jpg"
 aws --endpoint-url "$S3ENDPOINT" s3 cp "Road trip.json" "s3://$S3BUCKET/" \
   --content-type application/json
 ```
 
-The player keeps the metadata of tracks it has seen in the browser. After you
-change the metadata of a track that's already uploaded, clear the site data of
-the player in the browser to see the change.
+The player keeps the metadata of the tracks it has seen in the browser, and
+fetches it again when a track has been uploaded again since.
 
 ### Allowing the browser to read the bucket (CORS)
 
@@ -436,6 +426,7 @@ trying it on a TV.
   between them
 - `pwa/` has the web app's HTML template, service worker, manifest and icon
 - `tizen/` has the TV app's HTML template and `config.xml`
+- `scripts/` has the script for uploading music
 - `tests/` has the tests, see below
 
 `npm run build` builds both apps, into `dist/pwa` and `dist/tizen`.

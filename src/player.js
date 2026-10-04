@@ -279,6 +279,18 @@ function removeTracks(e) {
   }
   const li = this.closest('li')
   li?.parentNode?.removeChild(li)
+  forgetLink(source)
+}
+
+// the source in the address would be added again on the next load
+function forgetLink(source) {
+  let linked = location.hash.replace('#', '')
+  try {
+    linked = decodeURIComponent(linked)
+  } catch(e) {}
+  if (linked == source) {
+    history.replaceState(null, '', location.pathname + location.search)
+  }
 }
 
 // offline, only the tracks saved to offline storage can be played
