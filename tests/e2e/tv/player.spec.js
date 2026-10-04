@@ -13,16 +13,34 @@ test.beforeEach(async ({page, remote}) => {
 })
 
 test.describe('the queue', () => {
-  test('is collapsed to a summary and the playing track', async ({page}) => {
-    await expect(summary(page)).toHaveText('Queue: 2 tracks')
-    await expect(queue(page).nth(0)).toBeVisible()
+  test('is collapsed to a summary of the count and the next track', async ({page}) => {
+    await expect(summary(page).locator('.count')).toHaveText('Queue: 2 tracks')
+    await expect(summary(page).locator('.next')).toHaveText('Up next: Freddie Freeloader – Miles Davis')
+    await expect(queue(page)).toHaveCount(2)
+    await expect(queue(page).nth(0)).toBeHidden()
     await expect(queue(page).nth(1)).toBeHidden()
+    await expect(page.locator('audio-player ol.collection')).toBeHidden()
+    await expect(page.locator('audio-player button.save-offline')).toBeHidden()
+  })
+
+  test('expanded, shows the sources of the tracks and Save offline', async ({page, remote}) => {
+    await focusOn(summary(page))
+    await remote.press('OK')
+    await expect(page.locator('audio-player ol.collection li')).toHaveText(['Miles Davis'])
+    await expect(page.locator('audio-player button.save-offline')).toBeVisible()
+  })
+
+  test('the next track follows the playing one', async ({page, remote}) => {
+    await remote.press('MediaTrackNext')
+    await expectPlaying(page, 'Freddie Freeloader')
+    await expect(summary(page).locator('.next')).toBeEmpty()
   })
 
   test('Right expands it and moves into it, Left collapses it', async ({page, remote}) => {
     await focusOn(summary(page))
     await remote.press('Right')
     await expect(queue(page).nth(1)).toBeVisible()
+    // to the playing track
     await remote.press('Right')
     await expect(queue(page).nth(0)).toBeFocused()
     await remote.press('Down')

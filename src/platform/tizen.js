@@ -5,6 +5,7 @@ import { initSpatialNavigation } from '../spatial-navigation.js'
 import { initLibrary, addFocusedAndPlay, focusPlayer, focusShortcut } from './tizen-library.js'
 import { initQueue, inQueue, focusSummary } from './tizen-queue.js'
 import { initNowPlaying } from './tizen-now-playing.js'
+import { initPlayerBar } from './tizen-player.js'
 
 const BACK_KEY = 10009 // always delivered, needs no registration
 const SEEK_SECONDS = 10
@@ -34,6 +35,7 @@ export function init() {
   initSpatialNavigation()
   initLibrary(document.querySelector('audio-browser'), playerList)
   initQueue(document.querySelector('audio-player'), playerList)
+  initPlayerBar(document.querySelector('audio-player'))
   const handlers = new Map()
   for (const [name, handler] of Object.entries(mediaKeys)) {
     try {

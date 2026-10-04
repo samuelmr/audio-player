@@ -3,6 +3,15 @@ import { test, expect, folder, expectPlaying } from '../fixtures.js'
 import { focusOn, queueFolder, queue } from './helpers.js'
 
 const view = (page) => page.locator('#now-playing')
+const summary = (page) => page.locator('.queue-summary')
+
+// the queue is collapsed to its summary until Right expands it, and a
+// second Right moves to the playing track
+async function focusPlayingTrack(page, remote) {
+  await focusOn(summary(page))
+  await remote.press('Right', {times: 2})
+  await expect(queue(page).first()).toBeFocused()
+}
 
 test.beforeEach(async ({page, remote}) => {
   // the view waits for the remote to be idle, so the tests move the clock
@@ -34,14 +43,36 @@ test('stays closed while paused', async ({page, remote}) => {
 })
 
 test('OK on the playing track opens it', async ({page, remote}) => {
-  await focusOn(queue(page).first())
+  await focusPlayingTrack(page, remote)
   await remote.press('OK')
   await expect(view(page)).toBeVisible()
 })
 
+test('OK on the player bar opens it, and Back returns there', async ({page, remote}) => {
+  const bar = page.locator('audio-player .now')
+  await focusOn(bar)
+  await remote.press('OK')
+  await expect(view(page)).toBeVisible()
+  await remote.press('Back')
+  await expect(view(page)).toBeHidden()
+  await expect(bar).toBeFocused()
+})
+
+test('closing it where the focus was hidden meanwhile goes to the player', async ({page, remote}) => {
+  await focusPlayingTrack(page, remote)
+  await remote.press('Down')
+  await expect(queue(page).nth(1)).toBeFocused()
+  await page.clock.fastForward('00:21')
+  await expect(view(page)).toBeVisible()
+  // the queue collapses meanwhile, hiding the track that had the focus
+  await page.evaluate(() => document.querySelector('audio-player nav').classList.add('collapsed'))
+  await remote.press('Back')
+  await expect(page.locator('audio-player #buttons button').nth(1)).toBeFocused()
+})
+
 test('the remote works the player in the view, and Back closes it', async ({page, remote}) => {
   const playingTrack = queue(page).first()
-  await focusOn(playingTrack)
+  await focusPlayingTrack(page, remote)
   await remote.press('OK')
   await expect(view(page)).toBeVisible()
 

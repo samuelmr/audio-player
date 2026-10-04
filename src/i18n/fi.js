@@ -57,4 +57,7 @@ export default {
   addedNothing: (name) => `Kohteesta ${name} ei ole lisättävää`,
   upNext: 'Seuraavaksi',
   queue: (count) => `Jonossa ${count} ${count == 1 ? 'kappale' : 'kappaletta'}`,
+  upNextTrack: (track) => `Seuraavaksi: ${track}`,
+  nothingPlaying: 'Mitään ei soi',
+  addHint: 'Valitse musiikkia kirjastosta ja paina OK',
 }

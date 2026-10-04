@@ -10,105 +10,299 @@
 <%= htmlWebpackPlugin.options.styles %>
   </style>
   <style>
-    /* The remote moves the focus, so it must stand out: the player's hue at
-       the opposite lightness from the panels (dark on the light theme, light
-       on the dark one), and text at the far end of the scale from that */
+    /* The TV app is dark, like the room it's watched in, whatever the
+       TV's color scheme: the panels are glass over the album art of the
+       playing track, blurred (tizen-player.js), and tinted by the player's
+       hue. The text is large, for reading from the sofa. */
     :root {
-        --focus-background: hsl(var(--base-hue), 60%, calc(100% - var(--base-lightness)));
-        --focus-outline: var(--focus-background);
-        --focus-text: hsl(var(--base-hue), 75%, 95%);
-        --shortcut-focus-text: hsl(var(--base-hue), 75%, 5%);
+        --base-lightness: 25%;
+        --text-color: hsl(var(--base-hue), 30%, 96%);
+        --tv-text: hsl(var(--base-hue), 30%, 96%);
+        --tv-accent: hsl(var(--base-hue), 80%, 70%);
+        --tv-on-accent: hsl(var(--base-hue), 60%, 8%);
+        --tv-glass: hsla(var(--base-hue), 40%, 80%, 0.1);
+        --tv-panel: hsla(var(--base-hue), 35%, 12%, 0.94);
+        --tv-glow: 0 0.4em 1.2em hsla(0, 0%, 0%, 0.45), 0 0 1.2em hsla(var(--base-hue), 80%, 70%, 0.35);
+        /* the remote moves the focus, so it must stand out: the accent,
+           with dark text */
+        --focus-background: var(--tv-accent);
+        --focus-outline: var(--tv-accent);
+        --focus-text: var(--tv-on-accent);
     }
-    /* per theme, as Chromium 76 lacks clamp() to derive them from the lightness */
-    @media (prefers-color-scheme: dark) {
-        :root {
-            --focus-text: hsl(var(--base-hue), 75%, 5%);
-            --shortcut-focus-text: hsl(var(--base-hue), 75%, 95%);
-        }
+    body {
+        background-color: hsl(var(--base-hue), 40%, 7%);
+        color: var(--tv-text);
+        font-size: 1.5em;
+        margin: 0;
+        min-height: 100vh;
     }
+    #backdrop {
+        background-position: center;
+        background-size: cover;
+        bottom: -10%;
+        filter: blur(60px) brightness(30%) saturate(130%);
+        left: -10%;
+        position: fixed;
+        right: -10%;
+        top: -10%;
+        z-index: -1;
+    }
+    #backdrop.no-art {
+        background: radial-gradient(circle at 20% 0, hsl(var(--base-hue), 45%, 22%), hsl(var(--base-hue), 40%, 6%) 70%);
+        filter: none;
+    }
+
+    /* Focus: the accent fills rows and buttons, and rings the rest */
     :focus {
-        outline: 0.2em solid var(--focus-outline) !important;
-        outline-offset: 0.1em;
-    }
-    /* the add and remove buttons are faint until focused */
-    a.action:focus, .collection a:focus, button.gear:focus {
-        background-color: var(--focus-background) !important;
-        border-radius: 0.3em;
-        color: var(--focus-text) !important;
-        opacity: 1 !important;
-        padding: 0.1em 0.3em;
-    }
-    a.action:focus svg, .collection a:focus svg {
-        fill: var(--focus-text);
+        outline: 0.15em solid var(--focus-outline) !important;
+        outline-offset: 0.15em;
     }
     a:focus, li.folder:focus, li.playlist:focus, li.song:focus, .collection li:focus, audio-track:focus, .queue-summary:focus,
-    audio-browser nav#skipNav ul.search-results li:focus,
+    audio-browser nav#skipNav ul.search-results li:focus, audio-player .now:focus,
     button:focus, input[type=submit]:focus, input[type=reset]:focus, #buttons button:focus {
         background-color: var(--focus-background) !important;
+        box-shadow: var(--tv-glow);
         color: var(--focus-text) !important;
+        outline: none !important;
+    }
+    a.action:focus svg, .collection a:focus svg, #buttons button:focus svg path {
+        fill: var(--focus-text);
+    }
+    /* the remove buttons of the queue's sources are faint until focused */
+    a.action:focus, .collection a:focus {
+        border-radius: 50%;
+        opacity: 1 !important;
     }
 
-    /* the shortcut bar has the focus color as its background, so its
-       focus is the other way around: the panels' lightness */
-    audio-browser nav#skipNav a:focus {
-        background-color: hsl(var(--base-hue), 60%, var(--base-lightness)) !important;
-        border-radius: 0.3em;
-        color: var(--shortcut-focus-text) !important;
-        outline-color: hsl(var(--base-hue), 60%, var(--base-lightness)) !important;
-        text-decoration: none;
-        transform: scale(1.4);
+    /* the whole width of the screen, on the backdrop */
+    audio-player, audio-browser {
+        background: none;
+        border-radius: 0;
+        border-width: 0;
+        margin: 0;
+        max-width: none;
+        width: 100%;
     }
 
-    /* An open folder's own row is highlighted, not its contents: the
-       highlight is a band at the top, and the contents keep their color */
-    li.folder.open:focus, li.playlist.open:focus {
-        background-color: transparent !important;
-        background-image: linear-gradient(var(--focus-background), var(--focus-background));
-        background-position: top;
-        background-repeat: no-repeat;
-        background-size: 100% 2em;
+    /* The player: a small Now Playing, the buttons, the time and the
+       settings in a row, and a thin progress bar under them. The queue
+       below is a summary row; expanded, its sources and Save offline come
+       before the tracks. Grid, as Chromium 76 has no gap in flexbox. */
+    audio-player {
+        align-items: center;
+        display: grid;
+        grid-column-gap: 2.5em;
+        grid-template-areas:
+            "now buttons time gear"
+            "progress progress progress progress"
+            "summary summary summary summary"
+            "sources offline offline offline"
+            "queue queue queue queue";
+        grid-template-columns: 1fr auto auto auto;
+        padding: 1.25em 3em 0 3em;
     }
-    li.folder.open:focus > ol, li.playlist.open:focus > ol {
-        color: hsl(var(--base-hue), 75%, 2%);
-    }
-
-    /* OK adds the focused item, so the add buttons aren't needed */
-    audio-browser a.action.add {
-        display: none !important;
-    }
-    /* without the buttons, the rows need padding of their own,
-       and the arrow is lined up with the name */
-    audio-browser nav ol li.folder, audio-browser nav ol li.playlist {
-        padding-bottom: 0.5em;
-        padding-top: 0.5em;
-    }
-    audio-browser nav .folder:before {
-        line-height: 1;
-        top: 0.3em;
-    }
-
-    /* collapsed, the queue shows only the playing track (tizen-queue.js) */
-    audio-player nav.collapsed audio-track:not(.playing) {
+    audio-player .now { grid-area: now; }
+    audio-player #buttons { grid-area: buttons; }
+    audio-player .audio-time { grid-area: time; }
+    audio-player button.gear { grid-area: gear; }
+    audio-player #progress { grid-area: progress; }
+    audio-player .queue-summary { grid-area: summary; }
+    audio-player ol.collection { grid-area: sources; }
+    audio-player button.save-offline { grid-area: offline; }
+    audio-player > nav { grid-area: queue; }
+    audio-player div.track {
         display: none;
     }
-    audio-player nav.collapsed.idle {
+    /* so that long titles end in an ellipsis instead of widening the grid */
+    audio-player > *, audio-browser nav#skipNav > * {
+        min-width: 0;
+    }
+
+    audio-player .now {
+        align-items: center;
+        border-radius: 1em;
+        display: flex;
+        margin-left: -0.5em;
+        min-width: 0;
+        padding: 0.5em;
+    }
+    audio-player .now-art {
+        background: radial-gradient(circle at 30% 30%, hsl(var(--base-hue), 50%, 40%), hsl(var(--base-hue), 40%, 12%));
+        border-radius: 0.6em;
+        box-shadow: 0 0.75em 1.5em hsla(0, 0%, 0%, 0.5);
+        flex: none;
+        height: 5em;
+        margin-right: 1.25em;
+        overflow: hidden;
+        width: 5em;
+    }
+    audio-player .now-art img {
+        display: block;
+        height: 100%;
+        object-fit: cover;
+        width: 100%;
+    }
+    audio-player .now.no-art img {
         display: none;
     }
+    audio-player .now-text {
+        min-width: 0;
+    }
+    audio-player .now-title, audio-player .now-subtitle {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    audio-player .now-title {
+        font-size: 1.75em;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    audio-player .now-subtitle {
+        font-size: 1.1em;
+        margin-top: 0.15em;
+        opacity: 0.7;
+    }
+    audio-player .now.idle .now-title {
+        font-weight: 600;
+        opacity: 0.85;
+    }
+    audio-player .now.idle .now-art {
+        opacity: 0.5;
+    }
+
+    /* round buttons, the play button the largest and filled */
+    audio-player #buttons {
+        align-items: center;
+        display: flex;
+        float: none;
+        margin: 0;
+        width: auto;
+    }
+    audio-player #buttons button {
+        background: none;
+        border: 0;
+        border-radius: 50%;
+        font-size: 1em;
+        height: 3.25em;
+        margin: 0 0.3em;
+        padding: 0;
+        transition: transform 120ms;
+        width: 3.25em;
+    }
+    audio-player #buttons button svg {
+        display: block;
+        height: 1.6em;
+        margin: auto;
+        transform: none;
+        width: 1.6em;
+    }
+    audio-player #buttons button svg path {
+        fill: var(--tv-text);
+    }
+    audio-player #buttons button:nth-child(2) {
+        background-color: var(--tv-text);
+        height: 4.5em;
+        width: 4.5em;
+    }
+    audio-player #buttons button:nth-child(2) svg {
+        height: 2em;
+        width: 2em;
+    }
+    audio-player #buttons button:nth-child(2) svg path {
+        fill: var(--tv-on-accent);
+    }
+    audio-player #buttons button:focus {
+        transform: scale(1.12);
+    }
+    audio-player #buttons button:disabled {
+        opacity: 0.4;
+    }
+
+    audio-player .audio-time {
+        float: none;
+        font-size: 1.1em;
+        margin: 0;
+        opacity: 0.75;
+        white-space: nowrap;
+    }
+    audio-player .audio-time input {
+        background: none;
+        border: 0;
+        color: var(--tv-text);
+        font-size: 1em;
+        font-variant-numeric: tabular-nums;
+        height: auto;
+        padding: 0;
+        width: 2.6em;
+    }
+
+    audio-player button.gear {
+        border-radius: 50%;
+        color: var(--tv-text);
+        float: none;
+        font-size: 1.75em;
+        height: 1.6em;
+        opacity: 0.75;
+        width: 1.6em;
+    }
+    audio-player button.gear:focus {
+        opacity: 1;
+    }
+
+    /* the played part fills with the accent, as in Now Playing; the knob
+       shows when the bar has the focus, and Left and Right seek */
+    audio-player #progress {
+        -webkit-appearance: none;
+        background: none;
+        height: 1.2em;
+        margin: 1em 0 0.75em 0;
+        width: 100%;
+    }
+    audio-player #progress::-webkit-slider-runnable-track {
+        background: linear-gradient(to right, var(--tv-accent) var(--played, 0%), hsla(0, 0%, 100%, 0.2) var(--played, 0%));
+        border-radius: 0.15em;
+        height: 0.3em;
+    }
+    audio-player #progress::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        background-color: var(--tv-accent);
+        border: 0;
+        border-radius: 50%;
+        height: 1em;
+        margin-top: -0.35em;
+        transform: scale(0);
+        transition: transform 120ms;
+        width: 1em;
+    }
+    audio-player #progress:focus {
+        outline: none !important;
+    }
+    audio-player #progress:focus::-webkit-slider-thumb {
+        box-shadow: 0 0 0 0.35em hsla(var(--base-hue), 80%, 70%, 0.35);
+        transform: scale(1.2);
+    }
+
+    /* The queue, collapsed to a row with the count and the next track
+       (tizen-queue.js). The label is like Up Next in Now Playing. */
     .queue-summary {
-        clear: both;
+        border-radius: 0.6em;
         cursor: pointer;
-        margin: 0.5em 0;
-        padding: 0.25em 0.5em 0.25em 1.5em;
+        margin: 0 -0.5em 0.5em -0.5em;
+        overflow: hidden;
+        padding: 0.6em 1em 0.6em 2.25em;
         position: relative;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     .queue-summary:before {
         content: "›";
-        font-size: x-large;
-        left: 0.4em;
+        font-size: 1.4em;
+        left: 0.6em;
         line-height: 1;
         position: absolute;
-        top: 0.1em;
-        transition: all 120ms;
+        top: 0.3em;
+        transition: transform 120ms;
     }
     .queue-summary.open:before {
         transform: rotate(90deg);
@@ -116,11 +310,161 @@
     .queue-summary[hidden] {
         display: none;
     }
+    .queue-summary .count {
+        font-size: 0.85em;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        opacity: 0.75;
+        text-transform: uppercase;
+    }
+    .queue-summary .next {
+        margin-left: 1.5em;
+        opacity: 0.9;
+    }
+    .queue-summary .next:empty {
+        display: none;
+    }
+    audio-player:not(.queue-open) ol.collection, audio-player:not(.queue-open) button.save-offline,
+    audio-player nav.collapsed {
+        display: none;
+    }
+
+    /* where the tracks came from, as chips with a remove button */
+    audio-player ol.collection {
+        margin: 0 0 0.5em 0;
+    }
+    audio-player ol.collection li {
+        align-items: center;
+        background-color: var(--tv-glass);
+        border-radius: 2em;
+        display: flex;
+        margin: 0 0.6em 0.6em 0;
+        padding: 0.3em 0.4em 0.3em 1em;
+    }
+    audio-player ol.collection a {
+        line-height: 1;
+        margin-left: 0.4em;
+        padding: 0.15em;
+    }
+    audio-player ol.collection svg {
+        display: block;
+        fill: var(--tv-text);
+        height: 1.1em;
+        margin: 0;
+        width: 1.1em;
+    }
+    /* across the columns of the controls, so as not to widen them */
+    audio-player button.save-offline {
+        align-self: start;
+        background-color: var(--tv-glass);
+        border-radius: 2em;
+        color: var(--tv-text);
+        float: none;
+        justify-self: end;
+        margin: 0 0 0.5em 0;
+        padding: 0.4em 1.1em;
+        white-space: nowrap;
+    }
+    audio-player button.save-offline svg {
+        height: 1.2em;
+        vertical-align: -0.25em;
+    }
+
+    /* the queued tracks as rows: art, title, artist, album and length */
+    audio-player > nav {
+        background: none;
+        border: 0;
+        border-radius: 0;
+        margin: 0 -0.5em 0.5em -0.5em;
+        max-height: 40vh;
+        padding: 0 0.5em;
+    }
+    audio-player audio-track, audio-player audio-track:focus, audio-player audio-track:focus-within,
+    audio-player audio-track:hover, audio-player audio-track.playing {
+        align-items: center;
+        background-color: transparent;
+        background-position: 0.55em center;
+        background-size: 2.3em 2.3em;
+        border: 0;
+        border-radius: 0.6em;
+        color: var(--tv-text);
+        grid-template-areas: "track artist album duration";
+        grid-template-columns: 2fr 1.3fr 1.3fr 4em;
+        grid-template-rows: 3.2em;
+        height: 3.2em;
+        margin: 0.2em 0;
+        padding: 0 1em 0 3.75em;
+        position: relative;
+        transition: none;
+    }
+    /* without art, an empty square in its place */
+    audio-player audio-track:not([data-album-art]):before {
+        background-color: var(--tv-glass);
+        border-radius: 0.35em;
+        content: "";
+        height: 2.3em;
+        left: 0.55em;
+        position: absolute;
+        top: 0.45em;
+        width: 2.3em;
+    }
+    audio-player audio-track section:not(.track):not(.artist):not(.album):not(.duration) {
+        display: none;
+    }
+    audio-player audio-track section.album, audio-player audio-track section.duration {
+        display: block;
+    }
+    audio-player audio-track section {
+        font-size: 1em;
+        overflow: hidden;
+        padding: 0 0.75em 0 0;
+        text-overflow: ellipsis;
+    }
+    audio-player audio-track section.artist {
+        opacity: 0.8;
+    }
+    audio-player audio-track section.album, audio-player audio-track section.duration {
+        font-size: 0.9em;
+        opacity: 0.65;
+    }
+    audio-player audio-track a, audio-player audio-track.playing a {
+        color: inherit;
+    }
+    audio-player audio-track.playing {
+        background-color: hsla(var(--base-hue), 80%, 70%, 0.16);
+        box-shadow: inset 0.25em 0 0 var(--tv-accent);
+    }
+    audio-player audio-track.playing .track a {
+        color: var(--tv-accent);
+    }
+    audio-player audio-track.playing:focus .track a {
+        color: inherit;
+    }
+
+    /* tells what OK added to the queue */
+    .toast {
+        background-color: var(--focus-background);
+        border-radius: 2em;
+        bottom: 1.5em;
+        box-shadow: var(--tv-glow);
+        color: var(--focus-text);
+        font-size: 1.1em;
+        font-weight: 600;
+        left: 50%;
+        padding: 0.6em 1.75em;
+        position: fixed;
+        transform: translateX(-50%);
+        z-index: 10;
+    }
+    .toast[hidden] {
+        display: none;
+    }
 
     /* Now Playing (tizen-now-playing.js): the album art large, and blurred
        behind everything; without art, a gradient of the player's hue */
     #now-playing {
         align-items: center;
+        font-size: 16px; /* its sizes are from before the larger text of the app */
         background-color: hsl(var(--base-hue), 40%, 10%);
         color: hsl(var(--base-hue), 30%, 96%);
         bottom: 0;
@@ -248,39 +592,82 @@
         white-space: nowrap;
     }
 
-    /* tells what OK added to the queue */
-    .toast {
-        background-color: var(--focus-background);
-        border-radius: 0.5em;
-        bottom: 2em;
-        box-shadow: 0 0.2em 1em hsla(0, 0%, 0%, 0.4);
-        color: var(--focus-text);
-        font-size: 1.5em;
-        left: 50%;
-        padding: 0.5em 1.5em;
-        position: fixed;
-        transform: translateX(-50%);
-        z-index: 10;
-    }
-    .toast[hidden] {
-        display: none;
+    /* The library */
+    audio-browser {
+        padding: 0 3em 3em 3em;
     }
 
-    /* the whole width of the screen */
-    body {
-        margin: 0;
-    }
-    audio-player, audio-browser {
+    /* the shortcuts as round keys, and the search beside them, in a band
+       that stays at the top */
+    audio-browser nav#skipNav {
+        align-items: center;
+        background-color: hsla(var(--base-hue), 40%, 7%, 0.92);
         border-radius: 0;
-        border-width: 0;
-        margin: 0;
-        max-width: none;
-        width: 100%;
+        box-shadow: 0 0.5em 1em hsla(0, 0%, 0%, 0.3);
+        display: grid;
+        grid-column-gap: 2em;
+        grid-template-columns: auto 1fr;
+        margin: 0 -3em;
+        padding: 0.6em 3em;
+    }
+    audio-browser nav#skipNav ol {
+        flex-wrap: nowrap;
+    }
+    audio-browser nav#skipNav a {
+        background-color: var(--tv-glass);
+        border-radius: 50%;
+        color: var(--tv-text);
+        height: 2em;
+        line-height: 2em;
+        margin-right: 0.4em;
+        padding: 0;
+        text-align: center;
+        transition: transform 120ms;
+        width: 2em;
+    }
+    audio-browser nav#skipNav a svg {
+        height: 0.8em;
+        vertical-align: -0.05em;
+    }
+    audio-browser nav#skipNav a:focus {
+        text-decoration: none;
+        transform: scale(1.25);
+    }
+    audio-browser nav#skipNav .search {
+        padding: 0;
+    }
+    audio-browser nav#skipNav input[type=search] {
+        background-color: var(--tv-glass);
+        border: 0;
+        border-radius: 2em;
+        color: var(--tv-text);
+        font-size: 1em;
+        padding: 0.4em 1.1em;
+    }
+    audio-browser nav#skipNav input[type=search]::placeholder {
+        color: var(--tv-text);
+        opacity: 0.55;
+    }
+    audio-browser nav#skipNav ul.search-results {
+        margin-top: 0.5em;
+    }
+    audio-browser nav#skipNav ul.search-results li {
+        background-color: var(--tv-glass);
+        color: var(--tv-text);
+        padding: 0.4em 1em;
+    }
+    audio-browser nav#skipNav ul.search-results svg {
+        fill: currentColor;
     }
 
-    /* Two columns for the library: folders on the left, and the songs of the
-       selected folder on the right, level with it. The two-column layout of
-       wide screens is undone first: it puts subfolders beside and above their
+    /* OK adds the focused item, so the add buttons aren't needed */
+    audio-browser a.action.add {
+        display: none !important;
+    }
+
+    /* Two columns: folders on the left, and the songs of the selected
+       folder on the right, level with it. The two-column layout of wide
+       screens is undone first: it puts subfolders beside and above their
        folder, where the arrows can't follow them. */
     audio-browser nav .folder {
         height: auto;
@@ -302,40 +689,143 @@
         top: auto;
         width: auto;
     }
+    audio-browser nav:not(#skipNav) {
+        font-size: 1.15em;
+        padding-top: 0.75em;
+    }
     audio-browser nav:not(#skipNav) > ol {
         width: 50%;
     }
-    audio-browser nav ol li.playlist {
+
+    /* Folders as rows without boxes, a chevron before the name and the
+       contents of an open folder indented along a guide line. A row is
+       2.3em high: the bands of the highlights below are that tall. */
+    audio-browser nav ol li.folder, audio-browser nav ol li.playlist,
+    audio-browser nav ol li.folder.open, audio-browser nav ol li.folder.open li.folder, audio-browser nav ol li.folder.open li.playlist {
+        background-color: transparent;
+        border: 0;
+        border-radius: 0.5em;
+        color: var(--tv-text);
+        line-height: 1.4em;
+        margin: 0.1em 0;
+        padding: 0.45em 1em 0.45em 2em;
         position: relative;
     }
-    /* important: the shared rules for open folders show their lists */
+    audio-browser nav ol li.playlist {
+        padding-left: 1em;
+    }
+    audio-browser nav ol li.folder.open a {
+        background-color: transparent;
+        color: inherit;
+    }
+    audio-browser nav .folder:before {
+        font-size: 1.3em;
+        left: 0.45em;
+        line-height: 1.1;
+        opacity: 0.6;
+        top: 0.3em;
+    }
+    audio-browser nav ol li.open > ol:not(.songs) {
+        border-left: 2px solid hsla(var(--base-hue), 40%, 80%, 0.15);
+        margin-top: 0.45em;
+        padding-left: 0.5em;
+    }
+    audio-browser nav ol li li {
+        color: var(--tv-text);
+    }
+    audio-browser .offline-status, audio-browser .offline-message {
+        font-size: 0.8em;
+    }
+
+    /* the folder whose songs are shown is marked with a band of the
+       accent; when it has the focus, the band is the focus color, as the
+       focus would fill the folder's contents too */
+    audio-browser nav ol li.open.selected, audio-browser nav ol li.folder.open:focus, audio-browser nav ol li.playlist.open:focus {
+        background-image: linear-gradient(hsla(var(--base-hue), 80%, 70%, 0.18), hsla(var(--base-hue), 80%, 70%, 0.18));
+        background-position: top;
+        background-repeat: no-repeat;
+        background-size: 100% 2.3em;
+    }
+    li.folder.open:focus, li.playlist.open:focus {
+        background-color: transparent !important;
+        background-image: linear-gradient(var(--focus-background), var(--focus-background)) !important;
+        box-shadow: none;
+    }
+
+    /* the songs on a panel, level with their folder; left and width
+       come from tizen-library.js. important: the shared rules for open
+       folders show their lists */
     audio-browser nav ol li.folder > ol.songs, audio-browser nav ol li.playlist > ol.songs {
         display: none !important;
     }
-    /* left and width come from tizen-library.js */
     audio-browser nav ol li.open.selected > ol.songs {
-        background-color: hsla(var(--base-hue), 60%, 98%, 0.9);
-        border-radius: 0.5em;
-        color: hsl(var(--base-hue), 75%, 2%);
+        background-color: var(--tv-panel);
+        border-radius: 0.75em;
+        box-shadow: 0 1.5em 3em hsla(0, 0%, 0%, 0.5);
+        color: var(--tv-text);
         display: block !important;
+        line-height: 1.4em;
         margin-left: 1em;
-        padding: 0.5em 1em;
+        padding: 0.5em;
         position: absolute;
         top: 0;
         z-index: 1;
     }
     audio-browser nav ol.songs li.song {
-        padding: 0.25em 0.5em;
+        border-radius: 0.45em;
+        padding: 0.4em 0.75em;
     }
 
-    dialog#exit-confirm {
-        background-color: hsl(var(--base-hue), 50%, 95%);
-        border-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
-        border-radius: 0.5em;
-        color: hsl(var(--base-hue), 50%, 5%);
-        font-size: 1.5em;
+    /* Dialogs: panels of the same dark glass */
+    dialog#settings, dialog#save-offline, dialog#exit-confirm {
+        background-color: var(--tv-panel);
+        border: 0;
+        border-radius: 1em;
+        box-shadow: 0 2em 4em hsla(0, 0%, 0%, 0.6);
+        color: var(--tv-text);
         margin: auto;
-        padding: 1em;
+        padding: 1.25em 1.75em;
+    }
+    dialog::backdrop {
+        background-color: hsla(0, 0%, 0%, 0.6);
+    }
+    dialog#settings {
+        font-size: 0.8em;
+        max-height: 92vh;
+        overflow: auto;
+    }
+    dialog#settings label, dialog#save-offline label, dialog#settings fieldset.transfer {
+        color: var(--tv-text);
+    }
+    dialog#settings label, dialog#save-offline label {
+        opacity: 0.75;
+    }
+    dialog#settings fieldset.transfer {
+        border: 2px solid hsla(var(--base-hue), 40%, 80%, 0.15);
+    }
+    dialog input[type=text], dialog input[type=password], dialog select {
+        background-color: var(--tv-glass);
+        border: 0;
+        border-radius: 0.4em;
+        color: var(--tv-text);
+        font-family: inherit;
+        font-size: 1em;
+        padding: 0.3em 0.5em;
+    }
+    dialog select option {
+        background-color: hsl(var(--base-hue), 35%, 12%);
+    }
+    dialog button, dialog input[type=submit], dialog input[type=reset] {
+        background-color: var(--tv-glass);
+        border: 0;
+        border-radius: 2em;
+        color: var(--tv-text);
+        font-family: inherit;
+        font-size: 1em;
+        padding: 0.4em 1.2em;
+    }
+    dialog#settings .error {
+        color: hsl(0, 85%, 72%);
     }
     dialog#exit-confirm .buttons {
         display: grid;
@@ -343,10 +833,6 @@
         grid-auto-flow: column;
         justify-content: center;
         margin-top: 1em;
-    }
-    dialog#exit-confirm button {
-        font-size: inherit;
-        padding: 0.25em 1em;
     }
   </style>
  </head>

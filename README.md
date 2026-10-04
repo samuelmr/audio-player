@@ -362,6 +362,9 @@ Typing the keys with the remote is slow, so copy them from the web app:
 
 - The arrow keys move around. Right opens a folder or playlist, Left closes it.
 - OK or Play adds the selected item to the queue. Play also starts playing it.
+- The queue is the row under the player: Right or OK expands it. OK on the
+  playing track at the top opens *Now Playing* over the whole screen, which
+  also opens by itself after 20 seconds without input during playback.
 - Play/Pause, Stop, Rewind and Fast-forward work as usual. The channel keys
   move to the next and previous track.
 - Back goes up a level, and from the player buttons asks whether to exit.

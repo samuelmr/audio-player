@@ -116,6 +116,9 @@ describe(`the TV app's stylesheet works on Chromium ${TV_CHROME}`, () => {
   }
   // the logical properties of Chromium 69; inset and the shorthands came later
   const OLD_LOGICAL = /^(margin|padding|border)-(block|inline)-(start|end)$/
+  // only unprefixed appearance is newer (Chromium 84); the TV's progress
+  // bar needs -webkit-appearance to be styled
+  const PREFIXED_APPEARANCE = /^-webkit-appearance$/
 
   test('has no features that Chromium lacks', async () => {
     const found = []
@@ -124,6 +127,7 @@ describe(`the TV app's stylesheet works on Chromium ${TV_CHROME}`, () => {
       onFeatureUsage: ({feature, featureData, usage}) => {
         if (PARTLY_SUPPORTED[feature]) return
         if (feature == 'css-logical-props' && OLD_LOGICAL.test(usage.prop)) return
+        if (feature == 'css-appearance' && PREFIXED_APPEARANCE.test(usage.prop)) return
         found.push(`${featureData.title}: ${usage.toString().split('\n')[0]}`)
       },
     })]).process(css, {from: undefined})

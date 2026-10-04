@@ -60,4 +60,7 @@ export default {
   addedNothing: (name) => `Nothing to add from ${name}`,
   upNext: 'Up next',
   queue: (count) => `Queue: ${count} ${count == 1 ? 'track' : 'tracks'}`,
+  upNextTrack: (track) => `Up next: ${track}`,
+  nothingPlaying: 'Nothing playing',
+  addHint: 'Pick music from the library and press OK',
 }

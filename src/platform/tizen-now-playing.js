@@ -1,7 +1,7 @@
 // Now Playing on the TV: the playing track over the whole screen, with its
 // album art large and, blurred, as the background. It opens by itself when
 // the remote has been idle for a while during playback, and with OK on the
-// playing track in the queue. In it:
+// player bar (tizen-player.js) or on the playing track in the queue. In it:
 //   OK plays and pauses, Left and Right go to the previous and next track
 //   Back, Up and Down return to browsing, with the focus where it was
 // The class names have a prefix where the shared stylesheet has rules for
@@ -10,6 +10,7 @@
 import { locale } from '../locale.js'
 import { playSVG } from '../icons.js'
 import { audio, play, playerList, playNext, playPrevious } from '../player.js'
+import { focusPlayer } from './tizen-library.js'
 
 const LEFT = 37
 const UP = 38
@@ -51,7 +52,7 @@ export function initNowPlaying() {
     const action = isOpen()
       ? keys[e.keyCode]
       // OK on the playing track opens the view, instead of starting the track over
-      : e.keyCode == ENTER && document.activeElement?.matches?.('audio-track.playing') && open
+      : e.keyCode == ENTER && document.activeElement?.matches?.('audio-track.playing, audio-player .now') && open
     if (action) {
       e.preventDefault()
       e.stopImmediatePropagation()
@@ -102,13 +103,15 @@ function open() {
   view.hidden = false
 }
 
-// back to where the focus was, unless that was hidden meanwhile, like
-// the previous track in the collapsed queue: then the playing track
+// back to where the focus was, unless that was hidden meanwhile, like a
+// track in the queue that collapsed: then the playing track, or the player
 function close() {
   if (!isOpen()) return
   view.hidden = true
-  const target = returnFocus?.getClientRects?.().length ? returnFocus : playerList.querySelector('audio-track.playing')
-  target?.focus()
+  const visible = (element) => element?.getClientRects?.().length
+  const target = [returnFocus, playerList.querySelector('audio-track.playing')].find(visible)
+  if (target) target.focus()
+  else focusPlayer()
 }
 
 // opens after the remote has been idle for a while, while music plays
@@ -121,28 +124,39 @@ function resetIdle() {
 
 const text = (track, selector) => track?.querySelector(selector)?.textContent.trim() || ''
 
+// what the TV shows of a queued track, also in the player bar and the queue
+export function trackDetails(track) {
+  return {
+    title: text(track, '.name a'),
+    artist: text(track, '.artist'),
+    album: [text(track, '.album'), text(track, '.published')].filter(Boolean).join(' · '),
+    cover: track.dataset.albumArt || '',
+    line: [text(track, '.name a'), text(track, '.artist')].filter(Boolean).join(' – '),
+  }
+}
+
 function update() {
   const track = playerList.querySelector('audio-track.playing')
-  const cover = track?.dataset.albumArt || ''
   if (!track) {
     close()
     return
   }
-  view.classList.toggle('no-art', !cover)
-  if (cover && art.getAttribute('src') != cover) {
-    art.src = cover
-    background.style.backgroundImage = `url("${cover}")`
+  const details = trackDetails(track)
+  view.classList.toggle('no-art', !details.cover)
+  if (details.cover && art.getAttribute('src') != details.cover) {
+    art.src = details.cover
+    background.style.backgroundImage = `url("${details.cover}")`
   }
-  title.textContent = text(track, '.name a')
-  artist.textContent = text(track, '.artist')
-  album.textContent = [text(track, '.album'), text(track, '.published')].filter(Boolean).join(' · ')
+  title.textContent = details.title
+  artist.textContent = details.artist
+  album.textContent = details.album
   paused.hidden = !audio.paused
 
   upNext.innerHTML = ''
   let next = track.nextElementSibling
   for (let i = 0; next && i < UP_NEXT; i++, next = next.nextElementSibling) {
     const li = document.createElement('li')
-    li.textContent = [text(next, '.name a'), text(next, '.artist')].filter(Boolean).join(' – ')
+    li.textContent = trackDetails(next).line
     upNext.appendChild(li)
   }
   upNext.previousElementSibling.hidden = !upNext.firstChild
