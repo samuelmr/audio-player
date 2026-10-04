@@ -21,7 +21,7 @@ export function initBrowser(browser, player) {
   const li = document.createElement('li')
   const a = document.createElement('a')
   a.href = `#${player.id}`
-  a.title = `#${locale.jumpTo} ${locale.play}`
+  a.title = locale.jumpToPlayer
   // an image: not every font has the play symbol
   a.innerHTML = playSVG
   li.appendChild(a)
@@ -45,7 +45,7 @@ export function initBrowser(browser, player) {
   playlistParent.appendChild(pli)
   const mli = document.createElement('li')
   const pa = document.createElement('a')
-  pa.title = `#${locale.jumpTo} ${locale.playlistTitle}`
+  pa.title = locale.jumpTo(locale.playlistTitle)
   pa.href = `#playlists`
   pa.innerHTML = '#'
   mli.appendChild(pa)
@@ -91,7 +91,7 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
           const a = document.createElement('a')
           a.href = `#${first}`
           a.innerHTML = first
-          a.title = `#${locale.jumpTo} ${first}`
+          a.title = locale.jumpTo(first)
           skipLi.appendChild(a)
           skipMenu.appendChild(skipLi)
           previousFirst = first

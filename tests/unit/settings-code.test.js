@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { encodeSettings, decodeSettings, SETTINGS_CODE_PREFIX } from '../../src/settings-code.js'
+import { locale } from '../../src/locale.js'
 
 const settings = {
   accessKeyId: 'AKIDEXAMPLE',
@@ -39,6 +40,6 @@ describe('settings codes', () => {
     ['a code that is not base64', `${SETTINGS_CODE_PREFIX}not base64!`],
     ['a code that is not JSON', SETTINGS_CODE_PREFIX + btoa('{nope')],
   ])('reject %s', (_, code) => {
-    expect(() => decodeSettings(code)).toThrow('Not a valid settings code')
+    expect(() => decodeSettings(code)).toThrow(locale.invalidCode)
   })
 })

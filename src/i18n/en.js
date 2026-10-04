@@ -1,0 +1,63 @@
+// The English strings, also the fallback for anything missing from the
+// other languages. Plurals and inserted values are functions, so that
+// each language can order the words its own way.
+export default {
+  languageName: 'English',
+
+  play: 'Play',
+  previous: 'Previous',
+  next: 'Next',
+  playFolder: 'Add all tracks to queue',
+  playSong: 'Add track to queue',
+  playlistTitle: 'Playlists',
+  playPlaylist: 'Add playlist contents to queue',
+  jumpTo: (target) => `Jump to ${target}`,
+  jumpToPlayer: 'Jump to player',
+
+  save: 'Save',
+  reset: 'Cancel',
+  accessKeyId: 'S3 accessKeyId',
+  secretAccessKey: 'S3 secretAccessKey',
+  endpoint: 'S3 endpoint',
+  region: 'S3 region',
+  bucketName: 'S3 bucket',
+  playerColor: 'Player color',
+  language: 'Language',
+  deviceLanguage: 'Device language',
+  missingSetting: (key) => `S3 ${key} is missing`,
+
+  transferTitle: 'Transfer settings',
+  copySettings: 'Copy settings code',
+  pasteSettings: 'Paste settings code',
+  importSettings: 'Import settings code',
+  showQR: 'Show QR code',
+  hideQR: 'Hide QR code',
+  scanQR: 'Scan QR code',
+  stopScan: 'Stop scanning',
+  copied: 'Settings code copied. It contains your secret key, so keep it safe.',
+  pastePrompt: 'Paste settings code',
+  invalidCode: 'Not a valid settings code',
+
+  search: 'Search',
+  searchPlaceholder: 'Search artists, albums, tracks…',
+  noResults: 'No matches',
+
+  saveOffline: 'Save offline',
+  offlineName: 'Name',
+  offlinePlaylistsTitle: 'Offline playlists',
+  playOfflinePlaylist: 'Add playlist contents to queue',
+  removeOffline: 'Remove from offline storage',
+  confirmRemoveOffline: (name) => `Remove "${name}" from offline storage?`,
+  offlineSaved: 'Saved offline',
+  offlineDownloading: 'Saving offline…',
+  offlineFailed: 'Saving offline failed',
+  storageFull: 'Storage is full, downloads paused',
+
+  confirmExit: 'Exit the music player?',
+  exit: 'Exit',
+  adding: (name) => `Adding ${name}…`,
+  added: (name, count) => `Added ${name}: ${count} ${count == 1 ? 'track' : 'tracks'}`,
+  addedNothing: (name) => `Nothing to add from ${name}`,
+  upNext: 'Up next',
+  queue: (count) => `Queue: ${count} ${count == 1 ? 'track' : 'tracks'}`,
+}

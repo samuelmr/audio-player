@@ -3,6 +3,7 @@ import { HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { EXPIRE_SECONDS } from './constants.js'
 import { db, dbReady } from './db.js'
+import { locale } from './locale.js'
 
 export let s3, bucketName
 
@@ -19,7 +20,7 @@ export function connectS3() {
   S3_SETTINGS.forEach(key => {
     params[key] = localStorage.getItem(key)
     if (!params[key]) {
-      throw new Error(`S3 ${key} is missing`)
+      throw new Error(locale.missingSetting(key))
     }
   })
   const s3opts = {

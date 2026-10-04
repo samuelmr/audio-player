@@ -61,3 +61,34 @@ test('keeps the player color', async ({page}) => {
   await expect(folder(page, 'ABBA')).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.style.getPropertyValue('--base-hue'))).toBe('300')
 })
+
+test.describe('on a Finnish device', () => {
+  test.use({locale: 'fi-FI'})
+
+  test('speaks Finnish, unless English is chosen', async ({page}) => {
+    await page.goto('./')
+    await expect(folder(page, 'ABBA')).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fi')
+    await expect(page.locator('#playlists > li.folder')).toContainText('Soittolistat')
+
+    await page.locator('button.gear').click()
+    await expect(dialog(page).locator('#languageSelect')).toHaveValue('')
+    await dialog(page).locator('#languageSelect').selectOption('en')
+    await dialog(page).getByRole('button', {name: 'Tallenna'}).click()
+    await expect(folder(page, 'ABBA')).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+    await expect(page.locator('#playlists > li.folder')).toContainText('Playlists')
+    expect(await page.evaluate(() => localStorage.getItem('language'))).toBe('en')
+  })
+})
+
+test('switches the language from the settings', async ({page}) => {
+  await page.goto('./')
+  await page.locator('button.gear').click()
+  await dialog(page).locator('#languageSelect').selectOption('fi')
+  await dialog(page).getByRole('button', {name: 'Save'}).click()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fi')
+  await page.locator('button.gear').click()
+  await expect(dialog(page).getByRole('button', {name: 'Tallenna'})).toBeVisible()
+  await expect(dialog(page).locator('#languageSelect')).toHaveValue('fi')
+})

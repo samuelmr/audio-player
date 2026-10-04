@@ -1,4 +1,4 @@
-import { locale } from './locale.js'
+import { locale, translations, LANGUAGE_KEY } from './locale.js'
 import { encodeSettings, decodeSettings } from './settings-code.js'
 
 // addTransferControls comes from the platform: the ways of moving the
@@ -32,12 +32,12 @@ export function initSettings(player, { onSave, addTransferControls }) {
     return input
   }
 
-  const accessKeyIdInput     = makeField('accessKeyIdInput',     'S3 accessKeyId',     'text',     'on',               'accessKeyId')
-  const secretAccessKeyInput = makeField('secretAccessKeyInput', 'S3 secretAccessKey', 'password', 'current-password', 'secretAccessKey')
-  const endpointInput        = makeField('endpointInput',        'S3 endpoint',        'text',     'url',              'endpoint')
-  const regionInput          = makeField('regionInput',          'S3 region',          'text',     'on',               'region')
-  const bucketInput          = makeField('bucketInput',          'S3 bucket',          'text',     'on',               'bucketName')
-  const playerColor          = makeField('playerColor',          'Player color',       'range',    'off',              'playerColor')
+  const accessKeyIdInput     = makeField('accessKeyIdInput',     locale.accessKeyId,     'text',     'on',               'accessKeyId')
+  const secretAccessKeyInput = makeField('secretAccessKeyInput', locale.secretAccessKey, 'password', 'current-password', 'secretAccessKey')
+  const endpointInput        = makeField('endpointInput',        locale.endpoint,        'text',     'url',              'endpoint')
+  const regionInput          = makeField('regionInput',          locale.region,          'text',     'on',               'region')
+  const bucketInput          = makeField('bucketInput',          locale.bucketName,      'text',     'on',               'bucketName')
+  const playerColor          = makeField('playerColor',          locale.playerColor,     'range',    'off',              'playerColor')
   playerColor.min = 0
   playerColor.max = 360
 
@@ -49,6 +49,20 @@ export function initSettings(player, { onSave, addTransferControls }) {
     playerColor.style.accentColor = `hsl(${e.target.value}, var(--base-saturation), calc(100% - var(--base-lightness)))`
     document.documentElement.style.setProperty('--base-hue', e.target.value);
   }
+
+  // each language by its own name, as whoever needs to switch may not read the current one
+  const languageLabel = document.createElement('label')
+  languageLabel.htmlFor = 'languageSelect'
+  languageLabel.textContent = locale.language
+  settingsForm.appendChild(languageLabel)
+  const languageSelect = document.createElement('select')
+  languageSelect.id = 'languageSelect'
+  languageSelect.add(new Option(locale.deviceLanguage, ''))
+  for (const [code, translation] of Object.entries(translations)) {
+    languageSelect.add(new Option(translation.languageName, code))
+  }
+  languageSelect.value = localStorage.getItem(LANGUAGE_KEY) || ''
+  settingsForm.appendChild(languageSelect)
 
   const submit = document.createElement('input')
   submit.type = 'submit'
@@ -74,7 +88,8 @@ export function initSettings(player, { onSave, addTransferControls }) {
     endpoint: endpointInput,
     region: regionInput,
     bucketName: bucketInput,
-    playerColor: playerColor
+    playerColor: playerColor,
+    [LANGUAGE_KEY]: languageSelect
   }
 
   function exportCode() {
@@ -144,6 +159,12 @@ export function initSettings(player, { onSave, addTransferControls }) {
     localStorage.setItem('region', regionInput.value)
     localStorage.setItem('bucketName', bucketInput.value)
     localStorage.setItem('playerColor', playerColor.value)
+    // the texts are set as the app starts, so a new language needs a restart
+    if (languageSelect.value != (localStorage.getItem(LANGUAGE_KEY) || '')) {
+      localStorage.setItem(LANGUAGE_KEY, languageSelect.value)
+      location.reload()
+      return
+    }
     try {
       onSave()
       settingsError.textContent = ''

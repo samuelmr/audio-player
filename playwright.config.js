@@ -11,6 +11,8 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
+    // the tests expect the English texts, whatever the machine's language
+    locale: 'en-US',
     trace: 'retain-on-failure',
     launchOptions: {
       // the apps start playing without a click, like after a tap on a phone

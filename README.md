@@ -233,6 +233,7 @@ button.
 | S3 region | The bucket's region, such as `eu-north-1`. If your provider has no regions, `us-east-1` usually works |
 | S3 bucket | The name of the bucket |
 | Player color | The base color of the player. Album art overrides it while a track plays |
+| Language | The language of the player. *Device language* follows the language of the browser or TV, and falls back to English. Changing it restarts the player |
 
 *Save* stores the settings in this browser only. *Cancel* returns to the saved
 settings.
@@ -424,6 +425,7 @@ trying it on a TV.
 
 - `src/` has the code shared by both apps, and `src/platform/` what differs
   between them
+- `src/i18n/` has the translations, see [Translating](#translating)
 - `pwa/` has the web app's HTML template, service worker, manifest and icon
 - `tizen/` has the TV app's HTML template and `config.xml`
 - `scripts/` has the script for uploading music
@@ -472,6 +474,49 @@ code with a camera.
    you tested it, and on which devices or browsers you tried it.
 
 For bigger changes, open an issue first to talk about the idea.
+
+### Translating
+
+The texts of both apps are in [`src/i18n/`](src/i18n/), one file per language.
+[`en.js`](src/i18n/en.js) is the original, and anything missing from another
+language is shown in English.
+
+To add a language:
+
+1. Copy `src/i18n/en.js` to a file named with the language's two-letter
+   [ISO 639-1 code](https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes),
+   such as `src/i18n/sv.js`.
+2. Translate the texts. Set `languageName` to the name of the language in that
+   language itself (`Svenska`, not `Swedish`), as it's what the *Language*
+   setting lists.
+3. Add the language to `translations` in [`src/locale.js`](src/locale.js):
+
+   ```js
+   import sv from './i18n/sv.js'
+
+   export const translations = { en, fi, sv }
+   ```
+4. Run `npm run check`. `tests/unit/i18n.test.js` checks that the new file has
+   every text of `en.js`.
+
+Texts with names or numbers in them are functions, so that each language can
+put the words in its own order and use its own plurals:
+
+```js
+added: (name, count) => `Lisätty ${name}: ${count} ${count == 1 ? 'kappale' : 'kappaletta'}`,
+```
+
+Keep the function's parameters as they are in `en.js`, and change only the text
+it returns.
+
+To try a translation, choose the language in the settings, or set the language
+of your browser to it and choose *Device language*. Look at the TV app too, as
+its texts are larger and longer translations may not fit: after
+`npm run build`, `node tests/e2e/server.js` serves it at
+<http://127.0.0.1:4173/tizen/>.
+
+When you add a text to the code, add it to `en.js` and to every other
+language, in English if you can't translate it.
 
 ### Trying a branch on your devices
 
