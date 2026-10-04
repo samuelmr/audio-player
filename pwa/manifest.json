@@ -13,7 +13,7 @@
  "background_color": "hsl(180, 25%, 75%)",
  "display": "fullscreen",
  "orientation": "natural",
- "scope": "/",
+ "scope": "./",
  "theme_color": "hsl(180, 25%, 75%)",
  "shortcuts": [],
  "description": "Play music from online object storage",

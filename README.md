@@ -22,8 +22,9 @@ its own, and your keys stay on your device.
 - An S3-compatible bucket for your music, and an access key that can read it.
   A key that can only read is enough, and the safest choice.
 - MP3 files. Other formats are not listed.
-- A place to serve the app from over HTTPS. The same bucket works, see
-  [Installing the web app](#installing-the-web-app).
+- A browser. The app is ready to use at
+  <https://audioplayer.ctrldash.app/>, or you can host a copy of your
+  own, see [Installing the web app](#installing-the-web-app).
 - The [AWS CLI](https://aws.amazon.com/cli/) or another S3 tool for
   uploading. The examples below use the AWS CLI, which works with any
   S3-compatible provider through `--endpoint-url`.
@@ -194,7 +195,13 @@ music public. You can replace `*` with the address of your copy of the app.
 
 ### Installing the web app
 
-Building the app needs [Node.js](https://nodejs.org/) and this repository:
+The latest version of the app is at
+<https://audioplayer.ctrldash.app/>. It's built from the `main` branch
+of this repository and published with GitHub Pages. Your keys and music still
+go only between your browser and your bucket. Open the address, enter the
+[settings](#settings), and you're done.
+
+To host a copy of your own, building the app needs [Node.js](https://nodejs.org/) and this repository:
 
 ```sh
 git clone https://github.com/samuelmr/audio-player.git
@@ -221,9 +228,9 @@ These five files have to be publicly readable. Depending on your provider, add
 settings. Your music doesn't have to be public: the app reads it with your key.
 The player doesn't need to be in the same bucket as the music files.
 
-Open the address of `index.html` in a browser. On a phone, you can add it to
-the home screen (Share → *Add to Home Screen* on iOS, the menu → *Install app*
-or *Add to Home screen* on Android) to use it like an app.
+Open the address of the app (or of your `index.html`) in a browser. On a phone,
+you can add it to the home screen (Share → *Add to Home Screen* on iOS, the
+menu → *Install app* or *Add to Home screen* on Android) to use it like an app.
 
 ### Settings
 
