@@ -1,24 +1,27 @@
 # Builds the web app, runs the tests, and publishes dist/pwa on GitHub Pages
+# through the gh-pages branch: main at the root of the site, every other
+# branch in a folder named after it (slashes become dashes), such as
+# /my-test-branch/. Deleting a branch removes its folder.
 name: Deploy the web app to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches-ignore: [gh-pages]
+  delete:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# one deployment at a time, and a newer push doesn't cancel one in progress
-concurrency:
-  group: pages
-  cancel-in-progress: false
+  contents: write
+  pages: read
 
 jobs:
   build:
+    if: github.event_name != 'delete'
     runs-on: ubuntu-latest
+    # a newer push to the same branch replaces a build still waiting
+    concurrency:
+      group: build-${{ github.ref }}
+      cancel-in-progress: true
     env:
       CI: true
     steps:
@@ -30,17 +33,75 @@ jobs:
       - run: npm install
       - run: npx playwright install --with-deps chromium
       - run: npm run check
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
+          name: pwa
           path: dist/pwa
 
-  deploy:
+  publish:
     needs: build
+    # after a successful build, or without one when a branch was deleted
+    if: >-
+      !cancelled() && (needs.build.result == 'success' ||
+      (github.event_name == 'delete' && github.event.ref_type == 'branch'))
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - id: deployment
-        uses: actions/deploy-pages@v5
+      - if: github.event_name != 'delete'
+        uses: actions/download-artifact@v8
+        with:
+          name: pwa
+          path: pwa
+      - uses: actions/checkout@v7
+        with:
+          path: site
+      - name: Commit to gh-pages
+        working-directory: site
+        env:
+          # the deleted branch, or the one that was pushed
+          BRANCH: ${{ github.event_name == 'delete' && github.event.ref || github.ref_name }}
+          DELETED: ${{ github.event_name == 'delete' }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898099+github-actions[bot]@users.noreply.github.com"
+          if git fetch -q origin gh-pages; then
+            git checkout -q -B gh-pages FETCH_HEAD
+          else
+            git checkout -q --orphan gh-pages
+            git rm -rqf --ignore-unmatch .
+          fi
+
+          dir="${BRANCH//\//-}"
+          if [ "$DELETED" = true ]; then
+            rm -rf "$dir"
+            message="Remove $BRANCH"
+          elif [ "$BRANCH" = main ]; then
+            # only the files of main are replaced, the branch folders stay
+            find . -maxdepth 1 -type f ! -name CNAME ! -name .nojekyll -delete
+            cp -R ../pwa/. .
+            message="Deploy main at $GITHUB_SHA"
+          else
+            rm -rf "$dir"
+            mkdir "$dir"
+            cp -R ../pwa/. "$dir/"
+            message="Deploy $BRANCH at $GITHUB_SHA"
+          fi
+
+          # the custom domain set in the Pages settings, if any
+          cname=$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq '.cname // empty' 2>/dev/null || true)
+          if [ -n "$cname" ]; then echo "$cname" > CNAME; fi
+          touch .nojekyll
+
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing to change"
+            exit 0
+          fi
+          git commit -qm "$message"
+          # another branch may have been published meanwhile; they touch different folders
+          for attempt in 1 2 3 4 5; do
+            if git push -q origin gh-pages; then exit 0; fi
+            sleep $((attempt * 3))
+            git pull -q --rebase origin gh-pages
+          done
+          exit 1

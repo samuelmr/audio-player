@@ -484,6 +484,25 @@ code with a camera.
 
 For bigger changes, open an issue first to talk about the idea.
 
+### Trying a branch on your devices
+
+Every branch pushed to this repository is built, tested and published in a
+folder of its own: `my-test-branch` is at
+`https://audioplayer.ctrldash.app/my-test-branch/`, and `feature/search` at
+`/feature-search/` (slashes become dashes). Deleting the branch removes the
+folder. `main` is at the root of the site.
+
+The workflow, [`.github/workflows/pages.yml`](.github/workflows/pages.yml),
+also works in a fork: in your fork's *Settings* → *Pages*, choose *Deploy from
+a branch* and the `gh-pages` branch after the first push has created it. Your
+copies are then at `https://<your-user>.github.io/audio-player/`.
+
+The copies share the browser's storage with the app at the root of the same
+site. They see its settings, offline playlists and metadata cache. A branch
+that raises the version of the IndexedDB database in `src/db.js` leaves older
+versions of the app unable to open it in that browser, so try such changes in
+a private window or another browser profile.
+
 The dependencies are kept at their latest versions. If an update breaks
 something, fix the code rather than pinning an older version.
 
