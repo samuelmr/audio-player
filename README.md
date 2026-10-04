@@ -210,21 +210,19 @@ npm install
 npm run build:pwa
 ```
 
-The app is in `dist/pwa`. Serve its five files over HTTPS from any static
-web host.
+The app is in `dist/pwa`. Serve all of its files over HTTPS from any static
+web host. Besides `audioplayer.js`, the build makes script chunks such as
+`274.audioplayer.js`, which the app loads when it needs them.
 
-You can  also serve the app from the object storage:
+You can also serve the app from the object storage. The AWS CLI sets each
+file's content type from its extension:
 
 ```sh
-aws --endpoint-url "$S3ENDPOINT" s3api put-object --bucket "$S3BUCKET" --key index.html --content-type text/html --body dist/pwa/index.html
-aws --endpoint-url "$S3ENDPOINT" s3api put-object --bucket "$S3BUCKET" --key audioplayer.js --content-type text/javascript --body dist/pwa/audioplayer.js
-aws --endpoint-url "$S3ENDPOINT" s3api put-object --bucket "$S3BUCKET" --key sw.js --content-type text/javascript --body dist/pwa/sw.js
-aws --endpoint-url "$S3ENDPOINT" s3api put-object --bucket "$S3BUCKET" --key manifest.json --content-type application/manifest+json --body dist/pwa/manifest.json
-aws --endpoint-url "$S3ENDPOINT" s3api put-object --bucket "$S3BUCKET" --key play-192.png --content-type image/png --body dist/pwa/play-192.png
+aws --endpoint-url "$S3ENDPOINT" s3 cp dist/pwa "s3://$S3BUCKET/" --recursive
 ```
 
-These five files have to be publicly readable. Depending on your provider, add
-`--acl public-read` to the commands or make them public in the provider's
+These files have to be publicly readable. Depending on your provider, add
+`--acl public-read` to the command or make them public in the provider's
 settings. Your music doesn't have to be public: the app reads it with your key.
 The player doesn't need to be in the same bucket as the music files.
 
