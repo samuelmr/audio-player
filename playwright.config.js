@@ -40,7 +40,9 @@ export default defineConfig({
   webServer: {
     command: 'node tests/e2e/server.js',
     url: `http://127.0.0.1:${APP_PORT}/pwa/`,
-    reuseExistingServer: !process.env.CI,
+    // a server already running may be serving another copy's dist/: fail
+    // instead, and let TEST_PORT pick other ports (tests/e2e/library.js)
+    reuseExistingServer: false,
     stdout: 'ignore',
   },
 })

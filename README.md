@@ -428,7 +428,8 @@ trying it on a TV.
 - `src/i18n/` has the translations, see [Translating](#translating)
 - `pwa/` has the web app's HTML template, service worker, manifest and icon
 - `tizen/` has the TV app's HTML template and `config.xml`
-- `scripts/` has the script for uploading music
+- `scripts/` has the script for uploading music, and one for driving the TV
+  app on a TV (see [Testing](#testing))
 - `tests/` has the tests, see below
 
 `npm run build` builds both apps, into `dist/pwa` and `dist/tizen`.
@@ -458,6 +459,18 @@ built apps and a fake S3 bucket with the small library of
 `tests/e2e/library.js`. The TV app gets stand-ins for the Tizen APIs it uses.
 Chromium can't be as old as the oldest TVs, so the checks of `test:build`
 stand in for running on them.
+
+The tests serve the apps on port 4173 and the fake bucket on 4174. To run them
+in two copies of the repository at once, such as two git worktrees, give one
+of them other ports: `TEST_PORT=4273 npm run check` uses 4273 and 4274.
+
+To try a change on a real TV, install it with `npm run install:tv`, and
+[`scripts/tv-debug.js`](scripts/tv-debug.js) can then press the keys of the
+remote, run JavaScript in the app and take screenshots:
+
+```sh
+TV_IP=192.168.1.20 node scripts/tv-debug.js --launch key:ArrowDown key:Enter shot:tv.png
+```
 
 Left to be tried by hand on the devices: playback on a real TV and its remote,
 a Tizen 6 TV, a home screen app on iOS in the background, and scanning a QR

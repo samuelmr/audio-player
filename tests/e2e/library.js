@@ -1,8 +1,10 @@
 // The music library served by the fake S3 (server.js), and the settings
 // that point the apps at it. Nothing here is a real bucket or a real secret.
 
-export const APP_PORT = 4173
-export const S3_PORT = 4174
+// TEST_PORT moves both, so that copies of the repo (such as git worktrees)
+// can run the tests at the same time
+export const APP_PORT = Number(process.env.TEST_PORT) || 4173
+export const S3_PORT = APP_PORT + 1
 
 export const SETTINGS = {
   accessKeyId: 'TESTACCESSKEY',
