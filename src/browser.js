@@ -293,15 +293,16 @@ async function createPlaylistElement(obj, ol) {
     try {
       const playlist = JSON.parse(json)
       const base = obj.Key.replace(/\/[^\/]+$/, '')
-      playlist?.track.forEach(async (track) => {
+      // one at a time, to keep the queue in the listed order
+      for (const track of playlist?.track || []) {
         const song = {
           Bucket: bucketName,
           Key: track.url,
           Metadata: track,
         }
         song.href = await objectUrl(song.Key)
-        createAudioTrack(song)
-      })
+        await createAudioTrack(song)
+      }
     }
     catch(e) {
       console.error(e)

@@ -44,7 +44,7 @@ export const PLAYLISTS = {
   'Road trip.json': {
     title: 'Road trip',
     track: [
-      {url: 'Miles Davis/Kind of Blue/01 So What.mp3', title: 'So What', artist: 'Miles Davis'},
+      {url: 'Miles Davis/Kind of Blue/01 So What.mp3', title: 'So What', artist: 'Miles Davis', image: COVER.key},
       {url: 'ABBA/Arrival/01 Dancing Queen.mp3', title: 'Dancing Queen', artist: 'ABBA'},
     ],
   },
