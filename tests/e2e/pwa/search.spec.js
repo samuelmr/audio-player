@@ -1,4 +1,4 @@
-import { test, expect, folder, queue, expectPlaying } from '../fixtures.js'
+import { test, expect, folder, queue, expectPlaying, addFolder } from '../fixtures.js'
 
 const search = (page) => page.locator('#skipNav input[type=search]')
 const results = (page) => page.locator('#skipNav .search-results li')
@@ -23,7 +23,7 @@ test('finds tracks in folders that were never opened, by every word', async ({pa
 })
 
 test('shows the titles and artists of the tracks seen before, and searches them', async ({page}) => {
-  await folder(page, 'Björk').locator('> a.add').click()
+  await addFolder(page, 'Björk')
   await expect(queue(page)).toHaveCount(1)
   // in the metadata only: the file is "01 Human Behaviour.mp3"
   await search(page).fill('1993')

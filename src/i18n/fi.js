@@ -60,7 +60,7 @@ export default {
   upNextTrack: (track) => `Seuraavaksi: ${track}`,
   nothingPlaying: 'Mitään ei soi',
   addHint: 'Valitse musiikkia kirjastosta ja paina OK',
-  addHintClick: 'Lisää musiikkia jonoon napauttamalla sitä kirjastossa',
+  addHintClick: 'Lisää musiikkia jonoon alla olevasta kirjastosta',
   nowPlaying: 'Nyt soi',
   closeNowPlaying: 'Sulje Nyt soi -näkymä',
 }

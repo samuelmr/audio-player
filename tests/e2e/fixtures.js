@@ -114,6 +114,16 @@ export const queue = (page) => page.locator('audio-player audio-track')
 export const playing = (page) => page.locator('audio-player audio-track.playing')
 export const folder = (page, name) => page.locator(`audio-browser li.folder[data-folder="${name}"]`)
 
+// The web app adds a folder from the first row of its contents, Add all.
+// Right after opening it, while it may still be listed, as people would.
+export async function addFolder(page, name) {
+  const item = folder(page, name)
+  if (!await item.evaluate(li => li.classList.contains('open'))) {
+    await item.click({position: {x: 5, y: 5}})
+  }
+  await item.locator('> a.add').click()
+}
+
 // the browser plays the track, not only shows it
 export async function expectPlaying(page, title) {
   await expect(playing(page).locator('.name a')).toHaveText(title)

@@ -1,5 +1,5 @@
 // The installed app and its offline playlists (sw.js, offline.js)
-import { test, expect, folder, queue, audioState, expectPlaying } from '../fixtures.js'
+import { test, expect, folder, queue, audioState, expectPlaying, addFolder } from '../fixtures.js'
 
 const offlineFolder = (page) => page.locator('#offline-playlists > li.folder')
 const offlinePlaylist = (page, title) => page.locator('#offline-playlists li.playlist', {hasText: title})
@@ -54,7 +54,7 @@ test('opens offline, also from the home screen', async ({page, context}) => {
 
 test('saves the queue for offline use, and plays it offline', async ({page, context}) => {
   await loadUnderServiceWorker(page)
-  await folder(page, 'ABBA').locator('> a.add').click()
+  await addFolder(page, 'ABBA')
   await expect(queue(page)).toHaveCount(3)
   await saveQueueOffline(page, 'ABBA')
   await expect(offlinePlaylist(page, 'ABBA').locator('.offline-status')).toHaveText('3/3')
@@ -73,7 +73,7 @@ test('saves the queue for offline use, and plays it offline', async ({page, cont
 
 test('removes an offline playlist and its tracks', async ({page}) => {
   await page.goto('./')
-  await folder(page, 'Björk').locator('> a.add').click()
+  await addFolder(page, 'Björk')
   await expect(queue(page)).toHaveCount(1)
   await saveQueueOffline(page, 'Björk')
   await expect(offlinePlaylist(page, 'Björk').locator('.offline-status')).toHaveText('1/1')
@@ -90,7 +90,7 @@ test('removes an offline playlist and its tracks', async ({page}) => {
 test('marks the tracks that fail to download', async ({page}) => {
   await page.route(url => url.pathname.includes('Knowing') && url.searchParams.has('X-Amz-Signature'), route => route.fulfill({status: 500}))
   await page.goto('./')
-  await folder(page, 'ABBA').locator('> a.add').click()
+  await addFolder(page, 'ABBA')
   await expect(queue(page)).toHaveCount(3)
   await saveQueueOffline(page, 'ABBA')
   await expect(offlinePlaylist(page, 'ABBA').locator('.offline-status')).toHaveText('2/3')

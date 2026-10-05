@@ -251,9 +251,10 @@ share it.
 
 ### Using the player
 
-- Click or tap a name to add it to the queue: a track, an album, an artist or
-  a playlist. The arrow before a folder opens and closes it. The playlists
-  are under *Playlists* at the top.
+- Click or tap a folder, such as an artist or an album, to open and close
+  it. Its first row, *Add all tracks to queue*, adds all of it. Click or tap
+  a track or a playlist to add it to the queue. The playlists are under
+  *Playlists* at the top.
 - Search finds artists, albums, tracks and playlists in the whole bucket.
 - The queue is under the player. Its first row, *Queue*, folds it away to
   show only the next track, and opens it again.

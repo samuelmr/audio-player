@@ -72,9 +72,10 @@
         z-index: 1;
     }
 
-    /* A click on a name in the library adds it to the queue: the add link
-       covers the row, all but the caret, which opens and closes a folder.
-       The + shows at the end of the row under the mouse. */
+    /* A click on a track or playlist in the library adds it to the queue:
+       the add link covers the row, and the + shows at its end under the
+       mouse. A click on a folder opens and closes it, and the first row of
+       an open folder adds all of it. */
     audio-browser a.action.add {
         align-items: center;
         border-radius: 0.5em;
@@ -98,11 +99,44 @@
     audio-browser nav#skipNav ul.search-results li {
         padding-right: 2.5em;
     }
-    /* a folder's own row, past the caret; its contents are below */
+    audio-browser li.folder {
+        cursor: pointer;
+    }
+    audio-browser li.open > ol {
+        margin-right: -2.5em;
+    }
     audio-browser li.folder > a.action.add {
-        bottom: auto;
-        height: var(--row);
-        left: 2.5em;
+        display: none;
+    }
+    /* Add all, on the guide line of the contents, before them */
+    audio-browser li.folder.open > a.action.add {
+        border-left: 2px solid var(--line);
+        border-radius: 0 0.5em 0.5em 0;
+        color: var(--accent);
+        display: flex;
+        font-weight: 600;
+        height: auto;
+        justify-content: flex-start;
+        line-height: 1.4em;
+        margin: 0.45em -2.5em 0 0;
+        padding: 0.45em 1em;
+        position: static;
+        width: auto;
+    }
+    audio-browser li.folder.open > a.action.add svg {
+        height: 1.2em;
+        margin-right: 0.5em;
+        opacity: 1;
+        width: 1.2em;
+    }
+    audio-browser li.folder.open > a.action.add + ol {
+        margin-top: 0;
+    }
+    audio-browser li.folder > a.action.add .label {
+        display: none;
+    }
+    audio-browser li.folder.open > a.action.add .label {
+        display: inline;
     }
     /* the remove button of an offline playlist stays beside it */
     audio-browser #offline-playlists a.action.add {
@@ -110,20 +144,6 @@
     }
     audio-browser #offline-playlists a.action.remove {
         z-index: 1;
-    }
-    /* the caret: room of its own to open and close the folder */
-    audio-browser li.folder {
-        cursor: pointer;
-        padding-left: 2.5em;
-    }
-    audio-browser li.folder:before {
-        border-radius: 50%;
-        height: 1.4em;
-        left: 0.25em;
-        line-height: 1.35em;
-        text-align: center;
-        top: 0.18em;
-        width: 1.4em;
     }
 
     @media (hover: hover) {
@@ -142,9 +162,14 @@
         audio-browser a.action.add:hover svg {
             opacity: 0.6;
         }
-        audio-browser li.folder:hover:not(:has(> a:hover)):not(:has(li:hover)):before,
         #now-playing .np-controls button:not(.np-play):hover, #now-playing .np-close:hover {
             background-color: hsla(0, 0%, 50%, 0.25);
+        }
+        /* a folder's own row, not its contents */
+        audio-browser li.folder:hover:not(:has(> a:hover)):not(:has(li:hover)) {
+            background-image: linear-gradient(var(--line), var(--line));
+            background-repeat: no-repeat;
+            background-size: 100% var(--row);
         }
         audio-player .now-art:hover {
             transform: scale(1.04);
@@ -219,8 +244,9 @@
             padding-bottom: 0.75em;
             padding-top: 0.75em;
         }
-        audio-browser li.folder:before {
-            top: 0.4em;
+        audio-browser li.folder.open > a.action.add {
+            padding-bottom: 0.75em;
+            padding-top: 0.75em;
         }
         audio-browser a.action.remove {
             top: 0.45em;

@@ -161,7 +161,12 @@ function createFolderElement(folder, ol) {
   a.title = locale.playFolder
   // a.textContent = '⥅' // '⤅' '⧐' '⏵'
   // a.innerHTML = '<i class="fa-solid fa-album-circle-plus"></i>'
+  // the web app shows the label, as the first row of the open folder
   a.innerHTML = addSVG
+  const label = document.createElement('span')
+  label.className = 'label'
+  label.textContent = locale.playFolder
+  a.appendChild(label)
   a.onclick = async function(e) {
     e.preventDefault()
     e.stopPropagation()
@@ -170,6 +175,11 @@ function createFolderElement(folder, ol) {
     document.title = folder
     const cli = createSourceItem('folder', folder, folder)
     setSourceLink(folder)
+    // all of the folder, also when it was opened a moment ago and is
+    // still being listed, by itself or as part of a folder above it
+    for (let listed = li; listed; listed = listed.parentNode.closest('li.folder')) {
+      await listed.listing
+    }
     if (!li.querySelector('ol')) {
       await getFolders(li, true)
     }
@@ -201,7 +211,7 @@ function createFolderElement(folder, ol) {
       }
     }
     else {
-      getFolders(li)
+      li.listing = getFolders(li)
     }
   }
   li.appendChild(a)
@@ -213,7 +223,8 @@ function createFolderElement(folder, ol) {
     const target = linked
     linked = ''
     li.classList.add('open')
-    getFolders(li).then(() => {
+    li.listing = getFolders(li)
+    li.listing.then(() => {
       const item = li.querySelector(`li.folder[data-folder="${CSS.escape(target)}"], li.song[data-key="${CSS.escape(target)}"]`)
       item?.querySelector(':scope > a.add')?.click()
     })

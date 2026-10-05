@@ -1,4 +1,4 @@
-import { test, expect, folder, queue, audioState, expectPlaying } from '../fixtures.js'
+import { test, expect, folder, queue, audioState, expectPlaying, addFolder } from '../fixtures.js'
 import { COVER } from '../library.js'
 
 const button = (page, index) => page.locator('audio-player #buttons button').nth(index)
@@ -16,14 +16,14 @@ test.beforeEach(async ({page}) => {
 
 test('tells how to start when nothing plays', async ({page}) => {
   await expect(bar(page).locator('.now-title')).toHaveText('Nothing playing')
-  await expect(bar(page).locator('.now-subtitle')).toHaveText('Click or tap music in the library to add it to the queue')
+  await expect(bar(page).locator('.now-subtitle')).toHaveText('Add music to the queue from the library below')
   await expect(page.locator('audio-player button.np-open')).toBeHidden()
   await expect(summary(page)).toBeHidden()
 })
 
 test('moves on at the end of a track, and from the last back to the first', async ({page}) => {
   // the ABBA tracks are two seconds long
-  await folder(page, 'ABBA').locator('> a.add').click()
+  await addFolder(page, 'ABBA')
   await expectPlaying(page, 'Dancing Queen')
   await expectPlaying(page, 'Knowing Me, Knowing You')
   await expectPlaying(page, 'Money, Money, Money')
@@ -32,7 +32,7 @@ test('moves on at the end of a track, and from the last back to the first', asyn
 
 test.describe('with long tracks queued', () => {
   test.beforeEach(async ({page}) => {
-    await folder(page, 'Miles Davis').locator('> a.add').click()
+    await addFolder(page, 'Miles Davis')
     await expect(queue(page)).toHaveCount(2)
     await expectPlaying(page, 'So What')
   })

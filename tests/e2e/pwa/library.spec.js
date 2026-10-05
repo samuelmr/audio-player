@@ -1,4 +1,4 @@
-import { test, expect, folder, queue, playing, audioState, expectPlaying } from '../fixtures.js'
+import { test, expect, folder, queue, playing, audioState, expectPlaying, addFolder } from '../fixtures.js'
 import { S3_PORT } from '../library.js'
 
 const titles = (page) => queue(page).locator('.name a')
@@ -11,7 +11,8 @@ test.beforeEach(async ({page}) => {
 })
 
 test('lists the folders and playlists at the top of the bucket', async ({page}) => {
-  await expect(page.locator('audio-browser > nav:not(#skipNav) > ol:not(.playlists) > li.folder')).toHaveText(['ABBA', 'Björk', 'Miles Davis'])
+  const folders = page.locator('audio-browser > nav:not(#skipNav) > ol:not(.playlists) > li.folder')
+  await expect.poll(() => folders.evaluateAll(items => items.map(li => li.dataset.folder))).toEqual(['ABBA', 'Björk', 'Miles Davis'])
   // a shortcut for each first letter, after the player's and the playlists'
   await expect(page.locator('#skipNav ol a')).toHaveText(['', '#', 'A', 'B', 'M'])
   // the playlist is on the second page of the listing
@@ -30,7 +31,7 @@ test('opens a folder', async ({page}) => {
 })
 
 test('adds a folder to the queue, in order, and plays it', async ({page}) => {
-  await folder(page, 'ABBA').locator('> a.add').click()
+  await addFolder(page, 'ABBA')
   await expect(titles(page)).toHaveText(['Dancing Queen', 'Knowing Me, Knowing You', 'Money, Money, Money'])
   await expect(queue(page).first().locator('.artist')).toHaveText('ABBA')
   await expect(queue(page).first().locator('.album')).toHaveText('Arrival')
@@ -40,10 +41,26 @@ test('adds a folder to the queue, in order, and plays it', async ({page}) => {
   expect(page.url()).toContain('#ABBA')
 })
 
-test('a click on the name of a folder adds it, and says so', async ({page}) => {
+test('a click on a folder opens it, and its first row adds all of it, and says so', async ({page}) => {
+  const addAll = folder(page, 'ABBA').locator('> a.add')
+  await expect(addAll).toBeHidden()
   await folder(page, 'ABBA').click()
+  await expect(folder(page, 'ABBA')).toHaveClass(/open/)
+  await expect(titles(page)).toHaveCount(0)
+  await expect(addAll).toHaveText('Add all tracks to queue')
+  await addAll.click()
   await expect(titles(page)).toHaveText(['Dancing Queen', 'Knowing Me, Knowing You', 'Money, Money, Money'])
   await expect(page.locator('.toast')).toHaveText('Added ABBA: 3 tracks')
+  // and a click on the folder closes it
+  await folder(page, 'ABBA').click({position: {x: 5, y: 5}})
+  await expect(addAll).toBeHidden()
+})
+
+test('an album in an open artist has its own Add all', async ({page}) => {
+  await folder(page, 'ABBA').click()
+  await folder(page, 'ABBA/Arrival').locator('> a.add').click()
+  await expect(titles(page)).toHaveText(['Dancing Queen', 'Knowing Me, Knowing You', 'Money, Money, Money'])
+  await expect(page.locator('audio-player .collection li')).toHaveText(['ABBA/Arrival'])
 })
 
 test('a click on a song adds it', async ({page}) => {
@@ -107,18 +124,18 @@ test('a link to a song adds only the song', async ({page}) => {
 })
 
 test('a removed source is not added again on the next load', async ({page}) => {
-  await folder(page, 'Björk').locator('> a.add').click()
+  await addFolder(page, 'Björk')
   await expect(titles(page)).toHaveText(['Human Behaviour'])
   await page.locator('audio-player .collection li', {hasText: 'Björk'}).locator('a').click()
   expect(new URL(page.url()).hash).toBe('')
 
   await page.reload()
-  await folder(page, 'Miles Davis').locator('> a.add').click()
+  await addFolder(page, 'Miles Davis')
   await expect(titles(page)).toHaveText(['So What', 'Freddie Freeloader'])
 })
 
 test('the metadata of a track uploaded again is fetched again, of the others not', async ({page}) => {
-  await folder(page, 'ABBA').locator('> a.add').click()
+  await addFolder(page, 'ABBA')
   await expect(titles(page)).toHaveText(['Dancing Queen', 'Knowing Me, Knowing You', 'Money, Money, Money'])
 
   // Dancing Queen is uploaded again, with a new title: it's newer in the listing
@@ -146,9 +163,9 @@ test('the metadata of a track uploaded again is fetched again, of the others not
 })
 
 test('removing a source from the queue removes its tracks and stops them', async ({page}) => {
-  await folder(page, 'Miles Davis').locator('> a.add').click()
+  await addFolder(page, 'Miles Davis')
   await expect(titles(page)).toHaveCount(2)
-  await folder(page, 'Björk').locator('> a.add').click()
+  await addFolder(page, 'Björk')
   await expect(titles(page)).toHaveCount(3)
   await expectPlaying(page, 'So What')
 
