@@ -41,6 +41,8 @@ export function initOffline(player) {
   oli.className = 'folder'
   oli.textContent = locale.offlinePlaylistsTitle + ' '
   oli.onclick = function(e) {
+    // not a click on a playlist in it
+    if (e.target != this) return
     e.preventDefault()
     e.stopPropagation()
     this.classList.toggle('open')

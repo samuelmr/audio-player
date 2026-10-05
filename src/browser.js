@@ -35,9 +35,11 @@ export function initBrowser(browser, player) {
   pli.className = 'folder'
   pli.innerHTML = locale.playlistTitle
   pli.onclick = function(e) {
+    // not a click on a playlist in it
+    if (e.target != this) return
     e.preventDefault()
     e.stopPropagation()
-    const isOpen = this.classList.toggle('open')
+    this.classList.toggle('open')
   }
   playlistList = document.createElement('ol')
   playlistList.className = 'playlists'
@@ -184,6 +186,9 @@ function createFolderElement(folder, ol) {
   li.appendChild(document.createTextNode(' '))
   li.appendChild(a)
   li.onclick = function(e) {
+    // only a click on the folder's own row, not on its contents, nor
+    // between them
+    if (e.target != this) return
     e.preventDefault()
     e.stopPropagation()
     const isOpen = this.classList.toggle('open')
