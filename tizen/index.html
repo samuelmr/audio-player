@@ -84,9 +84,27 @@
     audio-player, audio-browser {
         max-width: none;
     }
+    /* the queue's sources and Save offline are in the open queue, past
+       the summary that Right opens it from */
     audio-player {
         grid-column-gap: 2.5em;
+        grid-template-areas:
+            "now buttons time gear"
+            "progress progress progress progress"
+            "summary summary summary summary"
+            "sources offline offline offline"
+            "queue queue queue queue";
+        grid-template-columns: 1fr auto auto auto;
         padding-top: 1.25em;
+    }
+    audio-player:not(.queue-open) button.save-offline {
+        display: none;
+    }
+    audio-player button.save-offline {
+        align-self: start;
+    }
+    .toast {
+        box-shadow: var(--glow);
     }
     audio-player #buttons button:focus {
         transform: scale(1.12);
@@ -107,155 +125,9 @@
         transform: scale(1.2);
     }
 
-    /* tells what OK added to the queue */
-    .toast {
-        background-color: var(--focus-background);
-        border-radius: 2em;
-        bottom: 1.5em;
-        box-shadow: var(--glow);
-        color: var(--focus-text);
-        font-size: 1.1em;
-        font-weight: 600;
-        left: 50%;
-        padding: 0.6em 1.75em;
-        position: fixed;
-        transform: translateX(-50%);
-        z-index: 10;
-    }
-    .toast[hidden] {
-        display: none;
-    }
-
-    /* Now Playing (tizen-now-playing.js): the album art large, and blurred
-       behind everything; without art, a gradient of the player's hue */
+    /* Now Playing keeps the sizes it had before the larger text */
     #now-playing {
-        align-items: center;
-        font-size: 16px; /* its sizes are from before the larger text of the app */
-        background-color: hsl(var(--base-hue), 40%, 10%);
-        color: hsl(var(--base-hue), 30%, 96%);
-        bottom: 0;
-        display: flex;
-        left: 0;
-        overflow: hidden;
-        padding: 0 6em;
-        position: fixed;
-        right: 0;
-        top: 0;
-        z-index: 20;
-    }
-    #now-playing[hidden], #now-playing .paused[hidden], #now-playing .up-next-title[hidden] {
-        display: none;
-    }
-    #now-playing .background {
-        background-position: center;
-        background-size: cover;
-        bottom: -10%;
-        filter: blur(60px) brightness(40%) saturate(130%);
-        left: -10%;
-        position: absolute;
-        right: -10%;
-        top: -10%;
-        z-index: -1;
-    }
-    #now-playing.no-art {
-        background: radial-gradient(circle at 30% 40%, hsl(var(--base-hue), 50%, 30%), hsl(var(--base-hue), 40%, 8%));
-    }
-    #now-playing.no-art .background, #now-playing.no-art .cover {
-        display: none;
-    }
-    #now-playing .cover {
-        flex: none;
-        height: 65vh;
-        margin-right: 4em;
-        position: relative;
-        width: 65vh;
-    }
-    #now-playing .cover img {
-        border-radius: 1em;
-        box-shadow: 0 2em 4em hsla(0, 0%, 0%, 0.6);
-        height: 100%;
-        object-fit: cover;
-        width: 100%;
-    }
-    #now-playing .paused {
-        align-items: center;
-        background-color: hsla(0, 0%, 0%, 0.35);
-        border-radius: 1em;
-        bottom: 0;
-        display: flex;
-        justify-content: center;
-        left: 0;
-        position: absolute;
-        right: 0;
-        top: 0;
-    }
-    #now-playing .paused svg {
-        fill: hsla(0, 0%, 100%, 0.85);
-        width: 25%;
-    }
-    #now-playing .details {
-        flex: 1;
-        min-width: 0;
-    }
-    #now-playing .np-title {
-        font-size: 4em;
-        font-weight: 700;
-        line-height: 1.1;
-        margin-bottom: 0.3em;
-        overflow-wrap: anywhere;
-        word-break: break-word; /* for Chromium 76, which lacks 'anywhere' */
-    }
-    #now-playing.no-art .np-title {
-        font-size: 5em;
-    }
-    #now-playing .np-artist {
-        font-size: 2.5em;
-    }
-    #now-playing .np-album {
-        font-size: 1.75em;
-        margin-top: 0.3em;
-        opacity: 0.75;
-    }
-    #now-playing .progress {
-        align-items: center;
-        display: flex;
-        margin: 2em 0 3em 0;
-    }
-    #now-playing .bar {
-        background-color: hsla(0, 0%, 100%, 0.25);
-        border-radius: 0.3em;
-        flex: 1;
-        height: 0.6em;
-        overflow: hidden;
-    }
-    #now-playing .fill {
-        background-color: hsl(var(--base-hue), 80%, 70%);
-        height: 100%;
-        width: 0;
-    }
-    #now-playing .time {
-        font-size: 1.5em;
-        margin-left: 0.67em;
-        font-variant-numeric: tabular-nums;
-    }
-    #now-playing .up-next-title {
-        font-size: 1.25em;
-        font-weight: 600;
-        letter-spacing: 0.1em;
-        margin-bottom: 0.5em;
-        opacity: 0.7;
-        text-transform: uppercase;
-    }
-    #now-playing .up-next {
-        font-size: 1.5em;
-        list-style: none;
-    }
-    #now-playing .up-next li {
-        margin-bottom: 0.3em;
-        opacity: 0.85;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        font-size: 16px;
     }
 
     /* The library: OK adds the focused item, so the add buttons aren't
@@ -269,6 +141,9 @@
     }
     audio-browser li.open > ol {
         margin-right: -1em;
+    }
+    audio-browser nav#skipNav {
+        grid-template-columns: 1fr 20em;
     }
     audio-browser nav#skipNav a:focus {
         transform: scale(1.25);

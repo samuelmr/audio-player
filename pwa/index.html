@@ -48,6 +48,10 @@
        up under the mouse, the keyboard's focus is a ring, touch gets larger
        targets, and phones stack the player and give the tracks two lines.
        Only for browsers, so newer CSS than the TV's is fine here. */
+    :root {
+        /* the height of a row in the library */
+        --row: 2.3em;
+    }
     :focus:not(:focus-visible) {
         outline: none;
     }
@@ -56,11 +60,11 @@
         outline-offset: 2px;
     }
 
-    /* a click anywhere on a queued track plays it, as on its title */
+    /* a click anywhere on a queued track plays it, as on its title; over
+       the faded parts, as opacity paints them in a layer of their own */
     audio-track {
         cursor: pointer;
     }
-    /* over the faded parts, as opacity paints them in a layer of their own */
     audio-track .track a:after {
         content: "";
         inset: 0;
@@ -68,29 +72,112 @@
         z-index: 1;
     }
 
+    /* A click on a name in the library adds it to the queue: the add link
+       covers the row, all but the caret, which opens and closes a folder.
+       The + shows at the end of the row under the mouse. */
+    audio-browser a.action.add {
+        align-items: center;
+        border-radius: 0.5em;
+        bottom: 0;
+        display: flex;
+        height: auto;
+        justify-content: flex-end;
+        left: 0;
+        opacity: 1;
+        padding: 0 0.6em;
+        right: 0;
+        top: 0;
+        width: auto;
+    }
+    audio-browser a.action.add svg {
+        height: 1.3em;
+        opacity: 0;
+        width: 1.3em;
+    }
+    audio-browser li.folder, audio-browser li.playlist, audio-browser li.song,
+    audio-browser nav#skipNav ul.search-results li {
+        padding-right: 2.5em;
+    }
+    /* a folder's own row, past the caret; its contents are below */
+    audio-browser li.folder > a.action.add {
+        bottom: auto;
+        height: var(--row);
+        left: 2.5em;
+    }
+    /* the remove button of an offline playlist stays beside it */
+    audio-browser #offline-playlists a.action.add {
+        right: 2.6em;
+    }
+    audio-browser #offline-playlists a.action.remove {
+        z-index: 1;
+    }
+    /* the caret: room of its own to open and close the folder */
+    audio-browser li.folder {
+        cursor: pointer;
+        padding-left: 2.5em;
+    }
+    audio-browser li.folder:before {
+        border-radius: 50%;
+        height: 1.4em;
+        left: 0.25em;
+        line-height: 1.35em;
+        text-align: center;
+        top: 0.18em;
+        width: 1.4em;
+    }
+
     @media (hover: hover) {
         audio-player #buttons button:not(:disabled):hover {
             transform: scale(1.08);
         }
-        audio-player button.gear:hover, audio-player ol.collection a:hover, audio-browser a.action:hover {
+        audio-player button.gear:hover, audio-player button.np-open:hover, audio-player ol.collection a:hover,
+        audio-browser a.action.remove:hover {
             opacity: 1;
         }
         audio-player button.save-offline:hover, .queue-summary:hover, audio-player ol.collection li:hover,
-        audio-track:not(.playing):hover, audio-browser li.song:hover, audio-browser nav#skipNav ol a:hover,
-        audio-browser nav#skipNav ul.search-results li:hover {
+        audio-track:not(.playing):hover, audio-browser nav#skipNav ol a:hover,
+        audio-browser a.action.add:hover, audio-browser nav#skipNav ul.search-results li:hover {
             background-color: var(--line);
         }
-        audio-browser a.action:hover {
-            background-color: var(--accent);
-            color: var(--on-accent);
+        audio-browser a.action.add:hover svg {
+            opacity: 0.6;
         }
-        /* a folder's own row, not its contents */
-        audio-browser li.folder:hover:not(:has(li:hover)), audio-browser li.playlist:hover:not(:has(li:hover)) {
-            background-image: linear-gradient(var(--glass), var(--glass));
-            background-repeat: no-repeat;
-            background-size: 100% 2.3em;
-            cursor: pointer;
+        audio-browser li.folder:hover:not(:has(> a:hover)):not(:has(li:hover)):before,
+        #now-playing .np-controls button:not(.np-play):hover, #now-playing .np-close:hover {
+            background-color: hsla(0, 0%, 50%, 0.25);
         }
+        audio-player .now-art:hover {
+            transform: scale(1.04);
+        }
+    }
+
+    /* opens Now Playing, at the top right: when something plays */
+    audio-player button.np-open {
+        background: none;
+        border: 0;
+        border-radius: 50%;
+        color: var(--text);
+        height: 2.8em;
+        margin-left: -1em;
+        opacity: 0.75;
+        padding: 0;
+        width: 2.8em;
+    }
+    audio-player button.np-open svg {
+        display: block;
+        height: 1.4em;
+        margin: auto;
+        width: 1.4em;
+    }
+    audio-player.idle button.np-open {
+        visibility: hidden;
+    }
+    audio-player .now-art {
+        cursor: pointer;
+        transition: transform 120ms;
+    }
+    audio-player.idle .now-art {
+        cursor: default;
     }
 
     /* the progress bar in Firefox, which has its own parts */
@@ -116,6 +203,9 @@
 
     /* fingers need larger targets than the mouse */
     @media (pointer: coarse) {
+        :root {
+            --row: 2.9em;
+        }
         audio-player #progress {
             height: 2.75em;
             margin: 0;
@@ -126,21 +216,22 @@
             width: 1.3em;
         }
         audio-browser li.folder, audio-browser li.playlist, audio-browser li.song {
-            padding-bottom: 0.65em;
-            padding-top: 0.65em;
+            padding-bottom: 0.75em;
+            padding-top: 0.75em;
         }
-        audio-browser a.action {
-            height: 2.5em;
-            padding: 0.5em;
-            top: 0.1em;
+        audio-browser li.folder:before {
+            top: 0.4em;
+        }
+        audio-browser a.action.remove {
+            top: 0.45em;
         }
         audio-player ol.collection a {
             padding: 0.4em;
         }
     }
 
-    /* phones: the art and title over the progress bar, and the buttons
-       under it, between the time and the settings */
+    /* phones: the art and title, the progress bar with the time under it,
+       and the buttons in a row of their own; Save offline is an icon */
     @media (max-width: 40em) {
         :root {
             --gutter: 1em;
@@ -148,14 +239,14 @@
         audio-player {
             grid-column-gap: 0.5em;
             grid-template-areas:
-                "now now gear"
+                "now gear expand"
                 "progress progress progress"
-                "time buttons ."
-                "summary summary summary"
+                "time time time"
+                "buttons buttons buttons"
+                "summary summary offline"
                 "sources sources sources"
-                "offline offline offline"
                 "queue queue queue";
-            grid-template-columns: 1fr auto 1fr;
+            grid-template-columns: 1fr auto auto;
         }
         audio-player .now-art {
             height: 3.75em;
@@ -168,18 +259,22 @@
         audio-player .now-subtitle {
             font-size: 1em;
         }
-        audio-player button.gear {
+        audio-player button.gear, audio-player button.np-open {
             align-self: start;
-            justify-self: end;
-            margin-top: 0.3em;
+            margin: 0.3em 0 0 0;
         }
         audio-player .audio-time {
-            font-size: 0.95em;
-            justify-self: start;
+            font-size: 0.9em;
+            justify-self: end;
+            margin-top: -0.6em;
+        }
+        audio-player #buttons {
+            justify-self: center;
+            margin-bottom: 0.75em;
         }
         audio-player #buttons button {
             height: 3em;
-            margin: 0 0.4em;
+            margin: 0 0.6em;
             width: 3em;
         }
         audio-player #buttons button:nth-child(2) {
@@ -187,7 +282,15 @@
             width: 4em;
         }
         audio-player button.save-offline {
-            justify-self: start;
+            border-radius: 50%;
+            font-size: 0;
+            margin: 0;
+            padding: 0.6rem;
+        }
+        audio-player button.save-offline svg {
+            display: block;
+            height: 1.4rem;
+            width: 1.4rem;
         }
         audio-player ol.collection {
             margin-bottom: 0;
@@ -200,11 +303,11 @@
         }
         /* two lines: the title, and the artist under it */
         audio-track {
+            align-content: center;
             grid-template-areas: "track duration" "artist duration";
             grid-template-columns: 1fr auto;
             grid-template-rows: auto auto;
             height: 3.6em;
-            align-content: center;
         }
         audio-track section.album {
             display: none;
@@ -218,11 +321,63 @@
             grid-template-columns: 1fr;
         }
         audio-browser nav#skipNav ol {
+            flex-wrap: nowrap;
+            margin-bottom: 0;
             overflow-x: auto;
             scrollbar-width: none;
         }
         audio-browser nav#skipNav ol li {
             flex: none;
+            margin-bottom: 0;
+        }
+    }
+
+    /* Now Playing on a screen taller than wide: the art above the details */
+    @media (max-aspect-ratio: 1/1) {
+        #now-playing {
+            flex-direction: column;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 4.5em 1.5em 2em 1.5em;
+        }
+        #now-playing .cover {
+            height: min(80vw, 40vh);
+            margin: 0 0 1.5em 0;
+            width: min(80vw, 40vh);
+        }
+        #now-playing .details {
+            flex: none;
+            max-width: 32em;
+            width: 100%;
+        }
+        #now-playing .np-title, #now-playing.no-art .np-title {
+            font-size: 2em;
+        }
+        #now-playing .np-artist {
+            font-size: 1.35em;
+        }
+        #now-playing .np-album, #now-playing .np-meta {
+            font-size: 1.05em;
+        }
+        #now-playing .progress {
+            margin-top: 1.25em;
+        }
+        #now-playing .time {
+            font-size: 1em;
+        }
+        #now-playing .np-controls {
+            justify-content: center;
+            margin: 0 0 1.5em 0;
+        }
+        #now-playing .up-next-title {
+            font-size: 0.9em;
+        }
+        #now-playing .up-next {
+            font-size: 1.05em;
+        }
+        #now-playing .np-close {
+            right: 1em;
+            top: 1em;
         }
     }
   </style>

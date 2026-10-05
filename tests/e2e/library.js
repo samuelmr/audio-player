@@ -25,8 +25,8 @@ export const TRACKS = [
   track('ABBA/Arrival/02 Knowing Me, Knowing You.mp3', 2, {artist: 'ABBA', album: 'Arrival', title: 'Knowing Me, Knowing You', tracknumber: '2', year: '1976'}),
   track('ABBA/Arrival/03 Money, Money, Money.mp3', 2, {artist: 'ABBA', album: 'Arrival', title: 'Money, Money, Money', tracknumber: '3', year: '1976'}),
   track('Björk/Debut/01 Human Behaviour.mp3', 2, {artist: 'Björk', album: 'Debut', title: 'Human Behaviour', tracknumber: '1', year: '1993'}),
-  track('Miles Davis/Kind of Blue/01 So What.mp3', 30, {artist: 'Miles Davis', album: 'Kind of Blue', title: 'So What', tracknumber: '1', year: '1959', image: 'Miles Davis/Kind of Blue/cover.png'}),
-  track('Miles Davis/Kind of Blue/02 Freddie Freeloader.mp3', 30, {artist: 'Miles Davis', album: 'Kind of Blue', title: 'Freddie Freeloader', tracknumber: '2', year: '1959', image: 'Miles Davis/Kind of Blue/cover.png'}),
+  track('Miles Davis/Kind of Blue/01 So What.mp3', 30, {artist: 'Miles Davis', album: 'Kind of Blue', title: 'So What', tracknumber: '1', year: '1959', genre: 'Jazz', image: 'Miles Davis/Kind of Blue/cover.png'}),
+  track('Miles Davis/Kind of Blue/02 Freddie Freeloader.mp3', 30, {artist: 'Miles Davis', album: 'Kind of Blue', title: 'Freddie Freeloader', tracknumber: '2', year: '1959', genre: 'Jazz', image: 'Miles Davis/Kind of Blue/cover.png'}),
 ]
 
 // the album art of Kind of Blue: one color, from which the player takes its hue

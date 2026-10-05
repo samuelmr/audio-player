@@ -251,16 +251,20 @@ share it.
 
 ### Using the player
 
-- Open the folders to browse, and press **+** to add a track, an album, or an
-  artist to the queue. The playlists are under *Playlists* at the top.
+- Click or tap a name to add it to the queue: a track, an album, an artist or
+  a playlist. The arrow before a folder opens and closes it. The playlists
+  are under *Playlists* at the top.
 - Search finds artists, albums, tracks and playlists in the whole bucket.
 - The queue is under the player. Its first row, *Queue*, folds it away to
   show only the next track, and opens it again.
-- *Save offline*, in the open queue, saves what's in the queue as an offline playlist. Its tracks
+- *Save offline*, beside the queue's first row, saves what's in the queue as an offline playlist. Its tracks
   are downloaded in the background, and it can be played without a network.
 - The address of the page follows what you add, such as
   `index.html#ABBA/Arrival`. Opening such an address adds that folder to the
   queue.
+- The button at the top right, or a tap on the album art, opens *Now
+  Playing* over the whole window. Its own button at the top right, or Esc,
+  closes it.
 - On a computer, Space plays and pauses, ← and → move to the previous and next
   track, and ↑ and ↓ move in the queue.
 

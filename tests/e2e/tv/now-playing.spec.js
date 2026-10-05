@@ -29,6 +29,9 @@ test('opens when the remote has been idle while music plays', async ({page}) => 
   await expect(view(page).locator('.np-title')).toHaveText('So What')
   await expect(view(page).locator('.np-artist')).toHaveText('Miles Davis')
   await expect(view(page).locator('.np-album')).toHaveText('Kind of Blue · 1959')
+  await expect(view(page).locator('.np-meta')).toHaveText('Jazz')
+  // the remote works it, so it has no buttons
+  await expect(view(page).locator('button')).toHaveCount(0)
   await expect(view(page).locator('.up-next li')).toHaveText(['Freddie Freeloader – Miles Davis'])
   await expect(view(page).locator('.time')).toHaveText(/^0:\d\d \/ 0:30$/)
   await expect(view(page)).not.toHaveClass(/no-art/)

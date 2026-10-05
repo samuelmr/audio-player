@@ -17,6 +17,8 @@ export function trackDetails(track) {
     title: text(track, '.name a'),
     artist: text(track, '.artist'),
     album: [text(track, '.album'), text(track, '.published')].filter(Boolean).join(' · '),
+    genre: text(track, '.genre'),
+    keywords: text(track, '.keywords'),
     cover: track.dataset.albumArt || '',
     line: [text(track, '.name a'), text(track, '.artist')].filter(Boolean).join(' – '),
   }

@@ -2,6 +2,7 @@
 import { locale } from '../locale.js'
 import { audio, play, playerList, playNext, playPrevious } from '../player.js'
 import { initSpatialNavigation } from '../spatial-navigation.js'
+import { initAdding } from '../adding.js'
 import { initLibrary, addFocusedAndPlay, focusPlayer, focusShortcut } from './tizen-library.js'
 import { initQueue, inQueue, focusSummary } from './tizen-queue.js'
 import { initNowPlaying } from './tizen-now-playing.js'
@@ -33,7 +34,8 @@ export function init() {
   // first, so that its key handler goes before the others while it's open
   initNowPlaying()
   initSpatialNavigation()
-  initLibrary(document.querySelector('audio-browser'), playerList)
+  initAdding(playerList)
+  initLibrary(document.querySelector('audio-browser'))
   initQueue(document.querySelector('audio-player'), playerList)
   initPlayerBar(document.querySelector('audio-player'))
   const handlers = new Map()

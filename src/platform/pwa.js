@@ -4,18 +4,57 @@ import jsQR from "jsqr"
 import { locale } from '../locale.js'
 import { SETTINGS_CODE_PREFIX } from '../settings-code.js'
 import { initKeyboard } from '../keyboard.js'
+import { expandSVG } from '../icons.js'
 import { playerList } from '../player.js'
 import { initPlayerBar } from '../player-bar.js'
 import { initQueue } from '../queue.js'
+import { initAdding, itemName, startAdding } from '../adding.js'
+import { initNowPlaying, open as openNowPlaying, close as closeNowPlaying, isOpen } from '../now-playing.js'
 
 export function init() {
   const player = document.querySelector('audio-player')
   initQueue(player, playerList)
-  initPlayerBar(player, {hint: locale.addHintButtons})
+  const now = initPlayerBar(player, {hint: locale.addHintClick})
+  initNowPlayingButtons(player, now)
+  initAdding(playerList)
+  // a click on a name in the library adds it: the add link covers the row.
+  // Not the clicks of the code, as a folder adds its songs by clicking them.
+  document.querySelector('audio-browser').addEventListener('click', (e) => {
+    const add = e.isTrusted && e.target.closest('a.action.add')
+    if (add) startAdding(itemName(add.parentNode))
+  }, true)
   initKeyboard()
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(e => console.warn('Service worker registration failed:', e))
   }
+}
+
+// Now Playing opens with the expand button at the top right, or a tap on
+// the album art, and closes with its own button or Esc. The page under it
+// doesn't scroll meanwhile.
+function initNowPlayingButtons(player, now) {
+  const expand = document.createElement('button')
+  expand.type = 'button'
+  expand.className = 'np-open'
+  expand.title = locale.nowPlaying
+  expand.setAttribute('aria-label', locale.nowPlaying)
+  expand.innerHTML = expandSVG
+  player.appendChild(expand)
+
+  const view = initNowPlaying({controls: true, onClose: () => {
+    document.documentElement.style.overflow = ''
+    if (view.contains(document.activeElement)) expand.focus()
+  }})
+  const open = () => {
+    if (!openNowPlaying()) return
+    document.documentElement.style.overflow = 'hidden'
+    view.querySelector('.np-close').focus()
+  }
+  expand.onclick = open
+  now.querySelector('.now-art').onclick = open
+  window.addEventListener('keydown', (e) => {
+    if (e.key == 'Escape' && isOpen()) closeNowPlaying()
+  })
 }
 
 // the settings code moves through the clipboard or a QR code

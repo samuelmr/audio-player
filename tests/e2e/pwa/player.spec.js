@@ -16,7 +16,8 @@ test.beforeEach(async ({page}) => {
 
 test('tells how to start when nothing plays', async ({page}) => {
   await expect(bar(page).locator('.now-title')).toHaveText('Nothing playing')
-  await expect(bar(page).locator('.now-subtitle')).toHaveText('Add music with the + buttons in the library')
+  await expect(bar(page).locator('.now-subtitle')).toHaveText('Click or tap music in the library to add it to the queue')
+  await expect(page.locator('audio-player button.np-open')).toBeHidden()
   await expect(summary(page)).toBeHidden()
 })
 
@@ -59,11 +60,49 @@ test.describe('with long tracks queued', () => {
     await expect(summary(page)).toHaveAttribute('aria-expanded', 'false')
     await expect(queue(page).first()).toBeHidden()
     await expect(page.locator('audio-player .collection')).toBeHidden()
-    await expect(page.locator('audio-player button.save-offline')).toBeHidden()
+    // on the summary's row, so it stays
+    await expect(page.locator('audio-player button.save-offline')).toBeVisible()
 
     await summary(page).click()
     await expect(queue(page).first()).toBeVisible()
-    await expect(page.locator('audio-player button.save-offline')).toBeVisible()
+  })
+
+  test('Now Playing opens with the expand button, and works the player', async ({page}) => {
+    const view = page.locator('#now-playing')
+    await page.locator('audio-player button.np-open').click()
+    await expect(view).toBeVisible()
+    await expect(view.locator('.np-title')).toHaveText('So What')
+    await expect(view.locator('.np-meta')).toHaveText('Jazz')
+    await expect(view.locator('.up-next li')).toHaveText(['Freddie Freeloader – Miles Davis'])
+
+    await view.locator('.np-next').click()
+    await expectPlaying(page, 'Freddie Freeloader')
+    await expect(view.locator('.np-title')).toHaveText('Freddie Freeloader')
+    await view.locator('.np-previous').click()
+    await expectPlaying(page, 'So What')
+    await view.locator('.np-play').click()
+    await expect.poll(() => isPaused(page)).toBe(true)
+    await expect(view.locator('.paused')).toBeVisible()
+    await view.locator('.np-play').click()
+    await expect.poll(() => isPaused(page)).toBe(false)
+
+    // a click on the progress bar seeks
+    const progressBar = view.locator('.bar')
+    const box = await progressBar.boundingBox()
+    await progressBar.click({position: {x: box.width * 0.75, y: box.height / 2}})
+    await expect.poll(async () => (await audioState(page)).currentTime).toBeGreaterThanOrEqual(20)
+
+    await view.locator('.np-close').click()
+    await expect(view).toBeHidden()
+    await expect(page.locator('audio-player button.np-open')).toBeFocused()
+  })
+
+  test('Now Playing opens with a tap on the album art, and Esc closes it', async ({page}) => {
+    const view = page.locator('#now-playing')
+    await bar(page).locator('.now-art').click()
+    await expect(view).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(view).toBeHidden()
   })
 
   test('shows the album art, and takes its color', async ({page}) => {

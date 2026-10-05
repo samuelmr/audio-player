@@ -40,6 +40,30 @@ test('adds a folder to the queue, in order, and plays it', async ({page}) => {
   expect(page.url()).toContain('#ABBA')
 })
 
+test('a click on the name of a folder adds it, and says so', async ({page}) => {
+  await folder(page, 'ABBA').click()
+  await expect(titles(page)).toHaveText(['Dancing Queen', 'Knowing Me, Knowing You', 'Money, Money, Money'])
+  await expect(page.locator('.toast')).toHaveText('Added ABBA: 3 tracks')
+})
+
+test('a click on a song adds it', async ({page}) => {
+  await openFolder(page, 'Miles Davis')
+  await folder(page, 'Miles Davis/Kind of Blue').locator('li.song', {hasText: 'Freddie'}).click()
+  await expect(titles(page)).toHaveText(['Freddie Freeloader'])
+  await expect(page.locator('.toast')).toHaveText('Added 02 Freddie Freeloader: 1 track')
+})
+
+test('a click inside an open folder, but not on a row, keeps it open', async ({page}) => {
+  await openFolder(page, 'ABBA')
+  const songs = folder(page, 'ABBA/Arrival').locator('> ol')
+  await expect(songs.locator('li.song')).toHaveCount(3)
+  // on the guide line at the side of the songs
+  await songs.click({position: {x: 1, y: 5}})
+  await expect(folder(page, 'ABBA')).toHaveClass(/open/)
+  await expect(folder(page, 'ABBA/Arrival')).toHaveClass(/open/)
+  await expect(titles(page)).toHaveCount(0)
+})
+
 test('adds a single song', async ({page}) => {
   await openFolder(page, 'Miles Davis')
   await folder(page, 'Miles Davis/Kind of Blue').locator('li.song', {hasText: 'Freddie'}).locator('a.add').click()
@@ -52,6 +76,14 @@ test('adds a playlist, in its order', async ({page}) => {
   await page.locator('#playlists li.playlist').locator('a.add').click()
   await expect(titles(page)).toHaveText(['So What', 'Dancing Queen'])
   await expectPlaying(page, 'So What')
+})
+
+test('a click on a playlist adds it, and keeps the playlists open', async ({page}) => {
+  await page.locator('#playlists > li.folder').click({position: {x: 5, y: 5}})
+  await page.locator('#playlists li.playlist').click()
+  await expect(titles(page)).toHaveText(['So What', 'Dancing Queen'])
+  await expect(page.locator('#playlists > li.folder')).toHaveClass(/open/)
+  await expect(page.locator('#playlists li.playlist')).toBeVisible()
 })
 
 test('a link to a folder adds it to the queue', async ({page}) => {

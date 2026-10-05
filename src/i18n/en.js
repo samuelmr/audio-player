@@ -63,5 +63,7 @@ export default {
   upNextTrack: (track) => `Up next: ${track}`,
   nothingPlaying: 'Nothing playing',
   addHint: 'Pick music from the library and press OK',
-  addHintButtons: 'Add music with the + buttons in the library',
+  addHintClick: 'Click or tap music in the library to add it to the queue',
+  nowPlaying: 'Now Playing',
+  closeNowPlaying: 'Close Now Playing',
 }

@@ -7,10 +7,10 @@
 // on the right, level with it. The songs stay in their folder in the
 // document; the stylesheet only moves the list aside.
 
-import { locale } from '../locale.js'
 import { getObjectText } from '../s3.js'
 import { queueKeys } from '../search.js'
 import { play as playButton } from '../player.js'
+import { itemName, startAdding, currentAdding } from '../adding.js'
 
 const LEFT = 37
 const UP = 38
@@ -21,17 +21,12 @@ const ENTER = 13
 const ITEMS = 'li.folder, li.playlist, li.song, .search-results li'
 // a held OK repeats faster than this; separate presses are slower
 const REPEAT_GAP = 250
-// the queue feedback waits this long for more tracks before it's final,
-// and longer for the first one, since a folder's listing may be slow
-const SETTLE_TIME = 1500
-const FIRST_TRACK_TIME = 15000
-const TOAST_TIME = 3000
 
-let browser, selected, toast, toastTimer, adding
+let browser, selected
 let okDown = false
 let lastOk = 0
 
-export function initLibrary(browserElement, playerList) {
+export function initLibrary(browserElement) {
   browser = browserElement
 
   // the song lists get the 'songs' class as the songs arrive from S3
@@ -90,16 +85,6 @@ export function initLibrary(browserElement, playerList) {
     }
   })
 
-  createToast()
-  new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      for (const node of mutation.addedNodes) {
-        if (node.nodeType == Node.ELEMENT_NODE && node.matches('audio-track')) {
-          trackAdded(node)
-        }
-      }
-    }
-  }).observe(playerList, {childList: true})
 }
 
 // adds the focused library item and plays it, for the Play key;
@@ -167,6 +152,7 @@ function ok(item, e) {
   lastOk = now
   if (repeat) {
     // held down: play what was just added
+    const adding = currentAdding()
     if (adding) adding.playNow = true
     if (adding?.first) play(adding.first)
     return true
@@ -178,55 +164,16 @@ function ok(item, e) {
 function add(item, playNow) {
   const action = item.querySelector(':scope > a.action.add')
   if (!action) return false
-  adding = {name: itemName(item), count: 0, playNow}
-  showToast(locale.adding(adding.name))
-  waitForTracks(FIRST_TRACK_TIME)
+  const adding = startAdding(itemName(item), (track) => {
+    if (adding.playNow) play(track)
+  })
+  adding.playNow = playNow
   action.click()
   return true
 }
 
-const itemName = (item) => {
-  const text = [...item.childNodes].find(node => node.nodeType == Node.TEXT_NODE && node.textContent.trim())
-  return (text?.textContent || item.querySelector('.name')?.textContent || '').trim().replace(/\.(mp3|json)$/, '')
-}
-
-function trackAdded(track) {
-  if (!adding) return
-  adding.count++
-  if (!adding.first) {
-    adding.first = track
-    if (adding.playNow) play(track)
-  }
-  showToast(locale.added(adding.name, adding.count))
-  waitForTracks(SETTLE_TIME)
-}
-
 function play(track) {
   track.querySelector('.name a')?.click()
-}
-
-function waitForTracks(time) {
-  clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => {
-    if (adding && adding.count == 0) {
-      showToast(locale.addedNothing(adding.name))
-    }
-    adding = null
-    toastTimer = setTimeout(() => toast.hidden = true, TOAST_TIME)
-  }, time)
-}
-
-function createToast() {
-  toast = document.createElement('div')
-  toast.className = 'toast'
-  toast.setAttribute('role', 'status')
-  toast.hidden = true
-  document.body.appendChild(toast)
-}
-
-function showToast(text) {
-  toast.textContent = text
-  toast.hidden = false
 }
 
 // A playlist's tracks are listed like a folder's songs. The list is also in

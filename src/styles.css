@@ -84,12 +84,12 @@ audio-player {
     display: grid;
     grid-column-gap: 2em;
     grid-template-areas:
-        "now buttons time gear"
-        "progress progress progress progress"
-        "summary summary summary summary"
-        "sources offline offline offline"
-        "queue queue queue queue";
-    grid-template-columns: 1fr auto auto auto;
+        "now buttons time gear expand"
+        "progress progress progress progress progress"
+        "summary offline offline offline offline"
+        "sources sources sources sources sources"
+        "queue queue queue queue queue";
+    grid-template-columns: 1fr auto auto auto auto;
     padding-top: 1em;
 }
 /* so that long titles end in an ellipsis instead of widening the grid */
@@ -100,6 +100,7 @@ audio-player .now { grid-area: now; }
 audio-player #buttons { grid-area: buttons; }
 audio-player .audio-time { grid-area: time; }
 audio-player button.gear { grid-area: gear; }
+audio-player button.np-open { grid-area: expand; }
 audio-player #progress { grid-area: progress; }
 audio-player .queue-summary { grid-area: summary; }
 audio-player ol.collection { grid-area: sources; }
@@ -325,8 +326,7 @@ audio-player.idle #progress::-webkit-slider-thumb {
 .queue-summary .next:empty {
     display: none;
 }
-audio-player:not(.queue-open) ol.collection, audio-player:not(.queue-open) button.save-offline,
-audio-player nav.collapsed {
+audio-player:not(.queue-open) ol.collection, audio-player nav.collapsed {
     display: none;
 }
 
@@ -363,7 +363,7 @@ audio-player ol.collection svg {
 }
 /* across the columns of the controls, so as not to widen them */
 audio-player button.save-offline {
-    align-self: start;
+    align-self: center;
     background-color: var(--glass);
     border: 0;
     border-radius: 2em;
@@ -497,7 +497,7 @@ audio-browser nav#skipNav {
     box-shadow: 0 0.5em 1em -0.5em var(--shadow);
     display: grid;
     grid-column-gap: 2em;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: 1fr 18em;
     margin: 0 calc(-1 * var(--gutter));
     padding: 0.6em var(--gutter);
     position: sticky;
@@ -507,8 +507,14 @@ audio-browser nav#skipNav {
 audio-browser nav#skipNav > * {
     min-width: 0;
 }
+/* as many rows as the letters need, beside the search */
 audio-browser nav#skipNav ol {
     display: flex;
+    flex-wrap: wrap;
+    margin-bottom: -0.4em;
+}
+audio-browser nav#skipNav ol li {
+    margin-bottom: 0.4em;
 }
 audio-browser nav#skipNav ol a {
     background-color: var(--glass);
@@ -575,7 +581,7 @@ audio-browser nav:not(#skipNav) {
 audio-browser li.folder, audio-browser li.playlist, audio-browser li.song {
     border-radius: 0.5em;
     line-height: 1.4em;
-    margin: 0.1em 0;
+    margin: 0;
     padding: 0.45em 3em 0.45em 2em;
     position: relative;
 }
@@ -642,6 +648,226 @@ audio-browser a.action svg {
     fill: currentColor;
     height: 1.5em;
     width: 1.5em;
+}
+
+/* tells what was added to the queue (adding.js) */
+.toast {
+    background-color: var(--accent);
+    border-radius: 2em;
+    bottom: 1.5em;
+    box-shadow: 0 0.5em 1.5em var(--shadow);
+    color: var(--on-accent);
+    font-size: 1.1em;
+    font-weight: 600;
+    left: 50%;
+    max-width: calc(100% - 2em);
+    padding: 0.6em 1.75em;
+    text-align: center;
+    position: fixed;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+.toast[hidden] {
+    display: none;
+}
+
+/* Now Playing (now-playing.js): the album art large, and blurred behind
+   everything; without art, a gradient of the player's hue. Dark in both
+   color schemes, like a video playing full screen. */
+#now-playing {
+    align-items: center;
+    background-color: hsl(var(--base-hue), 40%, 10%);
+    color: hsl(var(--base-hue), 30%, 96%);
+    bottom: 0;
+    display: flex;
+    left: 0;
+    overflow: hidden;
+    padding: 0 6em;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 20;
+}
+#now-playing[hidden], #now-playing .paused[hidden], #now-playing .up-next-title[hidden] {
+    display: none;
+}
+#now-playing .background {
+    background-position: center;
+    background-size: cover;
+    bottom: -10%;
+    filter: blur(60px) brightness(40%) saturate(130%);
+    left: -10%;
+    position: absolute;
+    right: -10%;
+    top: -10%;
+    z-index: -1;
+}
+#now-playing.no-art {
+    background: radial-gradient(circle at 30% 40%, hsl(var(--base-hue), 50%, 30%), hsl(var(--base-hue), 40%, 8%));
+}
+#now-playing.no-art .background, #now-playing.no-art .cover {
+    display: none;
+}
+#now-playing .cover {
+    flex: none;
+    height: 65vh;
+    margin-right: 4em;
+    position: relative;
+    width: 65vh;
+}
+#now-playing .cover img {
+    border-radius: 1em;
+    box-shadow: 0 2em 4em hsla(0, 0%, 0%, 0.6);
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+#now-playing .paused {
+    align-items: center;
+    background-color: hsla(0, 0%, 0%, 0.35);
+    border-radius: 1em;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+#now-playing .paused svg {
+    fill: hsla(0, 0%, 100%, 0.85);
+    width: 25%;
+}
+#now-playing .details {
+    flex: 1;
+    min-width: 0;
+}
+#now-playing .np-title {
+    font-size: 4em;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 0.3em;
+    overflow-wrap: anywhere;
+    word-break: break-word; /* for Chromium 76, which lacks 'anywhere' */
+}
+#now-playing.no-art .np-title {
+    font-size: 5em;
+}
+#now-playing .np-artist {
+    font-size: 2.5em;
+}
+#now-playing .np-album {
+    font-size: 1.75em;
+    margin-top: 0.3em;
+    opacity: 0.75;
+}
+#now-playing .np-meta {
+    font-size: 1.25em;
+    margin-top: 0.5em;
+    opacity: 0.6;
+}
+#now-playing .np-meta:empty {
+    display: none;
+}
+#now-playing .progress {
+    align-items: center;
+    display: flex;
+    margin: 2em 0 3em 0;
+}
+#now-playing .bar {
+    background-color: hsla(0, 0%, 100%, 0.25);
+    border-radius: 0.3em;
+    flex: 1;
+    height: 0.6em;
+    overflow: hidden;
+}
+#now-playing .fill {
+    background-color: hsl(var(--base-hue), 80%, 70%);
+    height: 100%;
+    width: 0;
+}
+#now-playing .time {
+    font-size: 1.5em;
+    margin-left: 0.67em;
+    font-variant-numeric: tabular-nums;
+}
+#now-playing .up-next-title {
+    font-size: 1.25em;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5em;
+    opacity: 0.7;
+    text-transform: uppercase;
+}
+#now-playing .up-next {
+    font-size: 1.5em;
+    list-style: none;
+}
+#now-playing .up-next li {
+    margin-bottom: 0.3em;
+    opacity: 0.85;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* the web app's buttons in Now Playing (controls in now-playing.js) */
+#now-playing.controls .progress {
+    margin-bottom: 1.25em;
+}
+#now-playing.controls .bar {
+    cursor: pointer;
+}
+#now-playing.controls .cover {
+    cursor: pointer;
+}
+#now-playing .np-controls {
+    align-items: center;
+    display: flex;
+    margin: 0 0 2.5em -0.6em;
+}
+#now-playing .np-controls button, #now-playing .np-close {
+    background: none;
+    border: 0;
+    border-radius: 50%;
+    color: inherit;
+    padding: 0;
+}
+#now-playing .np-controls button {
+    height: 3.5em;
+    margin-right: 0.75em;
+    width: 3.5em;
+}
+#now-playing .np-controls svg, #now-playing .np-close svg {
+    display: block;
+    fill: currentColor;
+    height: 1.6em;
+    margin: auto;
+    width: 1.6em;
+}
+#now-playing .np-controls .np-play {
+    background-color: hsl(var(--base-hue), 30%, 96%);
+    color: hsl(var(--base-hue), 40%, 10%);
+    height: 4.75em;
+    width: 4.75em;
+}
+#now-playing .np-controls .np-play svg {
+    height: 2em;
+    width: 2em;
+}
+/* at the top right, where the button that opened it is */
+#now-playing .np-close {
+    background-color: hsla(0, 0%, 100%, 0.12);
+    height: 3em;
+    position: absolute;
+    right: 1.5em;
+    top: 1.5em;
+    width: 3em;
+}
+#now-playing .np-close svg {
+    fill: none;
+    height: 1.3em;
+    width: 1.3em;
 }
 
 /* Dialogs: panels over the app */
