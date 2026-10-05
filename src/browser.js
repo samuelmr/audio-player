@@ -2,7 +2,7 @@ import { ListObjectsV2Command } from "@aws-sdk/client-s3"
 import { folderDelimiter } from './constants.js'
 import { locale } from './locale.js'
 import { addSVG, playSVG } from './icons.js'
-import { s3, bucketName, signedUrl, getObjectText, getS3Meta } from './s3.js'
+import { s3, bucketName, objectUrl, getObjectText, getS3Meta } from './s3.js'
 import { collection, createAudioTrack, createSourceItem, setSourceLink } from './player.js'
 
 export let browserList, playlistList
@@ -122,7 +122,7 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
         }
         if (obj.Key.endsWith('.mp3')) {
           obj.Metadata = await getS3Meta(obj.Key, obj.LastModified)
-          obj.href = await signedUrl(obj.Key)
+          obj.href = await objectUrl(obj.Key)
           createSongElement(obj, subRef).then(li => {
             if (autoAdd) {
               li.querySelector('a')?.click()
@@ -299,7 +299,7 @@ async function createPlaylistElement(obj, ol) {
           Key: track.url,
           Metadata: track,
         }
-        song.href = await signedUrl(song.Key)
+        song.href = await objectUrl(song.Key)
         createAudioTrack(song)
       })
     }

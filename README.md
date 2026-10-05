@@ -20,7 +20,8 @@ its own, and your keys stay on your device.
 ### What you need
 
 - An S3-compatible bucket for your music, and an access key that can read it.
-  A key that can only read is enough, and the safest choice.
+  A key that can only read is enough, and the safest choice. A
+  [public bucket](#a-public-bucket) needs no key.
 - MP3 files. Other formats are not listed.
 - A browser. The app is ready to use at
   <https://audioplayer.ctrldash.app/>, or you can host a copy of your
@@ -183,6 +184,41 @@ aws --endpoint-url "$S3ENDPOINT" s3api put-bucket-cors --bucket "$S3BUCKET" \
 Every request is signed with your key, so allowing any origin doesn't make the
 music public. You can replace `*` with the address of your copy of the app.
 
+### A public bucket
+
+The player can also read a public bucket, such as one for others to try the
+player with. Leave the keys empty in the [settings](#settings), and the player
+reads the bucket without signing its requests. Anyone can then play the music,
+so put in it only music that you may share.
+
+Making a bucket public usually lets anyone read its files, but not list them,
+and the player needs the list. Allow listing with a bucket policy. Save this
+as `policy.json`, with your bucket's name in place of `demo-music`:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {"Effect": "Allow", "Principal": "*", "Action": ["s3:GetObject"], "Resource": ["arn:aws:s3:::demo-music/*"]},
+    {"Effect": "Allow", "Principal": "*", "Action": ["s3:ListBucket"], "Resource": ["arn:aws:s3:::demo-music"]}
+  ]
+}
+```
+
+and apply it, after checking with `get-bucket-policy` that it doesn't replace
+a policy you need:
+
+```sh
+aws --endpoint-url "$S3ENDPOINT" s3api put-bucket-policy --bucket "$S3BUCKET" \
+  --policy file://policy.json
+```
+
+The bucket needs the [CORS configuration](#allowing-the-browser-to-read-the-bucket-cors)
+too. Some providers give a public bucket an address of its own: Contabo's is
+like `https://eu2.contabostorage.com/<tenant>:demo-music`. Then the endpoint
+is the part before the last `/`, and the bucket's name is the rest,
+`<tenant>:demo-music`.
+
 ### Installing the web app
 
 The latest version of the app is at
@@ -198,6 +234,13 @@ git clone https://github.com/samuelmr/audio-player.git
 cd audio-player
 npm install
 npm run build:pwa
+```
+
+To give the app a default bucket, set `DEFAULT_BUCKET_URL` to the address of
+a [public bucket](#a-public-bucket) when building:
+
+```sh
+DEFAULT_BUCKET_URL="https://s3.example.com/demo-music" npm run build:pwa
 ```
 
 The app is in `dist/pwa`. Serve all of its files over HTTPS from any static
@@ -227,16 +270,22 @@ button.
 
 | Setting | What to enter |
 | --- | --- |
-| S3 accessKeyId | The access key ID of your key |
-| S3 secretAccessKey | The secret of your key |
+| S3 accessKeyId | The access key ID of your key. Empty for a [public bucket](#a-public-bucket) |
+| S3 secretAccessKey | The secret of your key. Empty for a public bucket |
 | S3 endpoint | The address of the S3 service, without the bucket name, such as `https://eu2.contabostorage.com` or `https://s3.eu-north-1.amazonaws.com` |
-| S3 region | The bucket's region, such as `eu-north-1`. If your provider has no regions, `us-east-1` usually works |
+| S3 region | The bucket's region, such as `eu-north-1`. If it's empty, the player uses `us-east-1`, which usually works when your provider has no regions |
 | S3 bucket | The name of the bucket |
 | Player color | The base color of the player. Album art overrides it while a track plays |
 | Language | The language of the player. *Device language* follows the language of the browser or TV, and falls back to English. Changing it restarts the player |
 
 *Save* stores the settings in this browser only. *Cancel* returns to the saved
 settings.
+
+A copy of the app can be built with a default bucket (see
+[Installing the web app](#installing-the-web-app)). Its endpoint and name show
+in the empty fields, and the player uses them until you enter your own. The
+app at <https://audioplayer.ctrldash.app/> has a public bucket of free music
+as its default, so it plays something before you enter any settings.
 
 To move the settings to another device, use *Transfer settings*:
 
@@ -556,6 +605,10 @@ The workflow, [`.github/workflows/pages.yml`](.github/workflows/pages.yml),
 also works in a fork: in your fork's *Settings* → *Pages*, choose *Deploy from
 a branch* and the `gh-pages` branch after the first push has created it. Your
 copies are then at `https://<your-user>.github.io/audio-player/`.
+
+The published copies get a default bucket from the repository variable
+`DEFAULT_BUCKET_URL` (*Settings* → *Secrets and variables* → *Actions* →
+*Variables*), if it's set. The tests run without it.
 
 The copies share the browser's storage with the app at the root of the same
 site. They see its settings, offline playlists and metadata cache. A branch

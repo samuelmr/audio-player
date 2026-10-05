@@ -25,6 +25,7 @@ export default {
   language: 'Language',
   deviceLanguage: 'Device language',
   missingSetting: (key) => `S3 ${key} is missing`,
+  publicBucket: 'None for a public bucket',
 
   transferTitle: 'Transfer settings',
   copySettings: 'Copy settings code',

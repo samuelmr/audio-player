@@ -3,7 +3,7 @@ import { folderDelimiter, MAX_SEARCH_RESULTS, MAX_FOLDER_RESULTS, MIN_SEARCH_LEN
 import { locale } from './locale.js'
 import { addSVG } from './icons.js'
 import { getAllMeta } from './db.js'
-import { s3, bucketName, signedUrl, getS3Meta } from './s3.js'
+import { s3, bucketName, objectUrl, getS3Meta } from './s3.js'
 import { playlistList } from './browser.js'
 import { collection, createAudioTrack, createSourceItem, setSourceLink } from './player.js'
 
@@ -195,7 +195,7 @@ export async function queueKeys(keys, source, className) {
     } catch(e) {
       obj.Metadata = {}
     }
-    obj.href = await signedUrl(key)
+    obj.href = await objectUrl(key)
     setSourceLink(source)
     await createAudioTrack(obj)
   }

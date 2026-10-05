@@ -7,7 +7,7 @@
 import { locale } from './locale.js'
 import { offlineSVG, addSVG, removeSVG } from './icons.js'
 import { db, dbReady, requestResult, OFFLINE_PLAYLISTS, OFFLINE_AUDIO } from './db.js'
-import { s3, signedUrl } from './s3.js'
+import { s3, objectUrl } from './s3.js'
 import { browserList } from './browser.js'
 import { audio, collection, playerList, createAudioTrack, createSourceItem, setSourceLink, preloadAudio } from './player.js'
 
@@ -241,7 +241,7 @@ async function nextMissingKey() {
 }
 
 async function downloadTrack(key) {
-  const url = await signedUrl(key)
+  const url = await objectUrl(key)
   downloadController = new AbortController()
   const response = await fetch(url, {signal: downloadController.signal})
   if (!response.ok) {
@@ -312,7 +312,7 @@ async function queueOfflinePlaylist(playlist) {
     const song = {Key: entry.url, Metadata: entry, href: ''}
     if (s3) {
       // signing doesn't need the network
-      song.href = await signedUrl(entry.url)
+      song.href = await objectUrl(entry.url)
     }
     setSourceLink(source)
     await createAudioTrack(song)

@@ -10,6 +10,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // both apps inline the same stylesheet into their HTML
 const styles = fs.readFileSync(path.resolve(__dirname, "src/styles.css"), "utf8");
 
+// the default bucket of src/defaults.js, given when building, as the
+// deployment does from a variable of the repository
+const defaults = new webpack.DefinePlugin({
+  "process.env.DEFAULT_BUCKET_URL": JSON.stringify(process.env.DEFAULT_BUCKET_URL || ""),
+});
+
 // '#platform' picks the platform-specific module of each app
 const shared = (name) => ({
   name,
@@ -46,6 +52,7 @@ const pwa = {
     },
   },
   plugins: [
+    defaults,
     new HtmlWebpackPlugin({
       filename: 'index.html',
       template: 'pwa/index.html',
@@ -96,6 +103,7 @@ const tizen = {
     clean: true,
   },
   plugins: [
+    defaults,
     new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
     new HtmlWebpackPlugin({
       filename: 'index.html',

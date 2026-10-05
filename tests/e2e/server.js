@@ -6,14 +6,15 @@
 // (/<bucket>/<key>): ListObjectsV2, HeadObject and GetObject, with range
 // requests for the audio. It doesn't verify signatures, but it rejects
 // requests that aren't signed with the test access key, so the settings
-// really are what the requests are made with.
+// really are what the requests are made with. The public bucket takes only
+// requests that aren't signed, as a signature with no key would be refused.
 
 import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
 import zlib from 'node:zlib'
 import { fileURLToPath } from 'node:url'
-import { APP_PORT, S3_PORT, SETTINGS, TRACKS, PLAYLISTS, COVER } from './library.js'
+import { APP_PORT, S3_PORT, SETTINGS, PUBLIC_SETTINGS, TRACKS, PLAYLISTS, COVER } from './library.js'
 
 const dist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../dist')
 
@@ -82,13 +83,10 @@ function s3Error(res, status, code) {
   res.end(`<?xml version="1.0" encoding="UTF-8"?><Error><Code>${code}</Code><Message>${code}</Message></Error>`)
 }
 
-function signedWithTestKey(req, url) {
-  const credential = url.searchParams.get('X-Amz-Credential') || req.headers.authorization || ''
-  return credential.includes(`${SETTINGS.accessKeyId}/`)
-}
+const credentialOf = (req, url) => url.searchParams.get('X-Amz-Credential') || req.headers.authorization || ''
 
 // ListObjectsV2: with a delimiter, the folders at that level become CommonPrefixes
-function list(res, url) {
+function list(res, url, bucket) {
   const prefix = url.searchParams.get('prefix') || ''
   const delimiter = url.searchParams.get('delimiter')
   const entries = new Map() // name -> 'prefix' | 'key', in key order
@@ -112,7 +110,7 @@ function list(res, url) {
   ).join('')
   res.writeHead(200, {'Content-Type': 'application/xml'})
   res.end(`<?xml version="1.0" encoding="UTF-8"?>
-<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>${SETTINGS.bucketName}</Name><Prefix>${xmlEscape(prefix)}</Prefix>${delimiter ? `<Delimiter>${xmlEscape(delimiter)}</Delimiter>` : ''}<KeyCount>${page.length}</KeyCount><MaxKeys>${PAGE_SIZE}</MaxKeys><IsTruncated>${truncated}</IsTruncated>${truncated ? `<NextContinuationToken>${start + PAGE_SIZE}</NextContinuationToken>` : ''}${body}</ListBucketResult>`)
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>${xmlEscape(bucket)}</Name><Prefix>${xmlEscape(prefix)}</Prefix>${delimiter ? `<Delimiter>${xmlEscape(delimiter)}</Delimiter>` : ''}<KeyCount>${page.length}</KeyCount><MaxKeys>${PAGE_SIZE}</MaxKeys><IsTruncated>${truncated}</IsTruncated>${truncated ? `<NextContinuationToken>${start + PAGE_SIZE}</NextContinuationToken>` : ''}${body}</ListBucketResult>`)
 }
 
 function getObject(req, res, object) {
@@ -148,12 +146,20 @@ const s3 = http.createServer((req, res) => {
     return res.end()
   }
   const url = new URL(req.url, `http://${req.headers.host}`)
-  const [, bucket, ...keyParts] = url.pathname.split('/')
-  if (!signedWithTestKey(req, url)) return s3Error(res, 403, 'InvalidAccessKeyId')
-  if (decodeURIComponent(bucket) != SETTINGS.bucketName) return s3Error(res, 404, 'NoSuchBucket')
+  const [, bucketPart, ...keyParts] = url.pathname.split('/')
+  const bucket = decodeURIComponent(bucketPart)
+  const credential = credentialOf(req, url)
+  if (bucket == PUBLIC_SETTINGS.bucketName) {
+    if (credential) return s3Error(res, 401, 'InvalidAccessKeyId')
+    // like a cache in front of a public bucket that has kept the headers of
+    // a request without an Origin: only a query string gets fresh ones
+    if (!url.search) res.removeHeader('Access-Control-Expose-Headers')
+  }
+  else if (!credential.includes(`${SETTINGS.accessKeyId}/`)) return s3Error(res, 403, 'InvalidAccessKeyId')
+  else if (bucket != SETTINGS.bucketName) return s3Error(res, 404, 'NoSuchBucket')
   const key = keyParts.map(decodeURIComponent).join('/')
   if (!key) {
-    return url.searchParams.get('list-type') == '2' ? list(res, url) : s3Error(res, 400, 'InvalidRequest')
+    return url.searchParams.get('list-type') == '2' ? list(res, url, bucket) : s3Error(res, 400, 'InvalidRequest')
   }
   const object = objects.get(key)
   if (!object) return s3Error(res, 404, 'NoSuchKey')

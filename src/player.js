@@ -1,7 +1,7 @@
 import { WAKELOCK_CLEAR_TIMEOUT, SEEK_TARGET_TIMEOUT } from './constants.js'
 import { locale } from './locale.js'
 import { pauseSVG, playSVG, returnSVG, forwardSVG, offlineSVG, removeSVG } from './icons.js'
-import { s3, signedUrl } from './s3.js'
+import { s3, objectUrl } from './s3.js'
 import { offlineReady, offlineKeys, failedKeys, trackMeta, downloadKey, downloadRunning, getOfflineUrl } from './offline.js'
 
 export let audio, play, collection, playerList
@@ -479,7 +479,7 @@ export async function createAudioTrack(obj, source) {
 
   // album art is not stored offline
   if (myImage && navigator.onLine && s3) {
-    const url = await signedUrl(myImage)
+    const url = await objectUrl(myImage)
     track.style.backgroundImage = `url(${url})`
     track.dataset.albumArt = url
   }

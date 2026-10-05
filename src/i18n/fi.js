@@ -22,6 +22,7 @@ export default {
   language: 'Kieli',
   deviceLanguage: 'Laitteen kieli',
   missingSetting: (key) => `S3-asetus ${key} puuttuu`,
+  publicBucket: 'Ei tarvita julkiselle säilölle',
 
   transferTitle: 'Asetusten siirto',
   copySettings: 'Kopioi asetuskoodi',

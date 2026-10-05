@@ -1,5 +1,6 @@
 import { locale, translations, LANGUAGE_KEY } from './locale.js'
 import { encodeSettings, decodeSettings } from './settings-code.js'
+import { DEFAULTS } from './defaults.js'
 
 // addTransferControls comes from the platform: the ways of moving the
 // settings code between devices differ between the PWA and the TV app
@@ -16,7 +17,8 @@ export function initSettings(player, { onSave, addTransferControls }) {
   const settingsForm = document.createElement('form')
   settingsForm.method = 'dialog'
 
-  const makeField = (id, labelText, type, autocompleteType, storageKey) => {
+  // a default shows as the placeholder, and an empty field uses it
+  const makeField = (id, labelText, type, autocompleteType, storageKey, required = true) => {
     const label = document.createElement('label')
     label.htmlFor = id
     label.textContent = labelText
@@ -25,17 +27,22 @@ export function initSettings(player, { onSave, addTransferControls }) {
     input.id = id
     input.type = type
     input.size = 40
-    input.required = true
+    input.required = required && !DEFAULTS[storageKey]
+    if (DEFAULTS[storageKey]) {
+      input.placeholder = DEFAULTS[storageKey]
+    }
     input.autocomplete = autocompleteType
     input.value = localStorage.getItem(storageKey) || ''
     settingsForm.appendChild(input)
     return input
   }
 
-  const accessKeyIdInput     = makeField('accessKeyIdInput',     locale.accessKeyId,     'text',     'on',               'accessKeyId')
-  const secretAccessKeyInput = makeField('secretAccessKeyInput', locale.secretAccessKey, 'password', 'current-password', 'secretAccessKey')
+  // without keys the bucket is read as a public one
+  const accessKeyIdInput     = makeField('accessKeyIdInput',     locale.accessKeyId,     'text',     'on',               'accessKeyId', false)
+  const secretAccessKeyInput = makeField('secretAccessKeyInput', locale.secretAccessKey, 'password', 'current-password', 'secretAccessKey', false)
+  accessKeyIdInput.placeholder = secretAccessKeyInput.placeholder = locale.publicBucket
   const endpointInput        = makeField('endpointInput',        locale.endpoint,        'text',     'url',              'endpoint')
-  const regionInput          = makeField('regionInput',          locale.region,          'text',     'on',               'region')
+  const regionInput          = makeField('regionInput',          locale.region,          'text',     'on',               'region', false)
   const bucketInput          = makeField('bucketInput',          locale.bucketName,      'text',     'on',               'bucketName')
   const playerColor          = makeField('playerColor',          locale.playerColor,     'range',    'off',              'playerColor')
   playerColor.min = 0

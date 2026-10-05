@@ -33,6 +33,11 @@ jobs:
       - run: npm install
       - run: npx playwright install --with-deps chromium
       - run: npm run check
+      # the tests ran without a default bucket; the deployed app has the
+      # one of the repository variable DEFAULT_BUCKET_URL, if it's set
+      - run: npm run build:pwa
+        env:
+          DEFAULT_BUCKET_URL: ${{ vars.DEFAULT_BUCKET_URL }}
       - uses: actions/upload-artifact@v7
         with:
           name: pwa

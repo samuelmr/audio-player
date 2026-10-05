@@ -1,5 +1,5 @@
-import { test, expect, folder } from '../fixtures.js'
-import { SETTINGS } from '../library.js'
+import { test, expect, folder, queue, audioState, expectPlaying, addFolder } from '../fixtures.js'
+import { SETTINGS, PUBLIC_SETTINGS, COVER } from '../library.js'
 
 const dialog = (page) => page.locator('dialog#settings')
 const field = (page, key) => page.locator({
@@ -16,7 +16,8 @@ test.describe('first start', () => {
   test('asks for the settings, and lists the library once they are saved', async ({page}) => {
     await page.goto('./')
     await expect(dialog(page)).toBeVisible()
-    await expect(dialog(page).locator('.error')).toContainText('accessKeyId is missing')
+    // without keys the bucket would be a public one, at an address still to give
+    await expect(dialog(page).locator('.error')).toContainText('endpoint is missing')
     for (const [key, value] of Object.entries(SETTINGS)) {
       await field(page, key).fill(value)
     }
@@ -31,6 +32,30 @@ test.describe('first start', () => {
     await expect(folder(page, 'ABBA')).toBeVisible()
     expect(page.url()).not.toContain(SETTINGS.secretAccessKey)
     expect(await page.evaluate(() => localStorage.getItem('secretAccessKey'))).toBe(SETTINGS.secretAccessKey)
+  })
+})
+
+test.describe('a public bucket', () => {
+  test.use({settings: PUBLIC_SETTINGS})
+
+  test('is read without keys, and its tracks and covers from plain addresses', async ({page}) => {
+    await page.goto('./')
+    await page.locator('button.gear').click()
+    await expect(field(page, 'accessKeyId')).toHaveAttribute('placeholder', 'None for a public bucket')
+    await page.keyboard.press('Escape')
+    await addFolder(page, 'Miles Davis')
+    await expectPlaying(page, 'So What')
+    expect((await audioState(page)).src).not.toContain('X-Amz-')
+    await expect(queue(page).first()).toHaveAttribute('style', /cover\.png/)
+    await expect.poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue('--base-hue'))).toBe(String(COVER.hue))
+  })
+
+  test('needs both keys to sign, not only one', async ({page}) => {
+    await page.goto('./')
+    await page.locator('button.gear').click()
+    await field(page, 'accessKeyId').fill(SETTINGS.accessKeyId)
+    await dialog(page).getByRole('button', {name: 'Save'}).click()
+    await expect(dialog(page).locator('.error')).toContainText('secretAccessKey is missing')
   })
 })
 

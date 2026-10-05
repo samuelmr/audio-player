@@ -14,6 +14,13 @@ export const SETTINGS = {
   bucketName: 'music',
 }
 
+// the same library in a public bucket, read without keys. Its name has a
+// tenant in front, like the public buckets of some providers
+export const PUBLIC_SETTINGS = {
+  endpoint: SETTINGS.endpoint,
+  bucketName: 'tenant:public-music',
+}
+
 // the ABBA tracks are short, to test moving on at the end of a track, and
 // the Miles Davis ones long enough to seek in.
 // meta becomes x-amz-meta-* headers, like the metadata of the real uploads;
