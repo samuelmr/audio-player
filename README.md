@@ -263,8 +263,8 @@ share it.
   `index.html#ABBA/Arrival`. Opening such an address adds that folder to the
   queue.
 - The button at the top right, or a tap on the album art, opens *Now
-  Playing* over the whole window. Its own button at the top right, or Esc,
-  closes it.
+  Playing* over the whole window; on a computer, the button also makes the
+  browser full screen. Its own button at the top right, or Esc, closes it.
 - On a computer, Space plays and pauses, ← and → move to the previous and next
   track, and ↑ and ↓ move in the queue.
 

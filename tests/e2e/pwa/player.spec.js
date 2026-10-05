@@ -97,6 +97,29 @@ test.describe('with long tracks queued', () => {
     await expect(page.locator('audio-player button.np-open')).toBeFocused()
   })
 
+  test('on a computer, the expand button also makes the browser full screen', async ({page}) => {
+    const view = page.locator('#now-playing')
+    const isFullScreen = () => page.evaluate(() => Boolean(document.fullscreenElement))
+    await page.locator('audio-player button.np-open').click()
+    await expect(view).toBeVisible()
+    await expect.poll(isFullScreen).toBe(true)
+    await view.locator('.np-close').click()
+    await expect(view).toBeHidden()
+    await expect.poll(isFullScreen).toBe(false)
+
+    // leaving full screen, as Esc does, closes Now Playing too
+    await page.locator('audio-player button.np-open').click()
+    await expect.poll(isFullScreen).toBe(true)
+    await page.evaluate(() => document.exitFullscreen())
+    await expect(view).toBeHidden()
+  })
+
+  test('the album art opens Now Playing without full screen', async ({page}) => {
+    await bar(page).locator('.now-art').click()
+    await expect(page.locator('#now-playing')).toBeVisible()
+    expect(await page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false)
+  })
+
   test('Now Playing opens with a tap on the album art, and Esc closes it', async ({page}) => {
     const view = page.locator('#now-playing')
     await bar(page).locator('.now-art').click()

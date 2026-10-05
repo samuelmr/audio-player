@@ -31,7 +31,10 @@ export function init() {
 
 // Now Playing opens with the expand button at the top right, or a tap on
 // the album art, and closes with its own button or Esc. The page under it
-// doesn't scroll meanwhile.
+// doesn't scroll meanwhile. On a computer, the expand button also makes the
+// browser full screen, as its icon says, and leaving full screen, such as
+// with Esc, closes Now Playing too. Phones keep their browser as it is:
+// iPhones can't make a page full screen.
 function initNowPlayingButtons(player, now) {
   const expand = document.createElement('button')
   expand.type = 'button'
@@ -41,17 +44,33 @@ function initNowPlayingButtons(player, now) {
   expand.innerHTML = expandSVG
   player.appendChild(expand)
 
+  const computer = window.matchMedia('(hover: hover) and (pointer: fine)')
+  let fullScreen = false
   const view = initNowPlaying({controls: true, onClose: () => {
     document.documentElement.style.overflow = ''
     if (view.contains(document.activeElement)) expand.focus()
+    if (fullScreen && document.fullscreenElement) {
+      document.exitFullscreen().catch(e => console.warn('Leaving full screen failed:', e))
+    }
+    fullScreen = false
   }})
-  const open = () => {
+  const open = (e) => {
     if (!openNowPlaying()) return
     document.documentElement.style.overflow = 'hidden'
     view.querySelector('.np-close').focus()
+    if (e.currentTarget == expand && computer.matches && document.fullscreenEnabled && !document.fullscreenElement) {
+      fullScreen = true
+      document.documentElement.requestFullscreen().catch((e) => {
+        fullScreen = false
+        console.warn('Going full screen failed:', e)
+      })
+    }
   }
   expand.onclick = open
   now.querySelector('.now-art').onclick = open
+  document.addEventListener('fullscreenchange', () => {
+    if (fullScreen && !document.fullscreenElement) closeNowPlaying()
+  })
   window.addEventListener('keydown', (e) => {
     if (e.key == 'Escape' && isOpen()) closeNowPlaying()
   })
