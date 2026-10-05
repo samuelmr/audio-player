@@ -254,7 +254,9 @@ share it.
 - Open the folders to browse, and press **+** to add a track, an album, or an
   artist to the queue. The playlists are under *Playlists* at the top.
 - Search finds artists, albums, tracks and playlists in the whole bucket.
-- *Save offline* saves what's in the queue as an offline playlist. Its tracks
+- The queue is under the player. Its first row, *Queue*, folds it away to
+  show only the next track, and opens it again.
+- *Save offline*, in the open queue, saves what's in the queue as an offline playlist. Its tracks
   are downloaded in the background, and it can be played without a network.
 - The address of the page follows what you add, such as
   `index.html#ABBA/Arrival`. Opening such an address adds that folder to the
@@ -427,7 +429,10 @@ trying it on a TV.
 ### Layout
 
 - `src/` has the code shared by both apps, and `src/platform/` what differs
-  between them
+  between them. `src/styles.css` is the look of both; each app's HTML
+  template adds its own: hover and touch in the web app, the remote's focus
+  and the larger text in the TV app. The TV loads `src/styles.css` too, so it
+  must work on Chromium 76.
 - `src/i18n/` has the translations, see [Translating](#translating)
 - `pwa/` has the web app's HTML template, service worker, manifest and icon
 - `tizen/` has the TV app's HTML template and `config.xml`

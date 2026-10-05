@@ -43,6 +43,189 @@
   <style>
 <%= htmlWebpackPlugin.options.styles %>
   </style>
+  <style>
+    /* The web app is used by clicking and tapping: rows and buttons light
+       up under the mouse, the keyboard's focus is a ring, touch gets larger
+       targets, and phones stack the player and give the tracks two lines.
+       Only for browsers, so newer CSS than the TV's is fine here. */
+    :focus:not(:focus-visible) {
+        outline: none;
+    }
+    :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+
+    /* a click anywhere on a queued track plays it, as on its title */
+    audio-track {
+        cursor: pointer;
+    }
+    /* over the faded parts, as opacity paints them in a layer of their own */
+    audio-track .track a:after {
+        content: "";
+        inset: 0;
+        position: absolute;
+        z-index: 1;
+    }
+
+    @media (hover: hover) {
+        audio-player #buttons button:not(:disabled):hover {
+            transform: scale(1.08);
+        }
+        audio-player button.gear:hover, audio-player ol.collection a:hover, audio-browser a.action:hover {
+            opacity: 1;
+        }
+        audio-player button.save-offline:hover, .queue-summary:hover, audio-player ol.collection li:hover,
+        audio-track:not(.playing):hover, audio-browser li.song:hover, audio-browser nav#skipNav ol a:hover,
+        audio-browser nav#skipNav ul.search-results li:hover {
+            background-color: var(--line);
+        }
+        audio-browser a.action:hover {
+            background-color: var(--accent);
+            color: var(--on-accent);
+        }
+        /* a folder's own row, not its contents */
+        audio-browser li.folder:hover:not(:has(li:hover)), audio-browser li.playlist:hover:not(:has(li:hover)) {
+            background-image: linear-gradient(var(--glass), var(--glass));
+            background-repeat: no-repeat;
+            background-size: 100% 2.3em;
+            cursor: pointer;
+        }
+    }
+
+    /* the progress bar in Firefox, which has its own parts */
+    audio-player #progress::-moz-range-track {
+        background-color: var(--line);
+        border-radius: 0.15em;
+        height: 0.3em;
+    }
+    audio-player #progress::-moz-range-progress {
+        background-color: var(--accent);
+        border-radius: 0.15em;
+        height: 0.3em;
+    }
+    audio-player #progress::-moz-range-thumb {
+        background-color: var(--accent);
+        border: 0;
+        height: 1em;
+        width: 1em;
+    }
+    audio-player.idle #progress::-moz-range-thumb {
+        visibility: hidden;
+    }
+
+    /* fingers need larger targets than the mouse */
+    @media (pointer: coarse) {
+        audio-player #progress {
+            height: 2.75em;
+            margin: 0;
+        }
+        audio-player #progress::-webkit-slider-thumb {
+            height: 1.3em;
+            margin-top: -0.5em;
+            width: 1.3em;
+        }
+        audio-browser li.folder, audio-browser li.playlist, audio-browser li.song {
+            padding-bottom: 0.65em;
+            padding-top: 0.65em;
+        }
+        audio-browser a.action {
+            height: 2.5em;
+            padding: 0.5em;
+            top: 0.1em;
+        }
+        audio-player ol.collection a {
+            padding: 0.4em;
+        }
+    }
+
+    /* phones: the art and title over the progress bar, and the buttons
+       under it, between the time and the settings */
+    @media (max-width: 40em) {
+        :root {
+            --gutter: 1em;
+        }
+        audio-player {
+            grid-column-gap: 0.5em;
+            grid-template-areas:
+                "now now gear"
+                "progress progress progress"
+                "time buttons ."
+                "summary summary summary"
+                "sources sources sources"
+                "offline offline offline"
+                "queue queue queue";
+            grid-template-columns: 1fr auto 1fr;
+        }
+        audio-player .now-art {
+            height: 3.75em;
+            margin-right: 1em;
+            width: 3.75em;
+        }
+        audio-player .now-title {
+            font-size: 1.35em;
+        }
+        audio-player .now-subtitle {
+            font-size: 1em;
+        }
+        audio-player button.gear {
+            align-self: start;
+            justify-self: end;
+            margin-top: 0.3em;
+        }
+        audio-player .audio-time {
+            font-size: 0.95em;
+            justify-self: start;
+        }
+        audio-player #buttons button {
+            height: 3em;
+            margin: 0 0.4em;
+            width: 3em;
+        }
+        audio-player #buttons button:nth-child(2) {
+            height: 4em;
+            width: 4em;
+        }
+        audio-player button.save-offline {
+            justify-self: start;
+        }
+        audio-player ol.collection {
+            margin-bottom: 0;
+        }
+        .queue-summary .next {
+            display: block;
+            margin: 0.2em 0 0 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        /* two lines: the title, and the artist under it */
+        audio-track {
+            grid-template-areas: "track duration" "artist duration";
+            grid-template-columns: 1fr auto;
+            grid-template-rows: auto auto;
+            height: 3.6em;
+            align-content: center;
+        }
+        audio-track section.album {
+            display: none;
+        }
+        audio-track .artist {
+            font-size: 0.9em;
+        }
+        /* the shortcuts scroll sideways, over the search */
+        audio-browser nav#skipNav {
+            grid-row-gap: 0.5em;
+            grid-template-columns: 1fr;
+        }
+        audio-browser nav#skipNav ol {
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        audio-browser nav#skipNav ol li {
+            flex: none;
+        }
+    }
+  </style>
  </head>
  <body>
   <audio-player id="ap" name="Player" track="" next="" previous="">

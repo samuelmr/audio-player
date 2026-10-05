@@ -7,9 +7,17 @@ const play = (page) => button(page, 1)
 const next = (page) => button(page, 2)
 
 const isPaused = async (page) => (await audioState(page)).paused
+const bar = (page) => page.locator('audio-player .now')
+const summary = (page) => page.locator('.queue-summary')
 
 test.beforeEach(async ({page}) => {
   await page.goto('./')
+})
+
+test('tells how to start when nothing plays', async ({page}) => {
+  await expect(bar(page).locator('.now-title')).toHaveText('Nothing playing')
+  await expect(bar(page).locator('.now-subtitle')).toHaveText('Add music with the + buttons in the library')
+  await expect(summary(page)).toBeHidden()
 })
 
 test('moves on at the end of a track, and from the last back to the first', async ({page}) => {
@@ -34,6 +42,30 @@ test.describe('with long tracks queued', () => {
     await expect(page).toHaveTitle('So What')
   })
 
+  test('shows the playing track in the player bar', async ({page}) => {
+    await expect(bar(page).locator('.now-title')).toHaveText('So What')
+    await expect(bar(page).locator('.now-subtitle')).toHaveText('Miles Davis · Kind of Blue · 1959')
+    await expect(bar(page).locator('img')).toHaveAttribute('src', /cover\.png/)
+  })
+
+  test('the queue is open, and its summary closes and opens it', async ({page}) => {
+    await expect(summary(page).locator('.count')).toHaveText('Queue: 2 tracks')
+    await expect(summary(page).locator('.next')).toHaveText('Up next: Freddie Freeloader – Miles Davis')
+    await expect(summary(page)).toHaveAttribute('aria-expanded', 'true')
+    await expect(queue(page).first()).toBeVisible()
+    await expect(page.locator('audio-player .collection')).toBeVisible()
+
+    await summary(page).click()
+    await expect(summary(page)).toHaveAttribute('aria-expanded', 'false')
+    await expect(queue(page).first()).toBeHidden()
+    await expect(page.locator('audio-player .collection')).toBeHidden()
+    await expect(page.locator('audio-player button.save-offline')).toBeHidden()
+
+    await summary(page).click()
+    await expect(queue(page).first()).toBeVisible()
+    await expect(page.locator('audio-player button.save-offline')).toBeVisible()
+  })
+
   test('shows the album art, and takes its color', async ({page}) => {
     await expect(queue(page).first()).toHaveAttribute('style', /cover\.png/)
     await expect.poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue('--base-hue'))).toBe(String(COVER.hue))
@@ -55,6 +87,13 @@ test.describe('with long tracks queued', () => {
 
   test('plays a queued track when it is clicked', async ({page}) => {
     await queue(page).nth(1).locator('.name a').click()
+    await expectPlaying(page, 'Freddie Freeloader')
+  })
+
+  test('plays a queued track when it is clicked anywhere, not only on its title', async ({page}) => {
+    const track = queue(page).nth(1)
+    const box = await track.boundingBox()
+    await track.click({position: {x: box.width - 20, y: box.height / 2}})
     await expectPlaying(page, 'Freddie Freeloader')
   })
 

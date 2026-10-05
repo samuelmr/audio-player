@@ -10,6 +10,7 @@
 import { locale } from '../locale.js'
 import { playSVG } from '../icons.js'
 import { audio, play, playerList, playNext, playPrevious } from '../player.js'
+import { trackDetails } from '../player-bar.js'
 import { focusPlayer } from './tizen-library.js'
 
 const LEFT = 37
@@ -120,19 +121,6 @@ function resetIdle() {
   idleTimer = setTimeout(() => {
     if (!audio.paused && !document.querySelector('dialog[open]')) open()
   }, IDLE_TIME)
-}
-
-const text = (track, selector) => track?.querySelector(selector)?.textContent.trim() || ''
-
-// what the TV shows of a queued track, also in the player bar and the queue
-export function trackDetails(track) {
-  return {
-    title: text(track, '.name a'),
-    artist: text(track, '.artist'),
-    album: [text(track, '.album'), text(track, '.published')].filter(Boolean).join(' · '),
-    cover: track.dataset.albumArt || '',
-    line: [text(track, '.name a'), text(track, '.artist')].filter(Boolean).join(' – '),
-  }
 }
 
 function update() {

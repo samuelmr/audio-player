@@ -60,4 +60,5 @@ export default {
   upNextTrack: (track) => `Seuraavaksi: ${track}`,
   nothingPlaying: 'Mitään ei soi',
   addHint: 'Valitse musiikkia kirjastosta ja paina OK',
+  addHintButtons: 'Lisää musiikkia kirjaston +-painikkeilla',
 }

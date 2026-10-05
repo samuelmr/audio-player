@@ -4,8 +4,14 @@ import jsQR from "jsqr"
 import { locale } from '../locale.js'
 import { SETTINGS_CODE_PREFIX } from '../settings-code.js'
 import { initKeyboard } from '../keyboard.js'
+import { playerList } from '../player.js'
+import { initPlayerBar } from '../player-bar.js'
+import { initQueue } from '../queue.js'
 
 export function init() {
+  const player = document.querySelector('audio-player')
+  initQueue(player, playerList)
+  initPlayerBar(player, {hint: locale.addHintButtons})
   initKeyboard()
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(e => console.warn('Service worker registration failed:', e))
