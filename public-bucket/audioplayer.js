@@ -839,7 +839,9 @@ history.pushState(o.href,"",`#${e.Key}`),document.title=o.textContent;
 // collection.innerHTML = obj.Key
 const r=Wm("playlist",e.Key,e.Key);Vm(e.Key),Im.appendChild(r);
 // }
-const n=await async function(e){return(await Kf.send(new Lf({Bucket:Vf,Key:e}))).Body.transformToString()}(e.Key);try{const t=JSON.parse(n);e.Key.replace(/\/[^\/]+$/,"");t?.track.forEach(async e=>{const t={Bucket:Vf,Key:e.url,Metadata:e};t.href=await Qf(t.Key),tp(t)})}catch(t){console.error(t)}},n.appendChild(o),t.appendChild(n),n}// ./src/offline.js
+const n=await async function(e){return(await Kf.send(new Lf({Bucket:Vf,Key:e}))).Body.transformToString()}(e.Key);try{const t=JSON.parse(n);e.Key.replace(/\/[^\/]+$/,"");
+// one at a time, to keep the queue in the listed order
+for(const e of t?.track||[]){const t={Bucket:Vf,Key:e.url,Metadata:e};t.href=await Qf(t.Key),await tp(t)}}catch(t){console.error(t)}},n.appendChild(o),t.appendChild(n),n}// ./src/offline.js
 // Offline playlists
 // A saved playlist is a fixed list of S3 keys. The downloader saves the tracks
 // one at a time, in the order the playlists were saved, until every saved
