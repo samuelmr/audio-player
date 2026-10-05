@@ -1,0 +1,629 @@
+<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="HandheldFriendly" content="True"><meta name="MobileOptimized" content="width"><meta name="theme-color" content="hsl(180, 50%, 75%)" media="(prefers-color-scheme: light)"><meta name="theme-color" content="hsl(180, 50%, 25%)" media="(prefers-color-scheme: dark)"><link rel="icon" href="play-192.png"/><script>const keys = [
+     'accessKeyId',
+     'secretAccessKey',
+     'endpoint',
+     'region',
+     'bucketName'
+    ]
+    const params = new URLSearchParams(document.location.search)
+    const a = document.createElement('a')
+    a.href = document.location.href
+    let keysFound = false
+    keys.forEach(key => {
+      if (params.get(key)) {
+        keysFound = true
+        localStorage.setItem(key, params.get(key))
+        a.search = a.search.replace(new RegExp(`${key}=[^&]*&?`), '')
+      }
+    })
+    if (keysFound) {
+      // redirect to hide secret params
+      document.location.href = a.href
+    }</script><title>Ctrl&ndash; music player</title><link rel="manifest" href="./manifest.json"><link rel="apple-touch-icon" href="play-192.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200;400;600;700&amp;display=swap" rel="stylesheet"><style>@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200;400;600;700&display=swap');
+:root {
+    --base-hue: 180;
+    --base-saturation: 45%;
+    --base-lightness: 75%;
+    --text-color: hsl(var(--base-hue), 50%, 0.5%);
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --base-lightness: 25%;
+        --text-color: hsl(var(--base-hue), 50%, 99.5%);
+    }
+}
+body {
+    background-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
+    color: var(--text-color);
+    font-family: 'Source Sans Pro';
+}
+* {
+    box-sizing: border-box;        
+    margin-block-start: 0;
+    margin-block-end: 0;
+    margin-inline-start: 0;
+    margin-inline-end: 0;
+    padding-inline-start: 0;
+}
+audio-player, audio-browser {
+    background-color: hsl(var(--base-hue), var(--base-saturation), var(--base-lightness));
+    background: linear-gradient(209deg, hsl(var(--base-hue), var(--base-saturation), var(--base-lightness)), hsl(var(--base-hue), var(--base-saturation), calc(0.9 * var(--base-lightness))));
+    border-color: hsla(var(--base-hue), 50%, 5%, 0.5);
+    border-radius: 0.5em;
+    border-style: outset;
+    border-width: 2px;
+    display: block;
+    margin: 0 auto 1em auto;
+    max-width: 80em;
+    padding: 0 1% 0.5em 1%;
+    width: 98%;
+}
+audio-player {
+    border-radius: 0 0 0.5em 0.5em;
+    padding-top: 0.5em;
+}
+audio-player ol.collection {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+}
+audio-player ol.collection li {
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.25);
+    border-radius: 0.5em;
+    margin: 0 0.5em 0.5em 0;
+    padding: 0 0.5em;
+}
+audio-player nav {
+    background-color: hsla(var(--base-hue), 100%, 10%, 0.75);
+    border-color: hsla(var(--base-hue), 75%, 10%, 0.25);
+    border-radius: 0.5em;
+    border-style: inset;
+    border-width: 2px;
+    max-height: 30vh;
+    overflow: auto;
+    padding: 0.5em 1em;
+}
+audio-track {
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.25);
+    background-position: top right;
+    background-repeat: no-repeat;
+    background-size: contain;
+    border-radius: 0.5em;
+    display: grid;
+    grid-template-areas:
+     "artist track duration"
+     "tracknumber album year"
+     "genre playlist keywords";
+    grid-template-rows: 1.2em 1em 1em;
+    grid-template-columns: 30% 60% 10%;
+    height: 1.5em;
+    margin: 0.5em auto;
+    padding: 0 4em 0 0.5em;
+    overflow: hidden;
+    transition: all 175ms;
+    width: 100%;
+}
+audio-track.playing {
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.75);
+    border-color: hsla(var(--base-hue), 50%, 5%, 0.5);
+    border-radius: 0.5em;
+    border-style: outset;
+    border-width: 2px;
+    color: hsla(var(--base-hue), 75%, 10%, 0.99);
+    height: auto;
+}
+audio-track.playing a {
+    color: hsla(var(--base-hue), 75%, 10%, 0.99);
+}
+audio-track:focus, audio-track:focus-within, audio-track:hover {
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.5);
+    height: auto;
+    outline: none;
+    transition: all 120ms;
+}
+#buttons, .audio-time, div.track {
+    float: left;
+    margin: 0 0 0.5em 0;
+    padding: 0;
+/*
+    text-align: center;
+*/
+}
+#buttons button, .audio-time input, .track-title {
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.75);
+    border-color: hsla(var(--base-hue), 50%, 5%, 0.5);
+    border-radius: 0.2em;
+    color: hsla(var(--base-hue), 75%, 10%, 0.99);
+    /* inputs don't inherit the font, and the fallback may be much wider */
+    font-family: inherit;
+    font-size: 1.5em;
+    height: 1.5em;
+    margin: 0;
+    padding: 0;
+    transition: all 175ms;
+}
+#buttons {
+    text-wrap: nowrap;
+    width: 10em;
+}
+#buttons button {
+    width: 2em;
+}
+#buttons button svg {
+    margin: -0.25em 0 0 0;
+    padding: 0;
+    transform: scale(0.75);
+}
+#buttons button svg path {
+    fill: hsla(var(--base-hue), 75%, 10%, 0.99);
+}
+#buttons button:focus, #buttons button:hover {
+    outline: none;
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.5);
+    transition: all 120ms;
+}
+#buttons button.stalled {
+    animation: 3s infinite alternate fadeInOut;
+}
+@keyframes pulse {
+    from { opacity: 1; }
+    to { opacity: 0.2; }
+}
+button.save-offline {
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.25);
+    border: none;
+    border-radius: 0.5em;
+    color: var(--text-color);
+    cursor: pointer;
+    float: right;
+    font-family: inherit;
+    font-size: inherit;
+    margin: 0 0 0.5em 0;
+    padding: 0 0.5em;
+}
+button.save-offline:focus, button.save-offline:hover {
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.5);
+    outline: none;
+}
+button.save-offline svg, audio-track .offline-icon svg {
+    fill: currentColor;
+    height: 1em;
+    vertical-align: -0.25em;
+}
+button.save-offline svg {
+    height: 1.5em;
+    vertical-align: -0.125em;
+}
+button.save-offline[hidden], audio-browser ol.playlists[hidden] {
+    display: none;
+}
+audio-track .offline-icon {
+    display: none;
+    margin-right: 0.25em;
+}
+audio-track.offline-saved .offline-icon, audio-track.offline-downloading .offline-icon, audio-track.offline-failed .offline-icon {
+    display: inline;
+}
+audio-track.offline-downloading .offline-icon {
+    animation: 0.8s infinite alternate pulse;
+}
+audio-track.offline-failed .offline-icon {
+    color: red;
+}
+@media (prefers-reduced-motion: reduce) {
+    audio-track.offline-downloading .offline-icon {
+        animation: none;
+        opacity: 0.5;
+    }
+}
+audio-browser .offline-status, audio-browser .offline-message {
+    font-size: smaller;
+    opacity: 0.75;
+}
+.audio-time {
+    margin-right: 0.5em;
+    text-wrap: nowrap;
+}
+.audio-time input {
+    text-align: center;
+    width: 3.5em;
+}
+.audio-time span {
+    font-size: 2em;
+}
+div.track, .track-title {
+    max-width: 96%;
+}
+#progress {
+    accent-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
+    clear: both;
+    display: block;
+    margin: 1em auto;
+    width: 90%;
+}
+section {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 0.5em;
+    white-space: nowrap;
+}
+audio-track section {
+    display: none;
+}
+audio-track.playing section, audio-track:focus section, audio-track:focus-within section, audio-track:hover section, audio-track section.artist, audio-track section.track {
+    display: block;
+}
+audio-browser nav ol, audio-browser nav ol li {
+    margin: 0;
+    padding: 0;
+    scroll-margin-top: 2em;
+}
+audio-browser nav ol ol {
+    display: none;
+}
+audio-browser nav ol li.open ol {
+    display: block;
+}
+audio-browser nav ol li.open ol li ol {
+    display: none;
+}
+audio-browser nav ol li.open ol li.open ol {
+    display: block;
+}
+audio-browser nav#skipNav {
+    background-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
+    border-radius: 0 0 0.5em 0.5em;
+    margin: 0;
+    padding: 0 0.5em;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+audio-browser nav#skipNav a {
+    color: hsla(var(--base-hue), 60%, 98%, 0.9);
+    display: inline-block;
+    font-weight: bold;
+    padding: 0.25em;
+}
+audio-browser nav#skipNav a svg {
+    fill: currentColor;
+    height: 1em;
+    vertical-align: -0.125em;
+}
+audio-browser nav#skipNav ol {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0;
+    max-width: 100%;
+    padding: 0;
+}
+audio-browser nav#skipNav li {
+    list-style-type: none;
+}
+audio-browser nav ol li {
+    list-style-type: none;
+    padding: 0 0.5em;
+}
+audio-browser nav#skipNav .search {
+    padding: 0 0.25em 0.5em 0.25em;
+}
+audio-browser nav#skipNav input[type=search] {
+    background-color: hsla(var(--base-hue), 100%, 100%, 0.75);
+    border-color: hsla(var(--base-hue), 50%, 5%, 0.5);
+    border-radius: 0.2em;
+    color: hsla(var(--base-hue), 75%, 10%, 0.99);
+    font-family: inherit;
+    font-size: 1.25em;
+    padding: 0 0.25em;
+    width: 100%;
+}
+audio-browser nav#skipNav ul.search-results {
+    list-style: none;
+    max-height: 50vh;
+    overflow-y: auto;
+    padding: 0;
+}
+audio-browser nav#skipNav ul.search-results:empty {
+    display: none;
+}
+audio-browser nav#skipNav ul.search-results li {
+    background-color: hsla(var(--base-hue), 60%, 98%, 0.9);
+    border-radius: 0.5em;
+    color: hsl(var(--base-hue), 75%, 2%);
+    margin: 0.25em 0;
+    padding: 0.25em 0.5em;
+}
+audio-browser nav#skipNav ul.search-results li.result-folder .name, audio-browser nav#skipNav ul.search-results li.result-playlist .name {
+    font-weight: bold;
+}
+audio-browser nav#skipNav ul.search-results li.empty {
+    font-style: italic;
+}
+audio-browser nav#skipNav ul.search-results small {
+    opacity: 0.75;
+}
+audio-browser nav#skipNav ul.search-results a {
+    color: inherit;
+    font-weight: normal;
+    padding: 0;
+}
+audio-browser nav#skipNav ul.search-results svg {
+    height: 1.5em;
+    margin: 0 0 -0.4em 0.25em;
+    width: 1.5em;
+}
+audio-browser nav ol li.folder {
+    border-color: hsla(var(--base-hue), 50%, 5%, 0.5);
+    border-radius: 0.5em;
+    border-style: outset;
+    border-width: 1px;
+    margin: 0.5em 0;
+    padding: 0 1em 1em 1em;
+}
+audio-browser .playlists .folder {
+    padding-top: 0.5em;
+}
+audio-browser nav .folder {
+    padding: 0.25em 1em;
+    position: relative;
+    transition: all 0.5s ease-out;
+}
+audio-browser nav .folder svg, .collection svg {
+    height: 2em;
+    margin: 0 0.5em -0.5em 0.5em;
+}
+audio-browser nav ol li.folder.open, audio-browser nav ol li.folder.open a, audio-browser nav ol li.folder.open li.folder, audio-browser nav ol li.folder.open li.playlist {
+    background-color: hsla(var(--base-hue), 60%, 98%, 0.9);
+    color: hsl(var(--base-hue), 75%, 2%);
+}
+audio-browser nav > ol > li.folder.open {
+    transition: all 0.175s ease-out;
+}
+audio-browser nav .folder:before {
+    content: "›";
+    font-size: x-large;
+    left: 0.5ex;
+    position: absolute;
+    top: 0;
+    transition: all 120ms;
+    transform: rotate(0);
+}
+audio-browser nav .folder.open:before {
+    transform: rotate(90deg);
+}
+/*
+.song {
+    position: relative;
+    left: 26em;
+}
+*/
+a {
+    color: var(--text-color);
+    text-decoration: none;
+}
+a:focus, a:hover {
+    outline: none;
+    text-decoration: underline;
+}
+a.action {
+/*
+    font-size: 2em;
+    left: 0.125em;
+    line-height: 0.5em;
+*/
+    opacity: 0.25;
+/*
+    position: relative;
+    top: 0.125em;
+*/
+}
+a.action:hover, a.action:active {
+    opacity: 1;
+    text-decoration: none;
+}
+.album {
+    font-size: smaller;
+    grid-area: album;
+}
+.artist {
+    grid-area: artist;
+}
+.duration {
+    font-size: smaller;
+    grid-area: duration;
+    text-align: right;
+}
+.genre {
+    font-size: smaller;
+    font-style: italic;
+    grid-area: genre;
+}
+.keywords {
+    font-size: smaller;
+    grid-area: keywords;
+}
+.playlist {
+    font-size: smaller;
+    grid-area: playlist;
+}
+.title {
+    display: none;
+}
+.track {
+    font-weight: bold;
+    grid-area: track;
+}
+.trackNumber {
+    font-size: smaller;
+    grid-area: tracknumber;
+}
+.published {
+    font-size: smaller;
+    grid-area: year;
+    text-align: right;
+}
+button.gear {
+    background-color: hsla(var(--base-hue), var(--base-saturation), 15%, 0.25);
+    float: right;
+}
+button.gear {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 2em;
+    height: 1em;
+    line-height: 1;
+    padding: 0;
+    width: 1em;
+}
+/*
+storage-settings.open {
+    height: 100vh;
+    overflow-y: auto;
+    padding: 2em;
+    right: 0;
+    top: 0;
+    width: 100%;
+}
+storage-settings.open button.gear {
+    display: none;
+}
+*/
+dialog#settings, dialog#save-offline {
+    background-color: hsl(var(--base-hue), 50%, 95%);
+    border-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
+    border-radius: 0.5em;
+    margin: auto;
+    padding: 1em;
+}
+dialog#settings input#playerColor {
+    accent-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
+}
+dialog#settings label, dialog#save-offline label {
+    color: hsl(var(--base-hue), 50%, 5%);
+    display: block;
+    margin-top: 0.5em;
+}
+/* a grid, as the oldest TVs (Chromium 76) have no gap in flexbox */
+dialog#settings .buttons, dialog#save-offline .buttons {
+    display: grid;
+    gap: 0.5em;
+    grid-auto-flow: column;
+    justify-content: start;
+    margin-top: 0.5em;
+}
+dialog#settings .error {
+    color: red;
+}
+dialog#settings fieldset.transfer {
+    border-color: hsl(var(--base-hue), var(--base-saturation), calc(100% - var(--base-lightness)));
+    border-radius: 0.5em;
+    color: hsl(var(--base-hue), 50%, 5%);
+    display: flex;
+    flex-flow: row wrap;
+    margin-top: 1em;
+    padding: 0.5em 0 0 0.5em;
+}
+/* margins, as Chromium 76 has no gap in flexbox and no flexbox in a fieldset;
+   in rem, as the buttons' em is smaller than the fieldset's */
+dialog#settings fieldset.transfer > :not(legend) {
+    margin: 0 0.5rem 0.5rem 0;
+}
+dialog#settings fieldset.transfer .qr {
+    flex-basis: 100%;
+}
+dialog#settings fieldset.transfer .qr:empty {
+    display: none;
+}
+dialog#settings .qr svg, dialog#settings .qr video {
+    background-color: white;
+    display: block;
+    max-width: 100%;
+    width: 20em;
+}
+@media (min-width: 60em) {
+  audio-browser nav .folder {
+    height: 2em;
+    left: 52%;
+    margin-right: 0;
+    padding-right: 0;
+    width: 48%;
+  }
+  audio-browser nav > ol > li.folder {
+    left: 1em;
+  }
+  audio-browser nav > ol > li.folder.open {
+    margin-right: -4px;
+    padding-right: -4px;
+    width: 98%;
+  }
+  audio-browser nav > ol > li.folder > ol > li.folder {
+    border-radius: 0.5em;
+    border-width: 1px 1px 1px 1px;
+    right: 1em;
+    top: -2em;
+  }
+  audio-browser nav ol.playlists li.playlist {
+    border-radius: 0.5em;
+    border-width: 1px 1px 1px 1px;
+    position: relative;
+    left: 52%;
+    top: -1em;
+    width: 48%;
+    margin: 0 0 0.5em 0;
+  }
+  audio-browser nav > ol > li.folder > ol > li.folder.open {
+    height: auto;
+  }
+}
+@media (max-width: 40em) {
+    html, body {
+        margin: 0;
+    }
+    body {
+        font-size: larger;
+    }
+    #buttons, .audio-time {
+        width: auto;
+    }
+    .audio-time {
+        float: right;
+    }
+    audio-player, audio-browser {
+        margin: 0 0 1em 0;
+        width: 100%;
+    }
+/*
+    audio-player {
+        position: sticky;
+        top: 0;
+    }
+*/
+    audio-player nav {
+        padding: 0.5em;
+    }
+    audio-player audio-track {
+/*
+        display: block;
+*/
+        height: 1.25em;
+        grid-template-areas:
+         "tracknumber track duration"
+         "artist artist artist"
+         "album album year"
+         "genre genre genre"
+         "playlist playlist playlist"
+         "keywords keywords keywords";
+        grid-template-rows: 1.2em 1.2em 1.2em;
+        grid-template-columns: 2.5ex 1fr 4.5ex;
+        padding: 0 0.5em;
+    }
+    audio-player audio-track.playing, audio-player audio-track:focus, audio-player audio-track:focus-within, audio-player audio-track:hover {
+        height: auto;
+        padding-right: 0.5em;
+    }
+    audio-player audio-track section {
+        padding: 0;
+    }
+}</style><script type="module" src="audioplayer.js"></script></head><body><audio-player id="ap" name="Player" track="" next="" previous=""></audio-player><audio-browser>Loading...</audio-browser></body></html>
