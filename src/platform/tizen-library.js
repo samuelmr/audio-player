@@ -11,6 +11,7 @@ import { getObjectText } from '../s3.js'
 import { queueKeys } from '../search.js'
 import { play as playButton } from '../player.js'
 import { itemName, startAdding, currentAdding } from '../adding.js'
+import { scrollIntoView } from '../spatial-navigation.js'
 
 const LEFT = 37
 const UP = 38
@@ -225,7 +226,7 @@ function trackTitle(track) {
 function focusItem(item, block = 'nearest') {
   item.tabIndex = -1
   item.focus()
-  item.scrollIntoView({block, inline: 'nearest'})
+  scrollIntoView(item, block)
 }
 
 // The shortcut of the focused item's section: its letter, or # for the playlists.

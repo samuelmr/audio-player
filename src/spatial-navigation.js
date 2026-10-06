@@ -28,6 +28,8 @@ const REPEAT_INTERVAL = 120
 const NEARBY = 40
 // added to the score of anything not in the same row or column
 const OUT_OF_LINE = 100000
+// the library's shortcut bar stays at the top, over the rows scrolling under it
+const STICKY = 'nav#skipNav'
 
 let lastMove = -Infinity // performance.now() starts from 0 when the app loads
 let cached, cachedScope
@@ -180,7 +182,7 @@ function move(direction) {
   const from = box(current)
   // in a list, the next item up or down is close in the document too
   if (direction == 'up' || direction == 'down') {
-    const nearby = all.slice(Math.max(0, index - NEARBY), index + NEARBY + 1)
+    const nearby = all.slice(Math.max(0, index - NEARBY), index + NEARBY + 1).filter(behindBar(current))
     const {best, bestScore} = closest(from, current, nearby, direction)
     if (bestScore < OUT_OF_LINE) return focus(best)
   }
@@ -189,6 +191,22 @@ function move(direction) {
   if (direction == 'up' || direction == 'down' || bestScore < OUT_OF_LINE) {
     focus(best)
   }
+}
+
+// Rows scrolled under the sticky bar come before the bar, as the list goes on
+// behind it: from a row, the bar and what's above it are left out.
+// Without a row up there, the bar is the next stop again.
+function behindBar(current) {
+  const bar = coveringBar(current)
+  if (!bar) return () => true
+  const barTop = bar.getBoundingClientRect().top
+  return (option) => !bar.contains(option) && box(option).bottom > barTop
+}
+
+// the sticky bar that the element can scroll under
+function coveringBar(element) {
+  const bar = document.querySelector(STICKY)
+  return bar && !bar.contains(element) && bar.parentNode.contains(element) ? bar : null
 }
 
 function closest(from, current, options, direction) {
@@ -213,5 +231,17 @@ function focus(element) {
     element.readOnly = true
   }
   element.focus()
-  element.scrollIntoView({block: 'nearest', inline: 'nearest'})
+  scrollIntoView(element)
+}
+
+// scrolls the element into view, and down from under the sticky bar
+// when the bar would cover it
+export function scrollIntoView(element, block = 'nearest') {
+  element.scrollIntoView({block, inline: 'nearest'})
+  const bar = coveringBar(element)
+  if (!bar) return
+  const covered = bar.getBoundingClientRect().bottom - element.getBoundingClientRect().top
+  if (covered > 0) {
+    window.scrollBy(0, -Math.ceil(covered))
+  }
 }

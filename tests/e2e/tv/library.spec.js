@@ -122,6 +122,26 @@ test('the shortcuts move the focus to their letter', async ({page, remote}) => {
   await expect(folder(page, 'Miles Davis')).toBeFocused()
 })
 
+test('moving up shows the rows scrolled under the shortcut bar', async ({page, remote}) => {
+  // short enough for the rows to scroll under the bar
+  await page.setViewportSize({width: 1920, height: 250})
+  await focusOn(folder(page, 'Miles Davis'))
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+  const rows = [folder(page, 'Björk'), folder(page, 'ABBA'), page.locator('#playlists > li.folder')]
+  for (const row of rows) {
+    await remote.press('Up')
+    await expect(row).toBeFocused()
+    const covered = await page.evaluate(() => {
+      const bar = document.querySelector('#skipNav').getBoundingClientRect()
+      return bar.bottom - document.activeElement.getBoundingClientRect().top
+    })
+    expect(covered).toBeLessThanOrEqual(0)
+  }
+  // the bar comes after the top row
+  await remote.press('Up')
+  await expect(page.locator('#skipNav a[href="#playlists"]')).toBeFocused()
+})
+
 test('text fields open the keyboard only on OK', async ({page, remote}) => {
   const search = page.locator('#skipNav input[type=search]')
   await expect(search).toHaveJSProperty('readOnly', true)
