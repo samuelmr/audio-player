@@ -1,5 +1,5 @@
-// Network-first cache for the app itself (HTML, scripts, manifest, icons),
-// so that the app opens offline and still gets updates when online.
+// Network-first cache for the app itself (HTML, scripts, manifest, icons,
+// fonts), so that the app opens offline and still gets updates when online.
 // Audio and S3 requests are left alone: saved tracks live in IndexedDB.
 
 const CACHE = 'app-shell'
@@ -14,7 +14,7 @@ self.addEventListener('fetch', (event) => {
   // the app may be served from the same S3 bucket as the music
   if (url.searchParams.has('X-Amz-Signature') || request.headers.has('range')) return
   const appFile = request.mode == 'navigate' ||
-    ['script', 'manifest', 'image', 'style'].includes(request.destination)
+    ['script', 'manifest', 'image', 'style', 'font'].includes(request.destination)
   if (!appFile) return
   event.respondWith(networkFirst(request))
 })

@@ -14,7 +14,7 @@ describe('the PWA', () => {
   test('has the files to deploy', () => {
     // and the AWS SDK's lazily loaded chunks, such as 274.audioplayer.js
     const files = fs.readdirSync(dir).filter(file => !/^\d+\.audioplayer\.js$/.test(file))
-    expect(files.sort()).toEqual(['audioplayer.js', 'index.html', 'manifest.json', 'play-192.png', 'sw.js'])
+    expect(files.sort()).toEqual(['audioplayer.js', 'fonts', 'index.html', 'manifest.json', 'play-192.png', 'sw.js'])
   })
 
   test('loads its script as a module, with the stylesheet inlined', () => {
@@ -46,7 +46,7 @@ describe('the TV app', () => {
   test('has the files to package, and one script without chunks', () => {
     // and what `npm run package:tizen` adds, if it was run since the build
     const packaging = /\.wgt$|signature\d*\.xml$|^\.manifest\.tmp$/
-    expect(fs.readdirSync(dir).filter(file => !packaging.test(file)).sort()).toEqual(['audioplayer.js', 'config.xml', 'icon.png', 'index.html'])
+    expect(fs.readdirSync(dir).filter(file => !packaging.test(file)).sort()).toEqual(['audioplayer.js', 'config.xml', 'fonts', 'icon.png', 'index.html'])
   })
 
   test('loads its script as a classic script, with the stylesheet inlined', () => {
@@ -80,5 +80,23 @@ describe('the TV app', () => {
     expect(id.startsWith(`${pkg}.`)).toBe(true)
     // Tizen's format: ten letters or digits
     expect(pkg).toMatch(/^[A-Za-z0-9]{10}$/)
+  })
+})
+
+// the privacy policy says that the apps contact no one but the bucket
+describe.each(['dist/pwa', 'dist/tizen'])('%s', (dir) => {
+  const html = read(`${dir}/index.html`)
+
+  test('loads nothing from other sites', () => {
+    expect(html).not.toMatch(/(?:src|href)="(?:https?:)?\/\//)
+    expect(html).not.toMatch(/@import|url\((?:['"])?(?:https?:)?\/\//)
+  })
+
+  test('has the fonts of its @font-face rules', () => {
+    const fonts = [...html.matchAll(/src: url\((fonts\/[^)]+)\)/g)].map(m => m[1])
+    expect(fonts.length).toBe(8)
+    for (const font of fonts) {
+      expect(fs.existsSync(path.join(dir, font)), font).toBe(true)
+    }
   })
 })

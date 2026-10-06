@@ -10,6 +10,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // both apps inline the same stylesheet into their HTML
 const styles = fs.readFileSync(path.resolve(__dirname, "src/styles.css"), "utf8");
 
+// and serve the font files that its @font-face rules load from fonts/
+const fonts = {
+  from: "node_modules/@fontsource/source-sans-pro/files/source-sans-pro-{latin,latin-ext}-{200,400,600,700}-normal.woff2",
+  to: "fonts/[name][ext]",
+};
+
 // the default bucket of src/defaults.js, given when building, as the
 // deployment does from a variable of the repository
 const defaults = new webpack.DefinePlugin({
@@ -61,7 +67,10 @@ const pwa = {
     }),
     // the service worker must be served next to index.html, unbundled
     new CopyPlugin({
-      patterns: ['pwa/sw.js', 'pwa/manifest.json', 'pwa/play-192.png'].map(from => ({from, to: '[name][ext]'})),
+      patterns: [
+        ...['pwa/sw.js', 'pwa/manifest.json', 'pwa/play-192.png'].map(from => ({from, to: '[name][ext]'})),
+        fonts,
+      ],
     }),
   ],
   devServer: {
@@ -115,6 +124,7 @@ const tizen = {
       patterns: [
         'tizen/config.xml',
         {from: 'pwa/play-192.png', to: 'icon.png'},
+        fonts,
       ].map(p => typeof p == 'string' ? {from: p, to: '[name][ext]'} : p),
     }),
   ],
