@@ -15,7 +15,8 @@ export function initPlayerBar(player) {
     hint: locale.addHint,
     onCover: (cover) => {
       backdrop.classList.toggle('no-art', !cover)
-      if (cover) backdrop.style.backgroundImage = `url("${cover}")`
+      // the art of the track before would cover the gradient
+      backdrop.style.backgroundImage = cover ? `url("${cover}")` : ''
     },
   })
   now.tabIndex = 0

@@ -1,6 +1,6 @@
 // The player bar and the backdrop (tizen-player.js)
 import { test, expect, folder, audioState } from '../fixtures.js'
-import { queueFolder } from './helpers.js'
+import { focusOn, queueFolder } from './helpers.js'
 
 const bar = (page) => page.locator('audio-player .now')
 const backdrop = (page) => page.locator('#backdrop')
@@ -35,6 +35,16 @@ test('without art, the bar and the backdrop show the hue instead', async ({page,
   await queueFolder(page, remote, 'Björk', 'Human Behaviour')
   await expect(bar(page)).toHaveClass(/no-art/)
   await expect(backdrop(page)).toHaveClass(/no-art/)
+})
+
+test('the art of the track before leaves the backdrop with the next one', async ({page, remote}) => {
+  await queueFolder(page, remote, 'Miles Davis', 'So What')
+  await expect(backdrop(page)).toHaveCSS('background-image', /cover\.png/)
+  await focusOn(folder(page, 'Björk'))
+  await remote.press('MediaPlay')
+  await expect(bar(page).locator('.now-title')).toHaveText('Human Behaviour')
+  await expect(backdrop(page)).toHaveClass(/no-art/)
+  await expect(backdrop(page)).toHaveCSS('background-image', /^radial-gradient/)
 })
 
 test('the progress bar fills as the track plays', async ({page, remote}) => {
