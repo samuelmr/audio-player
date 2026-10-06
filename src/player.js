@@ -464,7 +464,7 @@ export async function createAudioTrack(obj, source) {
   track.dataset.src = obj.href
   track.dataset.href = obj.href
   track.dataset.key = obj.Key
-  track.dataset.source = sourceLink
+  track.dataset.source = source || sourceLink
   trackMeta.set(track, obj.Metadata)
   if (offlineKeys.has(obj.Key)) {
     track.classList.add('offline-saved')

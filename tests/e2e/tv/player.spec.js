@@ -30,6 +30,20 @@ test.describe('the queue', () => {
     await expect(page.locator('audio-player button.save-offline')).toBeVisible()
   })
 
+  test('a song added by itself has a source of its own, to remove it alone', async ({page, remote}) => {
+    await focusOn(page.locator('audio-browser li.song[data-key="KLF - 3 a.m. Eternal.mp3"]'))
+    await remote.press('OK')
+    await expect(queue(page)).toHaveCount(3)
+    await focusOn(summary(page))
+    await remote.press('OK')
+    const sources = page.locator('audio-player ol.collection li')
+    await expect(sources).toHaveText(['Miles Davis', 'KLF - 3 a.m. Eternal.mp3'])
+    await focusOn(sources.nth(1).locator('a'))
+    await remote.press('OK')
+    await expect(sources).toHaveText(['Miles Davis'])
+    await expect(queue(page).locator('.name a')).toHaveText(['So What', 'Freddie Freeloader'])
+  })
+
   test('the next track follows the playing one', async ({page, remote}) => {
     await remote.press('MediaTrackNext')
     await expectPlaying(page, 'Freddie Freeloader')

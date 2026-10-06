@@ -125,7 +125,7 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
           obj.href = await objectUrl(obj.Key)
           createSongElement(obj, subRef).then(li => {
             if (autoAdd) {
-              li.querySelector('a')?.click()
+              li.addToFolder()
             }
           })
         }
@@ -184,10 +184,7 @@ function createFolderElement(folder, ol) {
       await getFolders(li, true)
     }
     else {
-      const tracks = e?.target?.closest('.folder')?.querySelectorAll('.song a')
-      tracks.forEach((link) => {
-        link.click()
-      })
+      e?.target?.closest('.folder')?.querySelectorAll('li.song').forEach(song => song.addToFolder())
     }
     collection.appendChild(cli)
     // collection.innerHTML = (parent ? `${parent}: ` : '') + folder
@@ -245,19 +242,18 @@ async function createSongElement(obj, ol) {
   a.title = locale.playSong
   // a.textContent = '⧐' // '⥅' '⏵'
   a.innerHTML = addSVG
+  // the song by itself, with an entry of its own above the queue
   a.onclick = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    if (e?.pointerId > 0) {
-      history.pushState(a.href, '', `#${obj.Key}`)
-      document.title = a.textContent
-      // collection.innerHTML = obj.Key
-      const cli = createSourceItem('song', obj.Key, obj.Key)
-      setSourceLink(obj.Key)
-      collection.appendChild(cli)
-    }
-    createAudioTrack(obj)
+    history.pushState(a.href, '', `#${obj.Key}`)
+    document.title = a.textContent
+    setSourceLink(obj.Key)
+    collection.appendChild(createSourceItem('song', obj.Key, obj.Key))
+    createAudioTrack(obj, obj.Key)
   }
+  // as part of the folder being added, which has the entry
+  li.addToFolder = () => createAudioTrack(obj)
   li.appendChild(a)
   ol.appendChild(li)
   if (linked == obj.Key) {

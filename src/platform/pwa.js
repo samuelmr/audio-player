@@ -18,7 +18,7 @@ export function init() {
   initNowPlayingButtons(player, now)
   initAdding(playerList)
   // a click on a name in the library adds it: the add link covers the row.
-  // Not the clicks of the code, as a folder adds its songs by clicking them.
+  // Not the clicks of the code, such as of a link's folder or song on load.
   document.querySelector('audio-browser').addEventListener('click', (e) => {
     const add = e.isTrusted && e.target.closest('a.action.add')
     if (add) startAdding(itemName(add.parentNode))
