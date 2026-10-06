@@ -225,7 +225,9 @@ The latest version of the app is at
 <https://audioplayer.ctrldash.app/>. It's built from the `main` branch
 of this repository and published with GitHub Pages. Your keys and music still
 go only between your browser and your bucket. Open the address, enter the
-[settings](#settings), and you're done.
+[settings](#settings), and you're done. The
+[privacy policy](https://audioplayer.ctrldash.app/privacy.html) says the same
+for everyone else; it's `pwa/privacy.html`, published with the app.
 
 To host a copy of your own, building the app needs [Node.js](https://nodejs.org/) and this repository:
 

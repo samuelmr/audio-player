@@ -65,10 +65,11 @@ const pwa = {
       scriptLoading: 'module',
       styles,
     }),
-    // the service worker must be served next to index.html, unbundled
+    // the service worker must be served next to index.html, unbundled, and
+    // the privacy policy is a page of its own
     new CopyPlugin({
       patterns: [
-        ...['pwa/sw.js', 'pwa/manifest.json', 'pwa/play-192.png'].map(from => ({from, to: '[name][ext]'})),
+        ...['pwa/sw.js', 'pwa/manifest.json', 'pwa/play-192.png', 'pwa/privacy.html'].map(from => ({from, to: '[name][ext]'})),
         fonts,
       ],
     }),
