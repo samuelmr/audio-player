@@ -127,7 +127,8 @@ test('moving up shows the rows scrolled under the shortcut bar', async ({page, r
   await page.setViewportSize({width: 1920, height: 250})
   await focusOn(folder(page, 'Miles Davis'))
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
-  const rows = [folder(page, 'Björk'), folder(page, 'ABBA'), page.locator('#playlists > li.folder')]
+  const song = page.locator('audio-browser li.song[data-key="KLF - 3 a.m. Eternal.mp3"]')
+  const rows = [song, folder(page, 'Björk'), folder(page, 'ABBA'), page.locator('#playlists > li.folder')]
   for (const row of rows) {
     await remote.press('Up')
     await expect(row).toBeFocused()
@@ -140,6 +141,14 @@ test('moving up shows the rows scrolled under the shortcut bar', async ({page, r
   // the bar comes after the top row
   await remote.press('Up')
   await expect(page.locator('#skipNav a[href="#playlists"]')).toBeFocused()
+})
+
+test('down from a shortcut goes to the top row, however short its name', async ({page, remote}) => {
+  await focusOn(page.locator('#skipNav a[href="#M"]'))
+  await remote.press('Down')
+  await expect(page.locator('#playlists > li.folder')).toBeFocused()
+  await remote.press('Down')
+  await expect(folder(page, 'ABBA')).toBeFocused()
 })
 
 test('text fields open the keyboard only on OK', async ({page, remote}) => {

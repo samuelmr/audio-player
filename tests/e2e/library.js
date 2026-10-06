@@ -34,6 +34,8 @@ export const TRACKS = [
   track('Björk/Debut/01 Human Behaviour.mp3', 2, {artist: 'Björk', album: 'Debut', title: 'Human Behaviour', tracknumber: '1', year: '1993'}),
   track('Miles Davis/Kind of Blue/01 So What.mp3', 30, {artist: 'Miles Davis', album: 'Kind of Blue', title: 'So What', tracknumber: '1', year: '1959', genre: 'Jazz', image: 'Miles Davis/Kind of Blue/cover.png'}),
   track('Miles Davis/Kind of Blue/02 Freddie Freeloader.mp3', 30, {artist: 'Miles Davis', album: 'Kind of Blue', title: 'Freddie Freeloader', tracknumber: '2', year: '1959', genre: 'Jazz', image: 'Miles Davis/Kind of Blue/cover.png'}),
+  // outside the folders, with a name longer than theirs
+  track('KLF - 3 a.m. Eternal.mp3', 2, {artist: 'KLF', title: '3 a.m. Eternal'}),
 ]
 
 // the album art of Kind of Blue: one color, from which the player takes its hue

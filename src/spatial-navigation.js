@@ -123,8 +123,10 @@ function candidates() {
 const usable = (element) => !element.disabled && element.getClientRects().length > 0
 
 // A list item's box includes its open sublists, so it's measured by its own
-// text: the folder name, not the whole folder
-function box(element) {
+// text: the folder name, not the whole folder. As a target up or down, it's
+// as wide as its row, so that a short name is as much below a shortcut as a
+// long one.
+function box(element, wide = false) {
   const rect = element.getBoundingClientRect()
   if (element.tagName == 'LI') {
     const text = [...element.childNodes].find(node => node.nodeType == Node.TEXT_NODE && node.textContent.trim())
@@ -132,7 +134,8 @@ function box(element) {
       const range = document.createRange()
       range.selectNodeContents(text)
       const textRect = range.getBoundingClientRect()
-      return {left: textRect.left, right: textRect.right, top: textRect.top, bottom: textRect.bottom}
+      const across = wide ? rect : textRect
+      return {left: across.left, right: across.right, top: textRect.top, bottom: textRect.bottom}
     }
   }
   return rect
@@ -213,7 +216,7 @@ function closest(from, current, options, direction) {
   let best, bestScore = Infinity
   for (const option of options) {
     if (option == current || !usable(option)) continue
-    const optionScore = score(from, box(option), direction)
+    const optionScore = score(from, box(option, direction == 'up' || direction == 'down'), direction)
     if (optionScore < bestScore) {
       best = option
       bestScore = optionScore
