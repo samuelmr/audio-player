@@ -286,6 +286,8 @@ A copy of the app can be built with a default bucket (see
 in the empty fields, and the player uses them until you enter your own. The
 app at <https://audioplayer.ctrldash.app/> has a public bucket of free music
 as its default, so it plays something before you enter any settings.
+[demo-music.md](demo-music.md) tells where that music comes from and under
+what licence.
 
 To move the settings to another device, use *Transfer settings*:
 
