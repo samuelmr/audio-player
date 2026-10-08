@@ -1010,7 +1010,7 @@ dialog .buttons {
 dialog#settings .error {
     color: var(--error);
 }
-dialog#settings fieldset.transfer {
+dialog#settings fieldset {
     border: 2px solid var(--line);
     border-radius: 0.75em;
     display: flex;
@@ -1020,11 +1020,27 @@ dialog#settings fieldset.transfer {
 }
 /* margins, as Chromium 76 has no gap in flexbox and no flexbox in a fieldset;
    in rem, as the buttons' em is smaller than the fieldset's */
-dialog#settings fieldset.transfer > :not(legend) {
+dialog#settings fieldset > :not(legend) {
     margin: 0 0.5rem 0.5rem 0;
 }
-dialog#settings fieldset.transfer .qr {
+dialog#settings fieldset .qr, dialog#settings fieldset .error {
     flex-basis: 100%;
+}
+dialog#settings fieldset .error:empty {
+    display: none;
+}
+dialog#settings fieldset.transfer {
+    margin: 0 0 0.5em;
+}
+/* the scan's text, button and status one below the other */
+dialog#settings fieldset.scan {
+    display: block;
+    padding-bottom: 0.5em;
+}
+dialog#settings fieldset.scan p {
+    margin-top: 0;
+    max-width: 36em;
+    opacity: 0.75;
 }
 dialog#settings fieldset.transfer .qr:empty {
     display: none;
