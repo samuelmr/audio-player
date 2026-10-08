@@ -44,7 +44,7 @@ export default {
   invalidCode: 'Not a valid settings code',
 
   scanTitle: 'Library scan',
-  scanInfo: 'A scan reads the metadata of every track in the bucket, so that the library order knows them all. It makes a request for each track it hasn\'t read before, or that has changed since, so a large library takes a while.',
+  scanInfo: 'Read the metadata of every track and store it on this device. This can take a long time.',
   scanLibrary: 'Scan library',
   stopLibraryScan: 'Stop scan',
   scanProgress: (done, total, failed) => `${done}/${total} files scanned (${total ? Math.floor(100 * done / total) : 100}%)` + (failed ? `, ${failed} could not be read` : ''),
