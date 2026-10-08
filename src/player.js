@@ -2,6 +2,7 @@ import { WAKELOCK_CLEAR_TIMEOUT, SEEK_TARGET_TIMEOUT } from './constants.js'
 import { locale } from './locale.js'
 import { pauseSVG, playSVG, returnSVG, forwardSVG, offlineSVG, removeSVG } from './icons.js'
 import { s3, objectUrl } from './s3.js'
+import { parseTrackNumber, replayGainVolume } from './track-metadata.js'
 import { offlineReady, offlineKeys, failedKeys, trackMeta, downloadKey, downloadRunning, getOfflineUrl } from './offline.js'
 
 export let audio, play, collection, playerList
@@ -335,6 +336,7 @@ const playTrack = async (track) => {
     track.classList.add('playing')
     track.scrollIntoView({block: "nearest", inline: "nearest"})
     audio.src = track.dataset['src']
+    audio.volume = replayGainVolume(trackMeta.get(track))
     // call play() synchronously instead of waiting for 'canplay': on iOS a
     // backgrounded PWA is suspended as soon as audio stops, so an async gap
     // between tracks would stop playback at the end of the first track
@@ -446,7 +448,7 @@ export async function createAudioTrack(obj, source) {
   if (obj.Metadata['album']) myAlbum = decodeURIComponent(obj.Metadata['album'])
   if (obj.Metadata['name']) myTitle = decodeURIComponent(obj.Metadata['name'])
   if (obj.Metadata['title']) myTitle = decodeURIComponent(obj.Metadata['title'])
-  if (obj.Metadata['tracknumber']) myTrackNumber = decodeURIComponent(obj.Metadata['tracknumber'])
+  if (obj.Metadata['tracknumber']) myTrackNumber = parseTrackNumber(obj.Metadata['tracknumber'])
   if (obj.Metadata['length']) myDuration = decodeURIComponent(obj.Metadata['length'])
   if (obj.Metadata['datePublished']) myYear = decodeURIComponent(obj.Metadata['datePublished'])
   if (obj.Metadata['recordingtime']) myYear = decodeURIComponent(obj.Metadata['recordingtime'])

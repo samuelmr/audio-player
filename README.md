@@ -71,11 +71,12 @@ object's metadata. The player reads these keys:
 | `artist` | Artist |
 | `album` | Album |
 | `title` | Track title (`name` also works) |
-| `tracknumber` | Track number |
+| `tracknumber` | Track number. A tag such as `11/16` counts as `11` |
 | `length` | Duration in **milliseconds** |
 | `year` | Year (`recordingtime` also works) |
 | `genre` | Genre |
 | `keywords` | Keywords |
+| `replaygaintrackgain`, `replaygainalbumgain` | [ReplayGain](https://en.wikipedia.org/wiki/ReplayGain) in dB, such as `-7.23`. The player lowers the volume of a loud track to match (the track gain first, then the album gain). It never raises it, and browsers that don't let a page set the volume, such as Safari on iPhone, play it as it is |
 | `image` | Key of the album art in the same bucket, such as `ABBA/Arrival/cover.jpg` |
 
 S3 stores metadata as `x-amz-meta-*` headers, which can only hold ASCII text.
