@@ -41,11 +41,11 @@ export default {
   invalidCode: 'Virheellinen asetuskoodi',
 
   scanTitle: 'Kirjaston läpikäynti',
-  scanInfo: 'Läpikäynti lukee säilön jokaisen kappaleen tiedot, jotta kirjaston järjestys tuntee ne kaikki. Se tekee pyynnön jokaisesta kappaleesta, jota ei ole luettu aiemmin tai joka on muuttunut sen jälkeen, joten suuressa kirjastossa siihen menee aikaa.',
-  scanLibrary: 'Käy kirjasto läpi',
+  scanInfo: 'Lue kaikkien kappaleiden metatiedot ja tallenna ne laitteelle. Tämä voi kestää pitkään.',
+  scanLibrary: 'Käynnistä läpikäynti',
   stopLibraryScan: 'Keskeytä läpikäynti',
   scanProgress: (done, total, failed) => `${done}/${total} tiedostoa käyty läpi (${total ? Math.floor(100 * done / total) : 100} %)` + (failed ? `, ${failed} ei voitu lukea` : ''),
-  scanFailed: 'Säilön sisältöä ei saatu luettua',
+  scanFailed: 'Läpikäynti epäonnistui',
 
   search: 'Haku',
   searchPlaceholder: 'Hae artisteja, albumeita, kappaleita…',
