@@ -4,9 +4,11 @@ import { locale } from './locale.js'
 import { addSVG, playSVG } from './icons.js'
 import { s3, bucketName, objectUrl, getObjectText, getS3Meta } from './s3.js'
 import { collection, createAudioTrack, createSourceItem, setSourceLink } from './player.js'
+import { getAllMeta } from './db.js'
+import { SORT_KEY, SORT_NAME_YEAR, folderSortName, trackYear, earlierYear, sortByKey, sortByName, shortcutLetter } from './library-order.js'
 
 export let browserList, playlistList
-let skipMenu, previousFirst
+let skipMenu
 
 // a link to a folder or a song adds it to the queue on load. The folders
 // above it are opened first, and their listing has the link's own element.
@@ -77,28 +79,13 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
       parentElement.appendChild(ol)
       olRef = ol
     }
+    // the albums by year are added once they are in order
+    const byYear = input.Prefix && localStorage.getItem(SORT_KEY) == SORT_NAME_YEAR
     const command = new ListObjectsV2Command(input)
     const response = await s3.send(command)
     if (response.CommonPrefixes) {
       for (const obj of response.CommonPrefixes) {
-        const folderName = obj.Prefix.replace(/\/$/, '')
-        const li = createFolderElement(folderName, olRef)
-        let first = folderName.slice(0, 1)
-        if (first.match(/\d+/)) {
-          first = '1'
-        }
-        if (first && first != previousFirst) {
-          li.id = first
-          const skipLi = document.createElement('li')
-          const a = document.createElement('a')
-          a.href = `#${first}`
-          a.innerHTML = first
-          a.title = locale.jumpTo(first)
-          skipLi.appendChild(a)
-          skipMenu.appendChild(skipLi)
-          previousFirst = first
-        }
-        // folders[folderName] = folderName
+        createFolderElement(obj.Prefix.replace(/\/$/, ''), olRef)
       }
     }
     if (response.Contents) {
@@ -109,13 +96,14 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
           trimmed = trimmed.replace(input.Prefix + '/', '')
         }
         const match = trimmed.match(/^(.*)\/[^\/]*$/)
+        let folderLi
         if (match) {
-          const li = createFolderElement(match[1], olRef)
-          li.classList.toggle('open', true)
-          let ol = li.querySelector('ol')
+          folderLi = createFolderElement(match[1], olRef)
+          folderLi.classList.toggle('open', true)
+          let ol = folderLi.querySelector('ol')
           if (!ol) {
             ol = document.createElement('ol')
-            li.appendChild(ol)
+            folderLi.appendChild(ol)
           }
           // ol.classList.toggle('hidden', false)
           subRef = ol
@@ -123,8 +111,11 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
         if (obj.Key.endsWith('.mp3')) {
           obj.Metadata = await getS3Meta(obj.Key, obj.LastModified)
           obj.href = await objectUrl(obj.Key)
+          if (folderLi) {
+            folderLi.dataset.year = earlierYear(folderLi.dataset.year, trackYear(obj.Metadata))
+          }
           createSongElement(obj, subRef).then(li => {
-            if (autoAdd) {
+            if (autoAdd && !byYear) {
               li.addToFolder()
             }
           })
@@ -140,9 +131,59 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
     if (response.IsTruncated) {
       await getFolders(parentElement, autoAdd, response.NextContinuationToken)
     }
+    else if (!input.Prefix) {
+      await orderLibrary()
+    }
+    else if (byYear) {
+      // the tracks beside the albums have no year, and go last
+      olRef.append(...sortByKey([...olRef.children], li => li.dataset.year))
+      if (autoAdd) {
+        olRef.querySelectorAll('li.song').forEach(song => song.addToFolder())
+      }
+    }
   }
   catch(e) {
     console.error(e)
+  }
+}
+
+const folderItems = (ol) => [...ol.children].filter(li => li.matches('li.folder'))
+
+// Puts the artist folders, and the tracks beside them, in the order of the
+// sort setting, and gives each letter its shortcut. Without the sort setting,
+// in the order of the bucket. The sort names come from the tracks seen
+// before, or from a library scan.
+export async function orderLibrary() {
+  const ol = browserList?.querySelector(':scope > ol:not(.playlists)')
+  if (!ol) return
+  const sorted = Boolean(localStorage.getItem(SORT_KEY))
+  const items = [...ol.children]
+  const names = new Map(items.map(li => [li, li.dataset.folder || li.dataset.key || '']))
+  if (sorted) {
+    const records = await getAllMeta()
+    for (const li of folderItems(ol)) {
+      names.set(li, folderSortName(li.dataset.folder, records))
+    }
+  }
+  const ordered = sorted ? sortByKey(items, li => names.get(li)) : sortByName(items, li => names.get(li))
+  ol.append(...ordered)
+
+  skipMenu.querySelectorAll('li.letter').forEach(li => li.remove())
+  const letters = new Set()
+  for (const li of ordered.filter(li => li.matches('li.folder'))) {
+    li.removeAttribute('id')
+    const letter = shortcutLetter(names.get(li), sorted)
+    if (!letter || letters.has(letter)) continue
+    letters.add(letter)
+    li.id = letter
+    const skipLi = document.createElement('li')
+    skipLi.className = 'letter'
+    const a = document.createElement('a')
+    a.href = `#${letter}`
+    a.textContent = letter
+    a.title = locale.jumpTo(letter)
+    skipLi.appendChild(a)
+    skipMenu.appendChild(skipLi)
   }
 }
 

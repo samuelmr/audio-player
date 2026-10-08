@@ -17,7 +17,7 @@ test.describe('first start', () => {
     await page.goto('./')
     await expect(dialog(page)).toBeVisible()
     // without keys the bucket would be a public one, at an address still to give
-    await expect(dialog(page).locator('.error')).toContainText('endpoint is missing')
+    await expect(dialog(page).locator('form .error')).toContainText('endpoint is missing')
     for (const [key, value] of Object.entries(SETTINGS)) {
       await field(page, key).fill(value)
     }
@@ -55,7 +55,7 @@ test.describe('a public bucket', () => {
     await page.locator('button.gear').click()
     await field(page, 'accessKeyId').fill(SETTINGS.accessKeyId)
     await dialog(page).getByRole('button', {name: 'Save'}).click()
-    await expect(dialog(page).locator('.error')).toContainText('secretAccessKey is missing')
+    await expect(dialog(page).locator('form .error')).toContainText('secretAccessKey is missing')
   })
 })
 
@@ -116,4 +116,40 @@ test('switches the language from the settings', async ({page}) => {
   await page.locator('button.gear').click()
   await expect(dialog(page).getByRole('button', {name: 'Tallenna'})).toBeVisible()
   await expect(dialog(page).locator('#languageSelect')).toHaveValue('fi')
+})
+
+test.describe('the library order', () => {
+  const artists = (page) => page.locator('audio-browser nav:not(#skipNav) > ol:not(.playlists) > li.folder')
+    .evaluateAll(items => items.map(li => li.dataset.folder))
+  const letters = (page) => page.locator('#skipNav li.letter a')
+
+  test('is by folder name, and after a scan by the artists\' sort names', async ({page}) => {
+    await page.goto('./')
+    await expect(folder(page, 'ABBA')).toBeVisible()
+    await expect.poll(() => artists(page)).toEqual(['ABBA', 'Björk', 'Miles Davis'])
+    await expect(letters(page)).toHaveText(['A', 'B', 'M'])
+
+    await page.locator('button.gear').click()
+    await dialog(page).getByRole('button', {name: 'Scan library'}).click()
+    await expect(dialog(page).locator('.scan-status')).toHaveText('7/7 files scanned (100%)')
+    await expect(dialog(page).getByRole('button', {name: 'Scan library'})).toBeVisible()
+    await dialog(page).locator('#sortSelect').selectOption('sortname')
+    await dialog(page).getByRole('button', {name: 'Save'}).click()
+    // Davis, Miles; Guðmundsdóttir, Björk
+    await expect.poll(() => artists(page)).toEqual(['ABBA', 'Miles Davis', 'Björk'])
+    await expect(letters(page)).toHaveText(['A', 'D', 'G'])
+
+    // the sort names stay known
+    await page.reload()
+    await expect.poll(() => artists(page)).toEqual(['ABBA', 'Miles Davis', 'Björk'])
+  })
+
+  test('by year adds a folder\'s tracks in their order', async ({page}) => {
+    await page.goto('./')
+    await page.locator('button.gear').click()
+    await dialog(page).locator('#sortSelect').selectOption('sortname-year')
+    await dialog(page).getByRole('button', {name: 'Save'}).click()
+    await addFolder(page, 'ABBA')
+    await expect(queue(page).locator('.name a')).toHaveText(['Dancing Queen', 'Knowing Me, Knowing You', 'Money, Money, Money'])
+  })
 })

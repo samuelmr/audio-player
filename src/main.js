@@ -2,11 +2,12 @@
 // to src/platform/pwa.js or src/platform/tizen.js
 import * as platform from '#platform'
 import { connectS3 } from './s3.js'
-import { initBrowser, browserList, getFolders } from './browser.js'
+import { initBrowser, browserList, getFolders, orderLibrary } from './browser.js'
 import { initSearch, resetSearchKeys } from './search.js'
 import { initSettings } from './settings.js'
 import { initPlayer } from './player.js'
 import { initOffline, runDownloads } from './offline.js'
+import { scanLibrary, stopLibraryScan } from './scan.js'
 
 const storedColor = localStorage.getItem('playerColor')
 if (storedColor) {
@@ -39,6 +40,9 @@ const settings = initSettings(player, {
     runDownloads()
   },
   addTransferControls: platform.addTransferControls,
+  // the sort names may be new
+  scanLibrary: (onProgress) => scanLibrary(onProgress).finally(orderLibrary),
+  stopLibraryScan,
 })
 initPlayer(player)
 initOffline(player)

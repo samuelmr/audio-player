@@ -43,8 +43,9 @@ export function resetSearchKeys() {
   searchModified.clear()
 }
 
-// list every track key in the bucket once, so search also covers unopened folders
-function getSearchKeys() {
+// list every track key in the bucket once, so search also covers unopened
+// folders; the library scan reads the keys from here too
+export function getSearchKeys() {
   if (!searchKeysPromise && s3) {
     searchKeysPromise = (async () => {
       const keys = []
@@ -73,6 +74,9 @@ function getSearchKeys() {
   }
   return searchKeysPromise
 }
+
+// when a listed key was last modified, for its cached metadata
+export const lastModified = (key) => searchModified.get(key)
 
 const safeDecode = (value) => {
   try {

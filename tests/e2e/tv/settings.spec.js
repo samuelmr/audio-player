@@ -32,7 +32,7 @@ test('says when the code is not valid', async ({page, remote}) => {
   await remote.press('OK')
   await input.fill('not a code')
   await page.keyboard.press('Enter')
-  await expect(dialog(page).locator('.error')).toHaveText('Not a valid settings code')
+  await expect(dialog(page).locator('fieldset.transfer .error')).toHaveText('Not a valid settings code')
 })
 
 test('the arrows stay in the dialog', async ({page, remote}) => {
@@ -41,9 +41,9 @@ test('the arrows stay in the dialog', async ({page, remote}) => {
     await remote.press(key)
     await expect(dialog(page).locator(':focus')).toHaveCount(1)
   }
-  // and reach the code field at the bottom
-  for (let i = 0; i < 10 && await focused(page).getAttribute('id') != 'settingsCodeInput'; i++) {
-    await remote.press('Down')
+  // and reach the code field at the top
+  for (let i = 0; i < 12 && await focused(page).getAttribute('id') != 'settingsCodeInput'; i++) {
+    await remote.press('Up')
   }
   await expect(page.locator('#settingsCodeInput')).toBeFocused()
 })

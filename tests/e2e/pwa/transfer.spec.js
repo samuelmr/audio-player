@@ -21,7 +21,7 @@ test.describe('from a device that has the settings', () => {
   test('copies the settings code', async ({page, context}) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write'])
     await transferButton(page, 'Copy settings code').click()
-    await expect(dialog(page).locator('.error')).toContainText('Settings code copied')
+    await expect(dialog(page).locator('fieldset.transfer .error')).toContainText('Settings code copied')
     const code = await page.evaluate(() => navigator.clipboard.readText())
     expect(decode(code)).toMatchObject(SETTINGS)
   })
@@ -76,7 +76,7 @@ test.describe('on a new device', () => {
   test('rejects an invalid settings code', async ({page}) => {
     page.once('dialog', prompt => prompt.accept('not a settings code'))
     await transferButton(page, 'Paste settings code').click()
-    await expect(dialog(page).locator('.error')).toHaveText('Not a valid settings code')
+    await expect(dialog(page).locator('fieldset.transfer .error')).toHaveText('Not a valid settings code')
     expect(await page.evaluate(() => localStorage.getItem('accessKeyId'))).toBeNull()
   })
 })

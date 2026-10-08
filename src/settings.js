@@ -1,10 +1,12 @@
 import { locale, translations, LANGUAGE_KEY } from './locale.js'
 import { encodeSettings, decodeSettings } from './settings-code.js'
 import { DEFAULTS } from './defaults.js'
+import { SORT_KEY, SORT_NAME, SORT_NAME_YEAR } from './library-order.js'
 
 // addTransferControls comes from the platform: the ways of moving the
-// settings code between devices differ between the PWA and the TV app
-export function initSettings(player, { onSave, addTransferControls }) {
+// settings code between devices differ between the PWA and the TV app.
+// scanLibrary and stopLibraryScan run the library scan (scan.js).
+export function initSettings(player, { onSave, addTransferControls, scanLibrary, stopLibraryScan }) {
   const ss = document.createElement('dialog')
   ss.id = 'settings'
   ss.setAttribute('closedby', 'any')
@@ -57,6 +59,18 @@ export function initSettings(player, { onSave, addTransferControls }) {
     document.documentElement.style.setProperty('--base-hue', e.target.value);
   }
 
+  const sortLabel = document.createElement('label')
+  sortLabel.htmlFor = 'sortSelect'
+  sortLabel.textContent = locale.sortOrder
+  settingsForm.appendChild(sortLabel)
+  const sortSelect = document.createElement('select')
+  sortSelect.id = 'sortSelect'
+  sortSelect.add(new Option(locale.sortByName, ''))
+  sortSelect.add(new Option(locale.sortBySortName, SORT_NAME))
+  sortSelect.add(new Option(locale.sortBySortNameYear, SORT_NAME_YEAR))
+  sortSelect.value = localStorage.getItem(SORT_KEY) || ''
+  settingsForm.appendChild(sortSelect)
+
   // each language by its own name, as whoever needs to switch may not read the current one
   const languageLabel = document.createElement('label')
   languageLabel.htmlFor = 'languageSelect'
@@ -96,6 +110,7 @@ export function initSettings(player, { onSave, addTransferControls }) {
     region: regionInput,
     bucketName: bucketInput,
     playerColor: playerColor,
+    [SORT_KEY]: sortSelect,
     [LANGUAGE_KEY]: languageSelect
   }
 
@@ -123,9 +138,12 @@ export function initSettings(player, { onSave, addTransferControls }) {
   const transferLegend = document.createElement('legend')
   transferLegend.textContent = locale.transferTitle
   transfer.appendChild(transferLegend)
+  // the transfer's messages next to its buttons, at the top of the dialog
+  const transferMessage = document.createElement('div')
+  transferMessage.className = 'error'
 
   const setMessage = (text) => {
-    settingsError.textContent = text
+    transferMessage.textContent = text
   }
 
   const addButton = (text, onclick) => {
@@ -134,10 +152,10 @@ export function initSettings(player, { onSave, addTransferControls }) {
     button.textContent = text
     button.onclick = async () => {
       try {
-        settingsError.textContent = ''
+        transferMessage.textContent = ''
         await onclick(button)
       } catch(e) {
-        settingsError.textContent = e.message || e.toString()
+        transferMessage.textContent = e.message || e.toString()
       }
     }
     transfer.appendChild(button)
@@ -145,6 +163,44 @@ export function initSettings(player, { onSave, addTransferControls }) {
   }
 
   addTransferControls({ dialog: ss, container: transfer, addButton, exportCode, importCode, setMessage })
+  transfer.appendChild(transferMessage)
+
+  const scan = document.createElement('fieldset')
+  scan.className = 'scan'
+  const scanLegend = document.createElement('legend')
+  scanLegend.textContent = locale.scanTitle
+  scan.appendChild(scanLegend)
+  const scanInfo = document.createElement('p')
+  scanInfo.textContent = locale.scanInfo
+  scan.appendChild(scanInfo)
+  const scanButton = document.createElement('button')
+  scanButton.type = 'button'
+  scanButton.textContent = locale.scanLibrary
+  scan.appendChild(scanButton)
+  const scanStatus = document.createElement('div')
+  scanStatus.className = 'scan-status'
+  scanStatus.setAttribute('role', 'status')
+  scan.appendChild(scanStatus)
+  let scanning = false
+  scanButton.onclick = async () => {
+    if (scanning) {
+      stopLibraryScan()
+      return
+    }
+    scanning = true
+    scanButton.textContent = locale.stopLibraryScan
+    const showProgress = ({done, total, failed}) => {
+      scanStatus.textContent = locale.scanProgress(done, total, failed)
+    }
+    try {
+      showProgress(await scanLibrary(showProgress))
+    } catch(e) {
+      console.error(e)
+      scanStatus.textContent = locale.scanFailed
+    }
+    scanning = false
+    scanButton.textContent = locale.scanLibrary
+  }
 
   // native reset would empty the fields, so restore the saved values instead
   settingsForm.onreset = (e) => {
@@ -155,6 +211,7 @@ export function initSettings(player, { onSave, addTransferControls }) {
     playerColor.value = localStorage.getItem('playerColor') || defaultHue
     playerColor.dispatchEvent(new Event('input'))
     settingsError.textContent = ''
+    transferMessage.textContent = ''
     ss.close()
   }
 
@@ -166,6 +223,7 @@ export function initSettings(player, { onSave, addTransferControls }) {
     localStorage.setItem('region', regionInput.value)
     localStorage.setItem('bucketName', bucketInput.value)
     localStorage.setItem('playerColor', playerColor.value)
+    localStorage.setItem(SORT_KEY, sortSelect.value)
     // the texts are set as the app starts, so a new language needs a restart
     if (languageSelect.value != (localStorage.getItem(LANGUAGE_KEY) || '')) {
       localStorage.setItem(LANGUAGE_KEY, languageSelect.value)
@@ -181,8 +239,9 @@ export function initSettings(player, { onSave, addTransferControls }) {
       settingsError.textContent = e.toString()
     }
   }
-  ss.appendChild(settingsForm)
   ss.appendChild(transfer)
+  ss.appendChild(settingsForm)
+  ss.appendChild(scan)
   document.body.appendChild(ss)
   player.appendChild(gearBtn)
 

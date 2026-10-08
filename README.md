@@ -74,6 +74,8 @@ object's metadata. The player reads these keys:
 | `tracknumber` | Track number. A tag such as `11/16` counts as `11` |
 | `length` | Duration in **milliseconds** |
 | `year` | Year (`recordingtime` also works) |
+| `originaldate` | Original release date, `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Orders the albums by year (see [Settings](#settings)) before `year` |
+| `artistsort`, `albumartistsort` | The name an artist is sorted by, such as `Beatles, The`. Orders the artists by sort name (see [Settings](#settings)) |
 | `genre` | Genre |
 | `keywords` | Keywords |
 | `replaygaintrackgain`, `replaygainalbumgain` | [ReplayGain](https://en.wikipedia.org/wiki/ReplayGain) in dB, such as `-7.23`. The player lowers the volume of a loud track to match (the track gain first, then the album gain). It never raises it, and browsers that don't let a page set the volume, such as Safari on iPhone, play it as it is |
@@ -82,6 +84,8 @@ object's metadata. The player reads these keys:
 S3 stores metadata as `x-amz-meta-*` headers, which can only hold ASCII text.
 The player URL-decodes every value, so **URL-encode the values** when uploading
 (`Björk` → `Bj%C3%B6rk`). Plain ASCII values without a `%` work as they are.
+A key with several values separates them with `; `; the player sorts by the
+first.
 
 While a track plays, the player shows its album art and takes its color from
 the art.
@@ -279,10 +283,18 @@ button.
 | S3 region | The bucket's region, such as `eu-north-1`. If it's empty, the player uses `us-east-1`, which usually works when your provider has no regions |
 | S3 bucket | The name of the bucket |
 | Player color | The base color of the player. Album art overrides it while a track plays |
+| Library order | The order of the folders. *Folder names* is the order of the bucket. *Artist sort names* orders the artists by their `albumartistsort` or `artistsort`, so that *The Beatles* can be under B, and *Artist sort names, albums by year* also orders each artist's albums by `originaldate` or `year`. An artist whose tracks the player hasn't seen yet is sorted by its folder name, until a library scan |
 | Language | The language of the player. *Device language* follows the language of the browser or TV, and falls back to English. Changing it restarts the player |
 
 *Save* stores the settings in this browser only. *Cancel* returns to the saved
 settings.
+
+The player learns the metadata of the tracks as you open folders and search,
+and keeps it in the browser. *Scan library* reads the metadata of every track
+in the bucket at once, so that the library order knows all of them. It makes a
+request for each track it hasn't read before, or that has changed since, so it
+takes a while in a large library; it shows how far it has got, and *Stop scan*
+stops it.
 
 A copy of the app can be built with a default bucket (see
 [Installing the web app](#installing-the-web-app)). Its endpoint and name show
@@ -292,7 +304,7 @@ as its default, so it plays something before you enter any settings.
 [demo-music.md](demo-music.md) tells where that music comes from and under
 what licence.
 
-To move the settings to another device, use *Transfer settings*:
+To move the settings to another device, use *Transfer settings* at the top:
 
 - *Copy settings code* and *Paste settings code* move them through the
   clipboard.
@@ -542,6 +554,11 @@ TV_IP=192.168.1.20 node scripts/tv-debug.js --launch key:ArrowDown key:Enter sho
 Left to be tried by hand on the devices: playback on a real TV and its remote,
 a Tizen 6 TV, a home screen app on iOS in the background, and scanning a QR
 code with a camera.
+
+### Ideas for later
+
+- Searching by a metadata key, such as `mood:calm` for a `mood` key, perhaps
+  in a view of its own for advanced searches.
 
 ### Pull requests
 
