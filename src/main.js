@@ -2,7 +2,7 @@
 // to src/platform/pwa.js or src/platform/tizen.js
 import * as platform from '#platform'
 import { connectS3 } from './s3.js'
-import { initBrowser, browserList, getFolders, orderLibrary } from './browser.js'
+import { initBrowser, browserList, getFolders, orderLibrary, clearLibrary } from './browser.js'
 import { initSearch, resetSearchKeys } from './search.js'
 import { initSettings } from './settings.js'
 import { initPlayer } from './player.js'
@@ -31,6 +31,7 @@ if (!browser) {
 function initS3() {
   connectS3()
   resetSearchKeys()
+  clearLibrary()
   getFolders(browserList)
 }
 

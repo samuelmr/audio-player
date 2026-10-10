@@ -192,6 +192,33 @@ test.describe('clearing the local data', () => {
     expect(await page.evaluate(() => localStorage.getItem('bucketName'))).toBe('other-bucket')
   })
 
+  test('a new source replaces the library shown, not adds to it', async ({page}) => {
+    await scan(page)
+    const folders = page.locator('audio-browser > nav:not(#skipNav) > ol:not(.playlists) > li.folder')
+    await expect(folders).toHaveCount(3)
+    // what the old bucket had and the new one hasn't
+    await page.evaluate(() => {
+      const stale = (tag, className, parent) => {
+        const li = document.createElement('li')
+        li.className = className
+        li.dataset.folder = 'Stale'
+        li.textContent = 'Stale'
+        parent.appendChild(li)
+      }
+      stale('li', 'folder', document.querySelector('audio-browser > nav:not(#skipNav) > ol:not(.playlists)'))
+      stale('li', 'playlist', document.querySelector('#playlists li.folder > ol.playlists'))
+    })
+    await expect(folders).toHaveCount(4)
+    await field(page, 'region').fill('edited-region')
+    await dialog(page).getByRole('button', {name: 'Save'}).click()
+    await confirm(page).getByRole('button', {name: 'Clear local data'}).click()
+    await expect(dialog(page)).toBeHidden()
+    await expect(folder(page, 'ABBA')).toBeVisible()
+    await expect(folders).toHaveCount(3)
+    await page.locator('#playlists > li.folder').click({position: {x: 5, y: 5}})
+    await expect(page.locator('#playlists li.playlist')).toHaveText(['Road trip.json'])
+  })
+
   test('Keep old settings reverts the edits', async ({page}) => {
     await scan(page)
     await field(page, 'region').fill('edited-region')

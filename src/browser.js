@@ -148,6 +148,12 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
 }
 
 const folderItems = (ol) => [...ol.children].filter(li => li.matches('li.folder'))
+// the bucket may have changed: forget the folders and playlists listed
+export function clearLibrary() {
+  browserList?.querySelector(':scope > ol:not(.playlists)')?.remove()
+  if (playlistList) playlistList.textContent = ''
+}
+
 
 // Puts the artist folders, and the tracks beside them, in the order of the
 // sort setting, and gives each letter its shortcut. Without the sort setting,
