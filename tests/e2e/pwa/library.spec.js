@@ -188,3 +188,9 @@ test('removing a source from the queue removes its tracks and stops them', async
   expect((await audioState(page)).paused).toBe(true)
   await expect(page.locator('#trackTitle')).toHaveValue('')
 })
+
+test('tells when the library cannot be read', async ({page}) => {
+  await page.route(url => url.port == String(S3_PORT) && url.searchParams.has('list-type'), route => route.fulfill({status: 500}))
+  await page.goto('./')
+  await expect(page.locator('.toast')).toHaveText('Could not read the library')
+})

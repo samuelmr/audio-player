@@ -10,6 +10,9 @@ import { initPlayer, clearQueue } from './player.js'
 import { initOffline, runDownloads } from './offline.js'
 import { clearMeta, hasMeta } from './db.js'
 import { scanLibrary, stopLibraryScan } from './scan.js'
+import { initErrorHandling } from './errors.js'
+
+initErrorHandling()
 
 const storedColor = localStorage.getItem('playerColor')
 if (storedColor) {

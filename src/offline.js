@@ -9,6 +9,7 @@ import { offlineSVG, addSVG, removeSVG } from './icons.js'
 import { db, dbReady, requestResult, OFFLINE_PLAYLISTS, OFFLINE_AUDIO } from './db.js'
 import { s3, objectUrl } from './s3.js'
 import { browserList } from './browser.js'
+import { reportError } from './errors.js'
 import { audio, collection, playerList, createAudioTrack, createSourceItem, setSourceLink, preloadAudio } from './player.js'
 
 export const offlineKeys = new Set() // keys of the tracks stored in OFFLINE_AUDIO
@@ -22,7 +23,8 @@ let offlineParent, offlineList, offlineMessage
 
 const playlistKeys = (playlists) => new Set(playlists.flatMap(p => p.track.map(t => t.url)))
 
-const getOfflinePlaylists = () => {
+const getOfflinePlaylists = async () => {
+  await dbReady
   return requestResult(db.transaction(OFFLINE_PLAYLISTS).objectStore(OFFLINE_PLAYLISTS).getAll())
 }
 
@@ -109,7 +111,11 @@ export function initOffline(player) {
   saveOfflineForm.onsubmit = async (e) => {
     e.preventDefault()
     saveOfflineDialog.close()
-    await saveOfflinePlaylist(offlineNameInput.value.trim())
+    try {
+      await saveOfflinePlaylist(offlineNameInput.value.trim())
+    } catch(e) {
+      reportError(e, e.name == 'QuotaExceededError' ? locale.storageFull : locale.offlineSaveFailed)
+    }
   }
 
   offlineReady.then(async () => {
@@ -119,7 +125,7 @@ export function initOffline(player) {
       offlineParent.querySelector('.folder').classList.add('open')
     }
     runDownloads()
-  })
+  }).catch(e => reportError(e))
 
   window.addEventListener('online', () => {
     failedKeys.clear()
@@ -130,6 +136,11 @@ export function initOffline(player) {
 export async function getOfflineUrl(key) {
   if (!offlineUrls.has(key)) {
     const stored = await requestResult(db.transaction(OFFLINE_AUDIO).objectStore(OFFLINE_AUDIO).get(key))
+    if (!stored) {
+      // the browser may have evicted it: it is missing, to be saved again
+      offlineKeys.delete(key)
+      throw new Error(`'${key}' is not in offline storage`)
+    }
     offlineUrls.set(key, URL.createObjectURL(stored.blob))
   }
   return offlineUrls.get(key)
@@ -209,7 +220,7 @@ function removeOfflinePlaylist(id) {
       downloadController?.abort()
     }
     offlineMessage.textContent = ''
-    renderOfflinePlaylists()
+    renderOfflinePlaylists().catch(e => console.error(e))
     runDownloads()
   })
 }
@@ -241,8 +252,9 @@ async function nextMissingKey() {
 }
 
 async function downloadTrack(key) {
-  const url = await objectUrl(key)
+  // before the first await, so that an abort during it is not lost
   downloadController = new AbortController()
+  const url = await objectUrl(key)
   const response = await fetch(url, {signal: downloadController.signal})
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`)
@@ -285,13 +297,14 @@ export async function runDownloads() {
         }
         if (e.name == 'AbortError' || !navigator.onLine) {
           setOfflineState(key, null)
+          await renderOfflinePlaylists()
           continue
         }
         console.warn(`Saving '${key}' offline failed`, e)
         failedKeys.add(key)
         setOfflineState(key, 'failed')
       }
-      renderOfflinePlaylists()
+      await renderOfflinePlaylists()
     }
   }
   catch (e) {
@@ -309,13 +322,17 @@ async function queueOfflinePlaylist(playlist) {
   collection.appendChild(createSourceItem('playlist', playlist.title, source))
   // one at a time, to keep the queue in the listed order
   for (const entry of playlist.track) {
-    const song = {Key: entry.url, Metadata: entry, href: ''}
-    if (s3) {
-      // signing doesn't need the network
-      song.href = await objectUrl(entry.url)
+    try {
+      const song = {Key: entry.url, Metadata: entry, href: ''}
+      if (s3) {
+        // signing doesn't need the network
+        song.href = await objectUrl(entry.url)
+      }
+      setSourceLink(source)
+      await createAudioTrack(song)
+    } catch(e) {
+      reportError(e, locale.trackFailed(String(entry.url).replace(/^.*\//, '')))
     }
-    setSourceLink(source)
-    await createAudioTrack(song)
   }
 }
 
@@ -341,7 +358,7 @@ async function renderOfflinePlaylists() {
     a.onclick = (e) => {
       e.preventDefault()
       e.stopPropagation()
-      queueOfflinePlaylist(playlist)
+      queueOfflinePlaylist(playlist).catch(err => reportError(err))
     }
     li.appendChild(a)
     const remove = document.createElement('a')
@@ -353,7 +370,7 @@ async function renderOfflinePlaylists() {
       e.preventDefault()
       e.stopPropagation()
       if (confirm(locale.confirmRemoveOffline(playlist.title))) {
-        removeOfflinePlaylist(playlist.id)
+        removeOfflinePlaylist(playlist.id).catch(err => reportError(err))
       }
     }
     li.appendChild(remove)

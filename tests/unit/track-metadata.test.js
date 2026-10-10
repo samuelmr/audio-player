@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { parseTrackNumber, replayGainVolume } from '../../src/track-metadata.js'
+import { decode, parseTrackNumber, replayGainVolume } from '../../src/track-metadata.js'
 
 describe('the track number', () => {
   test('is a plain number as it is', () => {
@@ -57,5 +57,15 @@ describe('the ReplayGain volume', () => {
   test('ignores a value that is not a gain', () => {
     expect(replayGainVolume({replaygaintrackgain: 'loud', replaygainalbumgain: '-6'})).toBeCloseTo(0.501, 3)
     expect(replayGainVolume({replaygaintrackgain: 'loud'})).toBe(1)
+  })
+})
+
+describe('decoding a value', () => {
+  test('reads URI encoding', () => {
+    expect(decode('Bj%C3%B6rk')).toBe('Björk')
+  })
+
+  test('keeps a text that is not valid URI encoding, such as a percent sign', () => {
+    expect(decode('100% Pure')).toBe('100% Pure')
   })
 })

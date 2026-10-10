@@ -5,6 +5,7 @@ import { addSVG } from './icons.js'
 import { getAllMeta } from './db.js'
 import { s3, bucketName, objectUrl, getS3Meta } from './s3.js'
 import { playlistList } from './browser.js'
+import { reportError } from './errors.js'
 import { collection, createAudioTrack, createSourceItem, setSourceLink } from './player.js'
 
 let searchInput, searchResults, searchTimeout, searchKeys, searchKeysPromise
@@ -108,8 +109,13 @@ async function runSearch() {
   }
 
   const records = {}
-  for (const record of await getAllMeta()) {
-    records[record.key] = record
+  try {
+    for (const record of await getAllMeta()) {
+      records[record.key] = record
+    }
+  } catch(e) {
+    // without the cache, the search goes by the keys
+    console.warn('Reading the metadata cache failed:', e)
   }
   if (run != searchRun) {
     return
@@ -138,7 +144,9 @@ async function runSearch() {
   searchResults.innerHTML = ''
   for (const folder of folderMatches) {
     addSearchResult('result-folder', folder, '', async () => {
-      const folderKeys = (await getSearchKeys()).filter(key => key.startsWith(folder + folderDelimiter))
+      const keys = await getSearchKeys()
+      if (!keys) throw new Error('No bucket')
+      const folderKeys = keys.filter(key => key.startsWith(folder + folderDelimiter))
       queueKeys(folderKeys, folder, 'folder')
     })
   }
@@ -179,10 +187,14 @@ function addSearchResult(className, name, details, onAdd) {
   a.href = '#'
   a.title = className == 'result-track' ? locale.playSong : locale.playFolder
   a.innerHTML = addSVG
-  a.onclick = (e) => {
+  a.onclick = async (e) => {
     e.preventDefault()
     e.stopPropagation()
-    onAdd()
+    try {
+      await onAdd()
+    } catch(err) {
+      reportError(err, locale.listingFailed)
+    }
   }
   li.appendChild(document.createTextNode(' '))
   li.appendChild(a)
@@ -195,12 +207,16 @@ export async function queueKeys(keys, source, className) {
   for (const key of keys) {
     const obj = {Key: key}
     try {
-      obj.Metadata = await getS3Meta(key, searchModified.get(key))
+      try {
+        obj.Metadata = await getS3Meta(key, searchModified.get(key))
+      } catch(e) {
+        obj.Metadata = {}
+      }
+      obj.href = await objectUrl(key)
+      setSourceLink(source)
+      await createAudioTrack(obj)
     } catch(e) {
-      obj.Metadata = {}
+      reportError(e, locale.trackFailed(key.replace(/^.*\//, '')))
     }
-    obj.href = await objectUrl(key)
-    setSourceLink(source)
-    await createAudioTrack(obj)
   }
 }

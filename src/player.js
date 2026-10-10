@@ -2,13 +2,16 @@ import { WAKELOCK_CLEAR_TIMEOUT, SEEK_TARGET_TIMEOUT } from './constants.js'
 import { locale } from './locale.js'
 import { pauseSVG, playSVG, returnSVG, forwardSVG, offlineSVG, removeSVG } from './icons.js'
 import { s3, objectUrl } from './s3.js'
-import { parseTrackNumber, replayGainVolume } from './track-metadata.js'
+import { decode, parseTrackNumber, replayGainVolume } from './track-metadata.js'
+import { reportError } from './errors.js'
 import { offlineReady, offlineKeys, failedKeys, trackMeta, downloadKey, downloadRunning, getOfflineUrl } from './offline.js'
 
 export let audio, play, collection, playerList
 let cursor, trackLength, trackTitle, progress
 let sourceLink, wakeLock, wakelockCooldown
 let seekTarget, seekTimeout
+// tracks in a row that failed to play
+let failedInRow = 0
 
 const preloadCache = {}
 let preloading = false
@@ -61,7 +64,8 @@ export function initPlayer(player) {
   cursor.addEventListener('blur', (e) => {
     const parts = e.target.value.split(':')
     const secs = parseInt(parts[0]) * 60 + parseInt(parts[1])
-    audio.currentTime = secs
+    // text that isn't a time is ignored; the cursor shows the time again
+    if (Number.isFinite(secs)) audio.currentTime = secs
   })
   audioTime.appendChild(cursor)
   audioTime.appendChild(document.createTextNode(' / '))
@@ -114,9 +118,10 @@ export function initPlayer(player) {
       wakelockCooldown = clearTimeout(wakelockCooldown) // returns undefined
     }
     try {
-      wakeLock = await navigator.wakeLock.request("screen")
+      // missing from some browser engines, such as older TVs
+      wakeLock = await navigator.wakeLock?.request("screen")
     } catch (err) {
-      console.error(`${err.name}: ${err.message}`)
+      console.warn(`${err.name}: ${err.message}`)
     }
   }
   audio.onloadedmetadata = updateDuration
@@ -147,6 +152,7 @@ export function initPlayer(player) {
     setPlaybackState('paused')
   }
   audio.onplaying = (e) => {
+    failedInRow = 0
     play.innerHTML = pauseSVG
     play.classList.remove('stalled')
     setPlaybackState('playing')
@@ -165,6 +171,15 @@ export function initPlayer(player) {
   }
   audio.onended = next.onclick = (e) => {
     playNext()
+  }
+  // a track that won't play is skipped, unless none of them play
+  audio.onerror = () => {
+    // not the empty source of an emptied queue
+    if (!audio.getAttribute('src')) return
+    reportError(audio.error, locale.trackFailed(trackTitle.value))
+    if (++failedInRow < playerList.querySelectorAll('audio-track').length) {
+      playNext()
+    }
   }
 
   collection = document.createElement('ol')
@@ -356,24 +371,37 @@ const playTrack = async (track) => {
       let url = track.dataset.albumArt
       image.src = url
       image.crossOrigin = "Anonymous"
+      // the art is decoration: when it can't be read, playing goes on without it
       image.onload = async function() {
-        if ('mediaSession' in navigator) {
-          const response = await fetch(url)
-          const blob = await response.blob()
-          if (blob) {
+        // another track may have started while the art was loading
+        if (!track.classList.contains('playing')) return
+        if (sessionOpts) {
+          try {
+            const response = await fetch(url)
+            const blob = await response.blob()
             sessionOpts.artwork = [ {
               src: url,
               sizes: `${image.naturalWidth}x${image.naturalHeight}`,
               type: blob.type
             } ]
+            if (track.classList.contains('playing')) {
+              navigator.mediaSession.metadata = new MediaMetadata(sessionOpts)
+            }
+          } catch(e) {
+            console.warn('Reading the album art failed:', e)
           }
         }
-        const ctx = document.createElement("canvas").getContext("2d")
-        ctx.drawImage(image, 0, 0, 1, 1)
-        const rgba = ctx.getImageData(0, 0, 1, 1).data
-        const hue = getHue(rgba[0], rgba[1], rgba[2])
-        document.documentElement.style.setProperty('--base-hue', hue)
+        try {
+          const ctx = document.createElement("canvas").getContext("2d")
+          ctx.drawImage(image, 0, 0, 1, 1)
+          const rgba = ctx.getImageData(0, 0, 1, 1).data
+          const hue = getHue(rgba[0], rgba[1], rgba[2])
+          document.documentElement.style.setProperty('--base-hue', hue)
+        } catch(e) {
+          console.warn('Reading the color of the album art failed:', e)
+        }
       }
+      image.onerror = () => console.warn('Loading the album art failed:', url)
     }
     if (sessionOpts) {
       navigator.mediaSession.metadata = new MediaMetadata(sessionOpts)
@@ -410,7 +438,9 @@ export async function preloadAudio() {
   const dummyAudio = document.createElement('audio')
   dummyAudio.src = href
   dummyAudio.load()
-  dummyAudio.oncanplay = (e) => {
+  // an address that can't be loaded must not stop the preloading
+  dummyAudio.oncanplay = dummyAudio.onerror = (e) => {
+    dummyAudio.oncanplay = dummyAudio.onerror = null
     dummyAudio.src = ''
     preloading = false
     preloadAudio()
@@ -454,19 +484,19 @@ export async function createAudioTrack(obj, source) {
     myTitle = matches[2]
   }
 
-  if (obj.Metadata['artist']) myArtist = decodeURIComponent(obj.Metadata['artist'])
-  if (obj.Metadata['album']) myAlbum = decodeURIComponent(obj.Metadata['album'])
-  if (obj.Metadata['name']) myTitle = decodeURIComponent(obj.Metadata['name'])
-  if (obj.Metadata['title']) myTitle = decodeURIComponent(obj.Metadata['title'])
+  if (obj.Metadata['artist']) myArtist = decode(obj.Metadata['artist'])
+  if (obj.Metadata['album']) myAlbum = decode(obj.Metadata['album'])
+  if (obj.Metadata['name']) myTitle = decode(obj.Metadata['name'])
+  if (obj.Metadata['title']) myTitle = decode(obj.Metadata['title'])
   if (obj.Metadata['tracknumber']) myTrackNumber = parseTrackNumber(obj.Metadata['tracknumber'])
-  if (obj.Metadata['length']) myDuration = decodeURIComponent(obj.Metadata['length'])
-  if (obj.Metadata['datePublished']) myYear = decodeURIComponent(obj.Metadata['datePublished'])
-  if (obj.Metadata['recordingtime']) myYear = decodeURIComponent(obj.Metadata['recordingtime'])
-  if (obj.Metadata['year']) myYear = decodeURIComponent(obj.Metadata['year'])
-  if (obj.Metadata['playlist']) myPlaylist = decodeURIComponent(obj.Metadata['playlist'])
-  if (obj.Metadata['genre']) myGenre = decodeURIComponent(obj.Metadata['genre'])
-  if (obj.Metadata['keywords']) myKeywords = decodeURIComponent(obj.Metadata['keywords'])
-  if (obj.Metadata['image']) myImage = decodeURIComponent(obj.Metadata['image'])
+  if (obj.Metadata['length']) myDuration = decode(obj.Metadata['length'])
+  if (obj.Metadata['datePublished']) myYear = decode(obj.Metadata['datePublished'])
+  if (obj.Metadata['recordingtime']) myYear = decode(obj.Metadata['recordingtime'])
+  if (obj.Metadata['year']) myYear = decode(obj.Metadata['year'])
+  if (obj.Metadata['playlist']) myPlaylist = decode(obj.Metadata['playlist'])
+  if (obj.Metadata['genre']) myGenre = decode(obj.Metadata['genre'])
+  if (obj.Metadata['keywords']) myKeywords = decode(obj.Metadata['keywords'])
+  if (obj.Metadata['image']) myImage = decode(obj.Metadata['image'])
 
   const track = document.createElement('audio-track')
   track.tabIndex = 0
@@ -479,8 +509,13 @@ export async function createAudioTrack(obj, source) {
   track.dataset.source = source || sourceLink
   trackMeta.set(track, obj.Metadata)
   if (offlineKeys.has(obj.Key)) {
-    track.classList.add('offline-saved')
-    track.dataset.src = await getOfflineUrl(obj.Key)
+    try {
+      track.dataset.src = await getOfflineUrl(obj.Key)
+      track.classList.add('offline-saved')
+    } catch(e) {
+      // the saved track is gone, and plays from the bucket
+      console.warn(`Reading '${obj.Key}' from offline storage failed`, e)
+    }
   }
   else if (obj.Key == downloadKey) {
     track.classList.add('offline-downloading')
@@ -531,7 +566,7 @@ export async function createAudioTrack(obj, source) {
   const durationSpan = document.createElement('span')
   durationSpan.className = 'duration'
   duration.appendChild(durationSpan)
-  if (myDuration) {
+  if (myDuration && Number.isFinite(parseInt(myDuration))) {
     myDuration = parseInt(myDuration)/1000 // ms to s
     const min = Math.floor(myDuration / 60)
     const sec = Math.round(myDuration % 60)

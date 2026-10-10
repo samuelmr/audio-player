@@ -2,7 +2,7 @@ import { S3Client } from "@aws-sdk/client-s3"
 import { HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { EXPIRE_SECONDS } from './constants.js'
-import { db, dbReady } from './db.js'
+import { db, dbReady, requestResult } from './db.js'
 import { locale } from './locale.js'
 import { setting } from './defaults.js'
 
@@ -84,39 +84,28 @@ export async function getObjectText(key) {
 export async function getS3Meta(key, lastModified) {
   const modified = lastModified ? new Date(lastModified).toISOString() : ''
   await dbReady
-  return new Promise(
-    function(resolve, reject) {
-      let meta
-      const tx = db.transaction("meta", "readonly")
-      const cache = tx.objectStore("meta")
-      const index = cache.index("key")
-      const dbRequest = index.get(key)
-      dbRequest.onerror = function(event) {
-        reject(new Error(event))
-      }
-      dbRequest.onsuccess = async function() {
-        const matching = dbRequest.result
-        if (matching !== undefined && (!modified || matching.modified == modified)) {
-          meta = matching
-          resolve(meta)
-        } else {
-          try {
-            const get = new HeadObjectCommand({Bucket: bucketName, Key: key})
-            const metaQuery = await s3.send(get)
-            meta = metaQuery.Metadata
-            meta.key = key
-            meta.modified = modified || metaQuery.LastModified?.toISOString()
-            const putx = db.transaction("meta", "readwrite")
-            putx.objectStore("meta").put(meta)
-            resolve(meta)
-          }
-          catch(e) {
-            console.warn(`Error retrieving metadata for '${key}' from S3 bucket '${bucketName}'`)
-            console.log(e)
-            reject(new Error(e))
-          }
-        }
-      }
-    }
-  )
+  const cached = await requestResult(db.transaction("meta", "readonly").objectStore("meta").index("key").get(key))
+  if (cached !== undefined && (!modified || cached.modified == modified)) {
+    return cached
+  }
+  let head
+  try {
+    head = await s3.send(new HeadObjectCommand({Bucket: bucketName, Key: key}))
+  }
+  catch(e) {
+    console.warn(`Error retrieving metadata for '${key}' from S3 bucket '${bucketName}'`, e)
+    throw e
+  }
+  // some S3 services leave Metadata out when there is none
+  const meta = {...head.Metadata, key, modified: modified || head.LastModified?.toISOString()}
+  // failing to cache the metadata doesn't fail reading it
+  try {
+    const putx = db.transaction("meta", "readwrite")
+    putx.onerror = putx.onabort = () => console.warn(`Could not cache the metadata of '${key}'`, putx.error)
+    putx.objectStore("meta").put(meta)
+  }
+  catch(e) {
+    console.warn(`Could not cache the metadata of '${key}'`, e)
+  }
+  return meta
 }

@@ -294,13 +294,19 @@ export function initSettings(player, { onSave, addTransferControls, scanLibrary,
   }
 
   const save = () => {
-    localStorage.setItem('accessKeyId', accessKeyIdInput.value)
-    localStorage.setItem('secretAccessKey', secretAccessKeyInput.value)
-    localStorage.setItem('endpoint', endpointInput.value)
-    localStorage.setItem('region', regionInput.value)
-    localStorage.setItem('bucketName', bucketInput.value)
-    localStorage.setItem('playerColor', playerColor.value)
-    localStorage.setItem(SORT_KEY, sortSelect.value)
+    try {
+      localStorage.setItem('accessKeyId', accessKeyIdInput.value)
+      localStorage.setItem('secretAccessKey', secretAccessKeyInput.value)
+      localStorage.setItem('endpoint', endpointInput.value)
+      localStorage.setItem('region', regionInput.value)
+      localStorage.setItem('bucketName', bucketInput.value)
+      localStorage.setItem('playerColor', playerColor.value)
+      localStorage.setItem(SORT_KEY, sortSelect.value)
+    } catch(e) {
+      // storage that is blocked or full
+      settingsError.textContent = e.toString()
+      return
+    }
     // the texts are set as the app starts, so a new language needs a restart
     if (languageSelect.value != (localStorage.getItem(LANGUAGE_KEY) || '')) {
       localStorage.setItem(LANGUAGE_KEY, languageSelect.value)

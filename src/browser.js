@@ -5,6 +5,7 @@ import { addSVG, playSVG } from './icons.js'
 import { s3, bucketName, objectUrl, getObjectText, getS3Meta } from './s3.js'
 import { collection, createAudioTrack, createSourceItem, setSourceLink } from './player.js'
 import { notify } from './adding.js'
+import { reportError } from './errors.js'
 import { getAllMeta } from './db.js'
 import { SORT_KEY, SORT_NAME_YEAR, folderSortName, trackYear, earlierYear, sortByKey, sortByName, shortcutLetter } from './library-order.js'
 
@@ -14,7 +15,10 @@ let skipMenu
 // a link to a folder or a song adds it to the queue on load. The folders
 // above it are opened first, and their listing has the link's own element.
 const myUri = new URL(document.location.href)
-let linked = decodeURIComponent(myUri.hash.replace('#', ''))
+let linked = myUri.hash.replace('#', '')
+try {
+  linked = decodeURIComponent(linked)
+} catch(e) {}
 
 // returns the skip navigation bar, for the search box
 export function initBrowser(browser, player) {
@@ -110,7 +114,12 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
           subRef = ol
         }
         if (obj.Key.endsWith('.mp3')) {
-          obj.Metadata = await getS3Meta(obj.Key, obj.LastModified)
+          // a track whose metadata can't be read is listed without it
+          try {
+            obj.Metadata = await getS3Meta(obj.Key, obj.LastModified)
+          } catch(e) {
+            obj.Metadata = {}
+          }
           obj.href = await objectUrl(obj.Key)
           if (folderLi) {
             folderLi.dataset.year = earlierYear(folderLi.dataset.year, trackYear(obj.Metadata))
@@ -119,7 +128,7 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
             if (autoAdd && !byYear) {
               li.addToFolder()
             }
-          })
+          }).catch(e => reportError(e, locale.trackFailed(obj.Key.replace(/^.*\//, ''))))
         }
         else if (obj.Key.endsWith('.json')) {
           const li = createPlaylistElement(obj, playlistList)
@@ -144,7 +153,7 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
     }
   }
   catch(e) {
-    console.error(e)
+    reportError(e, locale.listingFailed)
   }
 }
 
@@ -223,16 +232,20 @@ function createFolderElement(folder, ol) {
     document.title = folder
     const cli = createSourceItem('folder', folder, folder)
     setSourceLink(folder)
-    // all of the folder, also when it was opened a moment ago and is
-    // still being listed, by itself or as part of a folder above it
-    for (let listed = li; listed; listed = listed.parentNode.closest('li.folder')) {
-      await listed.listing
-    }
-    if (!li.querySelector('ol')) {
-      await getFolders(li, true)
-    }
-    else {
-      e?.target?.closest('.folder')?.querySelectorAll('li.song').forEach(song => song.addToFolder())
+    try {
+      // all of the folder, also when it was opened a moment ago and is
+      // still being listed, by itself or as part of a folder above it
+      for (let listed = li; listed; listed = listed.parentNode.closest('li.folder')) {
+        await listed.listing
+      }
+      if (!li.querySelector('ol')) {
+        await getFolders(li, true)
+      }
+      else {
+        e?.target?.closest('.folder')?.querySelectorAll('li.song').forEach(song => song.addToFolder())
+      }
+    } catch(err) {
+      reportError(err, locale.listingFailed)
     }
     collection.appendChild(cli)
     // collection.innerHTML = (parent ? `${parent}: ` : '') + folder
@@ -298,7 +311,7 @@ async function createSongElement(obj, ol) {
     document.title = a.textContent
     setSourceLink(obj.Key)
     collection.appendChild(createSourceItem('song', obj.Key, obj.Key))
-    createAudioTrack(obj, obj.Key)
+    createAudioTrack(obj, obj.Key).catch(err => reportError(err, locale.trackFailed(obj.Key.replace(/^.*\//, ''))))
   }
   // as part of the folder being added, which has the entry
   li.addToFolder = () => createAudioTrack(obj)
