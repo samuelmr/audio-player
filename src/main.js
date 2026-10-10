@@ -7,6 +7,7 @@ import { initSearch, resetSearchKeys } from './search.js'
 import { initSettings } from './settings.js'
 import { initPlayer } from './player.js'
 import { initOffline, runDownloads } from './offline.js'
+import { clearMeta, hasMeta } from './db.js'
 import { scanLibrary, stopLibraryScan } from './scan.js'
 
 const storedColor = localStorage.getItem('playerColor')
@@ -40,6 +41,14 @@ const settings = initSettings(player, {
     runDownloads()
   },
   addTransferControls: platform.addTransferControls,
+  hasLocalData: hasMeta,
+  clearLocalData: async () => {
+    // a running scan would put the old metadata back
+    stopLibraryScan()
+    await clearMeta()
+    resetSearchKeys()
+    await orderLibrary()
+  },
   // the sort names may be new
   scanLibrary: (onProgress) => scanLibrary(onProgress).finally(orderLibrary),
   stopLibraryScan,

@@ -45,6 +45,17 @@ export const requestResult = (request) => new Promise((resolve, reject) => {
   request.onerror = () => reject(request.error)
 })
 
+// the metadata cache only: the offline playlists and tracks are kept
+export async function clearMeta() {
+  await dbReady
+  await requestResult(db.transaction("meta", "readwrite").objectStore("meta").clear())
+}
+
+export async function hasMeta() {
+  await dbReady
+  return await requestResult(db.transaction("meta", "readonly").objectStore("meta").count()) > 0
+}
+
 export function getAllMeta() {
   return new Promise(
     function(resolve, reject) {

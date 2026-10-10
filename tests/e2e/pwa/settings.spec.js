@@ -153,3 +153,89 @@ test.describe('the library order', () => {
     await expect(queue(page).locator('.name a')).toHaveText(['Dancing Queen', 'Knowing Me, Knowing You', 'Money, Money, Money'])
   })
 })
+
+test.describe('clearing the local data', () => {
+  const metaCount = (page) => page.evaluate(() => new Promise((resolve, reject) => {
+    const open = indexedDB.open('audio-library')
+    open.onerror = () => reject(open.error)
+    open.onsuccess = () => {
+      const count = open.result.transaction('meta').objectStore('meta').count()
+      count.onsuccess = () => { resolve(count.result); open.result.close() }
+    }
+  }))
+  const scan = async (page) => {
+    await page.goto('./')
+    await expect(folder(page, 'ABBA')).toBeVisible()
+    await page.locator('button.gear').click()
+    await dialog(page).getByRole('button', {name: 'Scan library'}).click()
+    await expect(dialog(page).locator('.scan-status')).toHaveText('7/7 files scanned (100%)')
+    expect(await metaCount(page)).toBe(7)
+  }
+  const confirm = (page) => page.locator('dialog#confirm-source')
+
+  test('the button deletes the metadata', async ({page}) => {
+    await scan(page)
+    await dialog(page).getByRole('button', {name: 'Clear local data'}).click()
+    await expect(dialog(page)).toContainText('Local data cleared')
+    expect(await metaCount(page)).toBe(0)
+  })
+
+  test('a new bucket asks, and clearing saves the settings', async ({page}) => {
+    await scan(page)
+    await field(page, 'bucketName').fill('other-bucket')
+    await dialog(page).getByRole('button', {name: 'Save'}).click()
+    await expect(confirm(page)).toBeVisible()
+    expect(await page.evaluate(() => localStorage.getItem('bucketName'))).toBe(SETTINGS.bucketName)
+    await confirm(page).getByRole('button', {name: 'Clear local data'}).click()
+    await expect(confirm(page)).toBeHidden()
+    expect(await metaCount(page)).toBe(0)
+    expect(await page.evaluate(() => localStorage.getItem('bucketName'))).toBe('other-bucket')
+  })
+
+  test('Keep old settings reverts the edits', async ({page}) => {
+    await scan(page)
+    await field(page, 'region').fill('edited-region')
+    await dialog(page).getByRole('button', {name: 'Save'}).click()
+    await confirm(page).getByRole('button', {name: 'Keep old settings'}).click()
+    await expect(confirm(page)).toBeHidden()
+    await expect(dialog(page)).toBeHidden()
+    expect(await metaCount(page)).toBe(7)
+    await page.locator('button.gear').click()
+    await expect(field(page, 'region')).toHaveValue(SETTINGS.region)
+  })
+
+  test('Edit settings, and Esc, return to the unsaved edits', async ({page}) => {
+    await scan(page)
+    await field(page, 'region').fill('edited-region')
+    for (const close of [
+      (p) => confirm(p).getByRole('button', {name: 'Edit settings'}).click(),
+      (p) => p.keyboard.press('Escape'),
+    ]) {
+      await dialog(page).getByRole('button', {name: 'Save'}).click()
+      await expect(confirm(page)).toBeVisible()
+      await close(page)
+      await expect(confirm(page)).toBeHidden()
+      await expect(dialog(page)).toBeVisible()
+      await expect(field(page, 'region')).toHaveValue('edited-region')
+    }
+    expect(await metaCount(page)).toBe(7)
+    expect(await page.evaluate(() => localStorage.getItem('region'))).toBe(SETTINGS.region)
+  })
+
+  test('does not ask for other changes, or without metadata', async ({page}) => {
+    await scan(page)
+    await page.locator('#playerColor').fill('300')
+    await dialog(page).getByRole('button', {name: 'Save'}).click()
+    await expect(dialog(page)).toBeHidden()
+    await expect(confirm(page)).toBeHidden()
+
+    await page.locator('button.gear').click()
+    await dialog(page).getByRole('button', {name: 'Clear local data'}).click()
+    await expect(dialog(page)).toContainText('Local data cleared')
+    await field(page, 'bucketName').fill(SETTINGS.bucketName)
+    await field(page, 'region').fill('edited-region')
+    await dialog(page).getByRole('button', {name: 'Save'}).click()
+    await expect(dialog(page)).toBeHidden()
+    await expect(confirm(page)).toBeHidden()
+  })
+})

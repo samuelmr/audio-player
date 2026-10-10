@@ -294,7 +294,12 @@ and keeps it in the browser. *Scan library* reads the metadata of every track
 in the bucket at once, so that the library order knows all of them. It makes a
 request for each track it hasn't read before, or that has changed since, so it
 takes a while in a large library; it shows how far it has got, and *Stop scan*
-stops it.
+stops it. *Clear local data* deletes the metadata the player has stored on
+this device; the bucket and the offline playlists are not touched. When you
+save a new endpoint, region or bucket name while there is stored metadata, the
+player asks whether to clear it, as it may not match the new bucket: *Clear
+local data* clears it and saves the settings, *Keep old settings* works like
+*Cancel*, and *Edit settings* returns to the dialog with the settings unsaved.
 
 A copy of the app can be built with a default bucket (see
 [Installing the web app](#installing-the-web-app)). Its endpoint and name show

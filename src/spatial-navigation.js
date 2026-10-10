@@ -105,9 +105,10 @@ function activate(element) {
   }
 }
 
-// an open modal dialog keeps the focus inside it
+// an open modal dialog keeps the focus inside it; of two, the one opened last
 function scope() {
-  return document.querySelector('dialog[open]') || document.body
+  const open = document.querySelectorAll('dialog[open]')
+  return open[open.length - 1] || document.body
 }
 
 // in document order, until the document changes

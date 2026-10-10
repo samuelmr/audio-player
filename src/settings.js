@@ -1,12 +1,14 @@
 import { locale, translations, LANGUAGE_KEY } from './locale.js'
 import { encodeSettings, decodeSettings } from './settings-code.js'
-import { DEFAULTS } from './defaults.js'
+import { DEFAULTS, setting } from './defaults.js'
 import { SORT_KEY, SORT_NAME, SORT_NAME_YEAR } from './library-order.js'
 
 // addTransferControls comes from the platform: the ways of moving the
 // settings code between devices differ between the PWA and the TV app.
 // scanLibrary and stopLibraryScan run the library scan (scan.js).
-export function initSettings(player, { onSave, addTransferControls, scanLibrary, stopLibraryScan }) {
+// hasLocalData tells whether there is cached metadata, and clearLocalData
+// deletes it (the bucket is not touched).
+export function initSettings(player, { onSave, addTransferControls, scanLibrary, stopLibraryScan, hasLocalData, clearLocalData }) {
   const ss = document.createElement('dialog')
   ss.id = 'settings'
   ss.setAttribute('closedby', 'any')
@@ -181,13 +183,35 @@ export function initSettings(player, { onSave, addTransferControls, scanLibrary,
   scanStatus.className = 'scan-status'
   scanStatus.setAttribute('role', 'status')
   scan.appendChild(scanStatus)
+  const clearInfo = document.createElement('p')
+  clearInfo.textContent = locale.clearInfo
+  scan.appendChild(clearInfo)
+  const clearButton = document.createElement('button')
+  clearButton.type = 'button'
+  clearButton.textContent = locale.clearLocalData
+  scan.appendChild(clearButton)
+  const clearStatus = document.createElement('div')
+  clearStatus.className = 'clear-status'
+  clearStatus.setAttribute('role', 'status')
+  scan.appendChild(clearStatus)
   let scanning = false
+  clearButton.onclick = async () => {
+    clearStatus.textContent = ''
+    try {
+      await clearLocalData()
+      clearStatus.textContent = locale.localDataCleared
+    } catch(e) {
+      console.error(e)
+      clearStatus.textContent = locale.clearFailed
+    }
+  }
   scanButton.onclick = async () => {
     if (scanning) {
       stopLibraryScan()
       return
     }
     scanning = true
+    clearButton.disabled = true
     scanButton.textContent = locale.stopLibraryScan
     const showProgress = ({done, total, failed}) => {
       scanStatus.textContent = locale.scanProgress(done, total, failed)
@@ -199,8 +223,49 @@ export function initSettings(player, { onSave, addTransferControls, scanLibrary,
       scanStatus.textContent = locale.scanFailed
     }
     scanning = false
+    clearButton.disabled = false
     scanButton.textContent = locale.scanLibrary
   }
+
+  // asked when the source of the library changes and there is cached metadata
+  const confirm = document.createElement('dialog')
+  confirm.id = 'confirm-source'
+  // Esc and the backdrop return to the settings
+  confirm.setAttribute('closedby', 'any')
+  const confirmText = document.createElement('p')
+  confirmText.textContent = locale.sourceChanged
+  confirm.appendChild(confirmText)
+  const confirmError = document.createElement('div')
+  confirmError.className = 'error'
+  const confirmButtons = document.createElement('div')
+  confirmButtons.className = 'buttons'
+  const addConfirmButton = (text, onclick) => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = text
+    button.onclick = onclick
+    confirmButtons.appendChild(button)
+    return button
+  }
+  addConfirmButton(locale.clearLocalData, async () => {
+    try {
+      await clearLocalData()
+    } catch(e) {
+      console.error(e)
+      confirmError.textContent = locale.clearFailed
+      return
+    }
+    confirmError.textContent = ''
+    confirm.close()
+    save()
+  })
+  addConfirmButton(locale.keepOldSettings, () => {
+    confirm.close()
+    settingsForm.reset()
+  })
+  addConfirmButton(locale.editSettings, () => confirm.close())
+  confirm.appendChild(confirmButtons)
+  confirm.appendChild(confirmError)
 
   // native reset would empty the fields, so restore the saved values instead
   settingsForm.onreset = (e) => {
@@ -215,8 +280,20 @@ export function initSettings(player, { onSave, addTransferControls, scanLibrary,
     ss.close()
   }
 
-  settingsForm.onsubmit = (e) => {
+  const sourceChanged = () => ['endpoint', 'region', 'bucketName']
+    .some(key => (settingsInputs[key].value || DEFAULTS[key] || '') != setting(key))
+
+  settingsForm.onsubmit = async (e) => {
     e.preventDefault()
+    if (sourceChanged() && await hasLocalData().catch(() => false)) {
+      confirmError.textContent = ''
+      confirm.showModal()
+      return
+    }
+    save()
+  }
+
+  const save = () => {
     localStorage.setItem('accessKeyId', accessKeyIdInput.value)
     localStorage.setItem('secretAccessKey', secretAccessKeyInput.value)
     localStorage.setItem('endpoint', endpointInput.value)
@@ -243,6 +320,7 @@ export function initSettings(player, { onSave, addTransferControls, scanLibrary,
   ss.appendChild(settingsForm)
   ss.appendChild(scan)
   document.body.appendChild(ss)
+  document.body.appendChild(confirm)
   player.appendChild(gearBtn)
 
   return {
