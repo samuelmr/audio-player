@@ -17,8 +17,35 @@ test.beforeEach(async ({page}) => {
 test('tells how to start when nothing plays', async ({page}) => {
   await expect(bar(page).locator('.now-title')).toHaveText('Nothing playing')
   await expect(bar(page).locator('.now-subtitle')).toHaveText('Add music to the queue from the library below')
-  await expect(page.locator('audio-player button.np-open')).toBeHidden()
   await expect(summary(page)).toBeHidden()
+})
+
+test.describe('when nothing plays', () => {
+  const expand = (page) => page.locator('audio-player button.np-open')
+  const isFullScreen = (page) => page.evaluate(() => Boolean(document.fullscreenElement))
+
+  test('on a computer, the expand button only toggles full screen', async ({page}) => {
+    await expect(expand(page)).toBeVisible()
+    await expect(expand(page)).toHaveAttribute('title', 'Full screen')
+    await expand(page).click()
+    await expect.poll(() => isFullScreen(page)).toBe(true)
+    await expect(page.locator('#now-playing')).toBeHidden()
+    await expand(page).click()
+    await expect.poll(() => isFullScreen(page)).toBe(false)
+  })
+
+  test('tells when going full screen fails', async ({page}) => {
+    await page.evaluate(() => { document.documentElement.requestFullscreen = () => Promise.reject(new Error('denied')) })
+    await expand(page).click()
+    await expect(page.locator('.toast')).toHaveText('Could not go full screen')
+  })
+
+  test.describe('on a phone', () => {
+    test.use({hasTouch: true, isMobile: true})
+    test('the expand button is hidden', async ({page}) => {
+      await expect(expand(page)).toBeHidden()
+    })
+  })
 })
 
 test('moves on at the end of a track, and from the last back to the first', async ({page}) => {

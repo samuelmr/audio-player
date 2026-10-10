@@ -89,5 +89,7 @@ export default {
   addHint: 'Pick music from the library and press OK',
   addHintClick: 'Add music to the queue from the library below',
   nowPlaying: 'Now Playing',
+  fullScreen: 'Full screen',
+  fullScreenFailed: 'Could not go full screen',
   closeNowPlaying: 'Close Now Playing',
 }

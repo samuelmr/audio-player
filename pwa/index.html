@@ -173,7 +173,8 @@
         }
     }
 
-    /* opens Now Playing, at the top right: when something plays */
+    /* opens Now Playing, at the top right, or on a computer, makes the browser
+       full screen when nothing plays */
     audio-player button.np-open {
         background: none;
         border: 0;
@@ -191,8 +192,11 @@
         margin: auto;
         width: 1.4em;
     }
-    audio-player.idle button.np-open {
-        visibility: hidden;
+    /* nothing to open, and no full screen to go to on a phone */
+    @media not all and (hover: hover) and (pointer: fine) {
+        audio-player.idle button.np-open {
+            visibility: hidden;
+        }
     }
     audio-player .now-art {
         cursor: pointer;
