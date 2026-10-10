@@ -4,6 +4,7 @@ import { locale } from './locale.js'
 import { addSVG, playSVG } from './icons.js'
 import { s3, bucketName, objectUrl, getObjectText, getS3Meta } from './s3.js'
 import { collection, createAudioTrack, createSourceItem, setSourceLink } from './player.js'
+import { notify } from './adding.js'
 import { getAllMeta } from './db.js'
 import { SORT_KEY, SORT_NAME_YEAR, folderSortName, trackYear, earlierYear, sortByKey, sortByName, shortcutLetter } from './library-order.js'
 
@@ -147,13 +148,13 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
   }
 }
 
-const folderItems = (ol) => [...ol.children].filter(li => li.matches('li.folder'))
 // the bucket may have changed: forget the folders and playlists listed
 export function clearLibrary() {
   browserList?.querySelector(':scope > ol:not(.playlists)')?.remove()
   if (playlistList) playlistList.textContent = ''
 }
 
+const folderItems = (ol) => [...ol.children].filter(li => li.matches('li.folder'))
 
 // Puts the artist folders, and the tracks beside them, in the order of the
 // sort setting, and gives each letter its shortcut. Without the sort setting,
@@ -332,8 +333,8 @@ async function createPlaylistElement(obj, ol) {
       setSourceLink(obj.Key)
       collection.appendChild(cli)
     // }
-    const json = await getObjectText(obj.Key)
     try {
+      const json = await getObjectText(obj.Key)
       const playlist = JSON.parse(json)
       const base = obj.Key.replace(/\/[^\/]+$/, '')
       // one at a time, to keep the queue in the listed order
@@ -348,7 +349,10 @@ async function createPlaylistElement(obj, ol) {
       }
     }
     catch(e) {
+      // the playlist may be gone, such as after a change of bucket
       console.error(e)
+      cli.querySelector('a').click()
+      notify(locale.playlistFailed(obj.Key.replace(/^.*\//, '')))
     }
   }
   li.appendChild(a)

@@ -73,6 +73,7 @@ export default {
   exit: 'Sulje',
   adding: (name) => `Lisätään ${name}…`,
   added: (name, count) => `Lisätty ${name}: ${count} ${count == 1 ? 'kappale' : 'kappaletta'}`,
+  playlistFailed: (name) => `Soittolistaa ${name} ei voitu lukea`,
   addedNothing: (name) => `Kohteesta ${name} ei ole lisättävää`,
   upNext: 'Seuraavaksi',
   queue: (count) => `Jonossa ${count} ${count == 1 ? 'kappale' : 'kappaletta'}`,

@@ -76,6 +76,7 @@ export default {
   exit: 'Exit',
   adding: (name) => `Adding ${name}…`,
   added: (name, count) => `Added ${name}: ${count} ${count == 1 ? 'track' : 'tracks'}`,
+  playlistFailed: (name) => `Could not read the playlist ${name}`,
   addedNothing: (name) => `Nothing to add from ${name}`,
   upNext: 'Up next',
   queue: (count) => `Queue: ${count} ${count == 1 ? 'track' : 'tracks'}`,

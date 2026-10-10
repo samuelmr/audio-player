@@ -103,6 +103,19 @@ test('a click on a playlist adds it, and keeps the playlists open', async ({page
   await expect(page.locator('#playlists li.playlist')).toBeVisible()
 })
 
+test('a playlist that cannot be read is told, and leaves the queue as it was', async ({page}) => {
+  await page.route(url => url.pathname.endsWith('/Road%20trip.json') || url.pathname.endsWith('/Road trip.json'), route => route.fulfill({
+    status: 404,
+    contentType: 'application/xml',
+    body: '<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message></Error>',
+  }))
+  await page.locator('#playlists > li.folder').click({position: {x: 5, y: 5}})
+  await page.locator('#playlists li.playlist').click()
+  await expect(page.locator('.toast')).toHaveText('Could not read the playlist Road trip.json')
+  await expect(titles(page)).toHaveCount(0)
+  await expect(page.locator('li.playlist[data-source]')).toHaveCount(0)
+})
+
 test('a link to a folder adds it to the queue', async ({page}) => {
   await page.goto('./#Miles%20Davis')
   // only a new load reads the address, not a change of the hash

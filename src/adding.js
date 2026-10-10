@@ -67,6 +67,14 @@ function waitForTracks(time) {
   }, time)
 }
 
+// a message of its own, not about adding
+export function notify(text) {
+  clearTimeout(timer)
+  adding = null
+  show(text)
+  timer = setTimeout(() => toast.hidden = true, TOAST_TIME)
+}
+
 function show(text) {
   toast.textContent = text
   toast.hidden = false
