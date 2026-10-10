@@ -219,6 +219,34 @@ test.describe('clearing the local data', () => {
     await expect(page.locator('#playlists li.playlist')).toHaveText(['Road trip.json'])
   })
 
+  test('a new source empties the queue, except for offline playlists', async ({page}) => {
+    await page.goto('./')
+    await addFolder(page, 'ABBA')
+    await expect(queue(page)).toHaveCount(3)
+    await page.locator('audio-player button.save-offline').click()
+    await page.locator('dialog#save-offline').getByRole('button', {name: 'Save offline'}).click()
+    await page.locator('#offline-playlists > li.folder').click({position: {x: 5, y: 5}})
+    await page.locator('#offline-playlists li.playlist', {hasText: 'ABBA'}).click()
+    await addFolder(page, 'Miles Davis')
+    await expect(queue(page)).toHaveCount(8)
+
+    // a change that is not of the source keeps the queue
+    await page.locator('button.gear').click()
+    await page.locator('#playerColor').fill('300')
+    await dialog(page).getByRole('button', {name: 'Save'}).click()
+    await expect(dialog(page)).toBeHidden()
+    await expect(queue(page)).toHaveCount(8)
+
+    await page.locator('button.gear').click()
+    await field(page, 'region').fill('edited-region')
+    await dialog(page).getByRole('button', {name: 'Save'}).click()
+    await confirm(page).getByRole('button', {name: 'Clear local data'}).click()
+    await expect(dialog(page)).toBeHidden()
+    await expect(queue(page)).toHaveCount(3)
+    await expect(page.locator('audio-player li[data-source^="offline:"]')).toHaveCount(1)
+    await expect(page.locator('audio-player li[data-source="ABBA"]')).toHaveCount(0)
+  })
+
   test('Keep old settings reverts the edits', async ({page}) => {
     await scan(page)
     await field(page, 'region').fill('edited-region')

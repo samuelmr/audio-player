@@ -300,6 +300,8 @@ save a new endpoint, region or bucket name while there is stored metadata, the
 player asks whether to clear it, as it may not match the new bucket: *Clear
 local data* clears it and saves the settings, *Keep old settings* works like
 *Cancel*, and *Edit settings* returns to the dialog with the settings unsaved.
+A new endpoint, region or bucket name also empties the queue, except for the
+offline playlists in it.
 
 A copy of the app can be built with a default bucket (see
 [Installing the web app](#installing-the-web-app)). Its endpoint and name show

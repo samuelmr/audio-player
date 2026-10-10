@@ -260,6 +260,16 @@ function scrollToFirstTrack(e) {
   }
 }
 
+// empties the queue of what came from the bucket; the offline playlists play
+// from the device and stay
+export function clearQueue() {
+  for (const li of [...collection.children]) {
+    if (!li.dataset.source.startsWith('offline:')) {
+      li.querySelector('a').click()
+    }
+  }
+}
+
 function removeTracks(e) {
   e.stopPropagation()
   const cli = this.closest('li')

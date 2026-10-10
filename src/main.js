@@ -5,7 +5,8 @@ import { connectS3 } from './s3.js'
 import { initBrowser, browserList, getFolders, orderLibrary, clearLibrary } from './browser.js'
 import { initSearch, resetSearchKeys } from './search.js'
 import { initSettings } from './settings.js'
-import { initPlayer } from './player.js'
+import { setting } from './defaults.js'
+import { initPlayer, clearQueue } from './player.js'
 import { initOffline, runDownloads } from './offline.js'
 import { clearMeta, hasMeta } from './db.js'
 import { scanLibrary, stopLibraryScan } from './scan.js'
@@ -28,6 +29,9 @@ if (!browser) {
   throw new Error("Didn't find an audio-browser element in HTML document")
 }
 
+const sourceKey = () => ['endpoint', 'region', 'bucketName'].map(setting).join(' ')
+let source = sourceKey()
+
 function initS3() {
   connectS3()
   resetSearchKeys()
@@ -38,6 +42,11 @@ function initS3() {
 initSearch(initBrowser(browser, player))
 const settings = initSettings(player, {
   onSave: () => {
+    // the queued tracks are from the old source
+    if (sourceKey() != source) {
+      source = sourceKey()
+      clearQueue()
+    }
     initS3()
     runDownloads()
   },
