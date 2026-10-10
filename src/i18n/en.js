@@ -49,7 +49,7 @@ export default {
   stopLibraryScan: 'Stop scan',
   scanProgress: (done, total, failed) => `${done}/${total} files scanned (${total ? Math.floor(100 * done / total) : 100}%)` + (failed ? `, ${failed} could not be read` : ''),
   scanFailed: 'Could not list the bucket',
-  clearInfo: 'Delete the metadata stored on this device. The bucket and the offline playlists are not touched.',
+  clearInfo: 'Delete the metadata stored on this device. The bucket is not touched.',
   clearLocalData: 'Clear local data',
   localDataCleared: 'Local data cleared',
   clearFailed: 'Could not clear the local data',
