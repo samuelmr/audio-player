@@ -69,7 +69,7 @@ const pwa = {
     // the privacy policy is a page of its own
     new CopyPlugin({
       patterns: [
-        ...['pwa/sw.js', 'pwa/manifest.json', 'pwa/play-192.png', 'pwa/privacy.html'].map(from => ({from, to: '[name][ext]'})),
+        ...['pwa/sw.js', 'pwa/manifest.json', 'pwa/play-192.png', 'pwa/play-512.png', 'pwa/privacy.html'].map(from => ({from, to: '[name][ext]'})),
         fonts,
       ],
     }),
