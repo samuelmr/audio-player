@@ -14,7 +14,7 @@ describe('the PWA', () => {
   test('has the files to deploy', () => {
     // and the AWS SDK's lazily loaded chunks, such as 274.audioplayer.js
     const files = fs.readdirSync(dir).filter(file => !/^\d+\.audioplayer\.js$/.test(file))
-    expect(files.sort()).toEqual(['audioplayer.js', 'fonts', 'index.html', 'manifest.json', 'play-192.png', 'privacy.html', 'sw.js'])
+    expect(files.sort()).toEqual(['audioplayer.js', 'fonts', 'index.html', 'manifest.json', 'play-192.png', 'play-512.png', 'privacy.html', 'sw.js'])
   })
 
   test('loads its script as a module, with the stylesheet inlined', () => {

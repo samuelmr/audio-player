@@ -8,6 +8,17 @@
    "src": "./play-192.png",
    "type": "image/png",
    "sizes": "192x192"
+  },
+  {
+   "src": "./play-512.png",
+   "type": "image/png",
+   "sizes": "512x512"
+  },
+  {
+   "src": "./play-512.png",
+   "type": "image/png",
+   "sizes": "512x512",
+   "purpose": "maskable"
   }
  ],
  "background_color": "hsl(180, 25%, 75%)",

@@ -514,7 +514,7 @@ trying it on a TV.
   must work on Chromium 76.
 - `src/i18n/` has the translations, see [Translating](#translating)
 - `pwa/` has the web app's HTML template, service worker, manifest and icon
-  (`icon.svg` is the source of `play-192.png`: `rsvg-convert -w 192 -h 192 pwa/icon.svg -o pwa/play-192.png`)
+  (`icon.svg` is the source of `play-192.png` and `play-512.png`: `rsvg-convert -w 192 -h 192 pwa/icon.svg -o pwa/play-192.png`, and likewise with 512)
 - `tizen/` has the TV app's HTML template and `config.xml`
 - `scripts/` has the script for uploading music, and one for driving the TV
   app on a TV (see [Testing](#testing))
