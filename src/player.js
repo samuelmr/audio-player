@@ -4,6 +4,7 @@ import { pauseSVG, playSVG, returnSVG, forwardSVG, offlineSVG, removeSVG } from 
 import { s3, objectUrl } from './s3.js'
 import { decode, parseTrackNumber, replayGainVolume } from './track-metadata.js'
 import { reportError } from './errors.js'
+import { mirrorQueue } from './address.js'
 import { offlineReady, offlineKeys, failedKeys, trackMeta, downloadKey, downloadRunning, getOfflineUrl } from './offline.js'
 
 export let audio, play, collection, playerList
@@ -185,6 +186,7 @@ export function initPlayer(player) {
   collection = document.createElement('ol')
   collection.className = 'collection'
   player.appendChild(collection)
+  mirrorQueue(collection)
 
   playerList = document.createElement('nav')
   player.appendChild(playerList)
@@ -305,18 +307,6 @@ function removeTracks(e) {
   }
   const li = this.closest('li')
   li?.parentNode?.removeChild(li)
-  forgetLink(source)
-}
-
-// the source in the address would be added again on the next load
-function forgetLink(source) {
-  let linked = location.hash.replace('#', '')
-  try {
-    linked = decodeURIComponent(linked)
-  } catch(e) {}
-  if (linked == source) {
-    history.replaceState(null, '', location.pathname + location.search)
-  }
 }
 
 // offline, only the tracks saved to offline storage can be played

@@ -333,9 +333,10 @@ share it.
   show only the next track, and opens it again.
 - *Save offline*, beside the queue's first row, saves what's in the queue as an offline playlist. Its tracks
   are downloaded in the background, and it can be played without a network.
-- The address of the page follows what you add, such as
-  `index.html#ABBA/Arrival`. Opening such an address adds that folder to the
-  queue.
+- The address of the page follows the queue, such as
+  `index.html?folder=ABBA/Arrival&track=Miles%20Davis/So%20What.mp3&playlist=Road%20trip.json`
+  (`folder`, `track` and `playlist` can each be repeated). Opening such an
+  address adds those to the queue. Offline playlists are not in the address.
 - The button at the top right, or a tap on the album art, opens *Now
   Playing* over the whole window; on a computer, the button also makes the
   browser full screen. Its own button at the top right, or Esc, closes it.
