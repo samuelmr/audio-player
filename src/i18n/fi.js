@@ -46,11 +46,11 @@ export default {
   stopLibraryScan: 'Keskeytä läpikäynti',
   scanProgress: (done, total, failed) => `${done}/${total} tiedostoa käyty läpi (${total ? Math.floor(100 * done / total) : 100} %)` + (failed ? `, ${failed} ei voitu lukea` : ''),
   scanFailed: 'Läpikäynti epäonnistui',
-  clearInfo: 'Poista laitteelle tallennetut metatiedot. Bucketiin ja offline-soittolistoihin ei kosketa.',
+  clearInfo: 'Poista laitteelle tallennetut metatiedot. S3-säiliöön ei kosketa.',
   clearLocalData: 'Tyhjennä paikalliset tiedot',
   localDataCleared: 'Paikalliset tiedot tyhjennetty',
   clearFailed: 'Paikallisten tietojen tyhjennys epäonnistui',
-  sourceChanged: 'Laitteelle tallennetut metatiedot eivät välttämättä vastaa uutta bucketia. Tyhjennetäänkö ne?',
+  sourceChanged: 'Laitteelle tallennetut metatiedot eivät välttämättä vastaa uutta S3-säiliötä. Tyhjennetäänkö ne?',
   keepOldSettings: 'Säilytä vanhat asetukset',
   editSettings: 'Muokkaa asetuksia',
 
