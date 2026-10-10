@@ -94,7 +94,11 @@ export function addTransferControls({ dialog, container, addButton, exportCode, 
       code = prompt(locale.pastePrompt)
     }
     if (code) {
-      importCode(code)
+      try {
+        importCode(code)
+      } catch(e) {
+        setMessage(e.message)
+      }
     }
   })
 
@@ -139,22 +143,25 @@ export function addTransferControls({ dialog, container, addButton, exportCode, 
     if (!scanStream) {
       return
     }
-    if (scanVideo.readyState >= scanVideo.HAVE_ENOUGH_DATA) {
-      scanCanvas.width = scanVideo.videoWidth
-      scanCanvas.height = scanVideo.videoHeight
-      const ctx = scanCanvas.getContext('2d', { willReadFrequently: true })
-      ctx.drawImage(scanVideo, 0, 0)
-      const image = ctx.getImageData(0, 0, scanCanvas.width, scanCanvas.height)
-      const result = jsQR(image.data, image.width, image.height, { inversionAttempts: 'dontInvert' })
-      if (result?.data?.startsWith(SETTINGS_CODE_PREFIX)) {
-        stopScan()
-        try {
+    try {
+      if (scanVideo.readyState >= scanVideo.HAVE_ENOUGH_DATA) {
+        scanCanvas.width = scanVideo.videoWidth
+        scanCanvas.height = scanVideo.videoHeight
+        const ctx = scanCanvas.getContext('2d', { willReadFrequently: true })
+        ctx.drawImage(scanVideo, 0, 0)
+        const image = ctx.getImageData(0, 0, scanCanvas.width, scanCanvas.height)
+        const result = jsQR(image.data, image.width, image.height, { inversionAttempts: 'dontInvert' })
+        if (result?.data?.startsWith(SETTINGS_CODE_PREFIX)) {
+          stopScan()
           importCode(result.data)
-        } catch(e) {
-          setMessage(e.message)
+          return
         }
-        return
       }
+    } catch(e) {
+      // a frame that can't be read ends the scan, since the next would fail too
+      stopScan()
+      setMessage(e.message)
+      return
     }
     requestAnimationFrame(scanFrame)
   }
@@ -168,7 +175,13 @@ export function addTransferControls({ dialog, container, addButton, exportCode, 
     scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
     scanVideo.srcObject = scanStream
     qrContainer.appendChild(scanVideo)
-    await scanVideo.play()
+    try {
+      await scanVideo.play()
+    } catch(e) {
+      // the camera would stay on
+      stopScan()
+      throw e
+    }
     scanButton.textContent = locale.stopScan
     requestAnimationFrame(scanFrame)
   })

@@ -72,10 +72,11 @@ export function notify(text) {
   clearTimeout(timer)
   adding = null
   show(text)
-  timer = setTimeout(() => toast.hidden = true, TOAST_TIME)
+  timer = setTimeout(() => toast && (toast.hidden = true), TOAST_TIME)
 }
 
 function show(text) {
+  if (!toast) return
   toast.textContent = text
   toast.hidden = false
 }

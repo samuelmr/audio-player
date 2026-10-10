@@ -6,6 +6,8 @@ export const OFFLINE_AUDIO = 'offlineAudio'
 export let db
 
 const dbRequest = indexedDB.open("audio-library", 4)
+// another tab with an older version of the app keeps the upgrade waiting
+dbRequest.onblocked = () => console.warn('Upgrading the database is blocked by another open tab')
 dbRequest.onupgradeneeded = function(event) {
   const db = dbRequest.result
   if (event.oldVersion < 1) {

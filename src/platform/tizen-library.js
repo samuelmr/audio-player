@@ -10,7 +10,8 @@
 import { getObjectText } from '../s3.js'
 import { queueKeys } from '../search.js'
 import { play as playButton } from '../player.js'
-import { itemName, startAdding, currentAdding } from '../adding.js'
+import { itemName, startAdding, currentAdding, notify } from '../adding.js'
+import { locale } from '../locale.js'
 import { scrollIntoView } from '../spatial-navigation.js'
 
 const LEFT = 37
@@ -188,8 +189,8 @@ async function openPlaylist(item) {
   const list = document.createElement('ol')
   list.className = 'songs playlists'
   item.appendChild(list)
+  const key = item.querySelector(':scope > a.action')?.getAttribute('href') || ''
   try {
-    const key = item.querySelector(':scope > a.action').getAttribute('href')
     const playlist = JSON.parse(await getObjectText(key))
     for (const track of playlist.track || []) {
       const song = document.createElement('li')
@@ -207,7 +208,10 @@ async function openPlaylist(item) {
     }
   }
   catch (e) {
+    // the TV has no console to read: say so, and let the next try read it again
     console.error(e)
+    list.remove()
+    notify(locale.playlistFailed(key.replace(/^.*\//, '')))
   }
 }
 

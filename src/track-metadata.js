@@ -1,6 +1,7 @@
 // Reading the values of a track's metadata (see "Organizing the bucket" in the README)
 
-const decode = (value) => {
+// the text of a metadata value, as it is if it isn't valid URI encoding
+export const decode = (value) => {
   try {
     return decodeURIComponent(String(value))
   } catch(e) {

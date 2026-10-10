@@ -36,6 +36,40 @@ README doesn't say, or what is easy to miss.
 - **Tests:** add or update tests for the change, in the style of the tests
   around them.
 
+## Error handling
+
+Nothing fails silently: an error ends up either handled or told to the user.
+The TV has no console to read, and the phone's is out of reach too.
+
+- **Where the user asked for something** (a click, a key press, a form), catch
+  the error there and call `reportError(e, locale.<text>)` from
+  `src/errors.js`. It logs the error and shows a toast. Say what failed, as
+  `locale.listingFailed` and `locale.trackFailed(name)` do. The toast is
+  shown once for a repeating text, so a loop over tracks may call it for each.
+- **Where something is optional** (album art, the metadata cache, wake lock,
+  media session), catch the error, `console.warn` it, and carry on without
+  the extra. Don't bother the user.
+- **Promises nobody awaits** (`.then(...)`, event handlers, `async` `onclick`)
+  need a `.catch` or a `try`/`catch` of their own: a throw in them is lost,
+  or becomes an unhandled rejection. `initErrorHandling` turns those into a
+  "Something went wrong" toast, but it is the backstop, not the plan.
+- **One bad item doesn't stop the rest:** in a loop over tracks, catch
+  inside the loop, so that one unreadable track or one failed metadata
+  request doesn't hide the tracks after it.
+- **IndexedDB:** use `requestResult` instead of wrapping a request in a
+  promise by hand: an `async` handler inside `new Promise` that throws leaves
+  the promise pending forever. Give a transaction that must not fail the
+  caller (such as caching) its own `onerror`.
+- **Values from the bucket aren't trusted:** use `decode` from
+  `track-metadata.js`, not `decodeURIComponent`, for metadata, and don't
+  assume `Metadata` or a stored record exists. The same goes for the address
+  hash and the settings code.
+- **Platforms:** an error shown in the PWA is shown on the TV too. Check
+  `src/platform/tizen-*.js` when you add handling to a PWA-only path.
+- Add a test for the failing case, with `page.route` to make the fake S3
+  fail (see `tests/e2e/pwa/library.spec.js`). An uncaught error in the page
+  fails the e2e tests, which is on purpose.
+
 ## Constraints
 
 - The TV app must run on Tizen 6 (Chromium 76). Babel handles the script, but
