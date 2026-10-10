@@ -5,6 +5,7 @@ import { addSVG, playSVG } from './icons.js'
 import { s3, bucketName, objectUrl, getObjectText, getS3Meta } from './s3.js'
 import { collection, createAudioTrack, createSourceItem, setSourceLink } from './player.js'
 import { notify } from './adding.js'
+import { parseAddress } from './address.js'
 import { reportError } from './errors.js'
 import { getAllMeta } from './db.js'
 import { SORT_KEY, SORT_NAME_YEAR, folderSortName, trackYear, earlierYear, sortByKey, sortByName, shortcutLetter } from './library-order.js'
@@ -12,13 +13,10 @@ import { SORT_KEY, SORT_NAME_YEAR, folderSortName, trackYear, earlierYear, sortB
 export let browserList, playlistList
 let skipMenu
 
-// a link to a folder or a song adds it to the queue on load. The folders
-// above it are opened first, and their listing has the link's own element.
-const myUri = new URL(document.location.href)
-let linked = myUri.hash.replace('#', '')
-try {
-  linked = decodeURIComponent(linked)
-} catch(e) {}
+// the folders, songs and playlists in the address are added to the queue on
+// load. The folders above them are opened first, and their listing has the
+// elements of the links.
+const linked = parseAddress(location.search)
 
 // returns the skip navigation bar, for the search box
 export function initBrowser(browser, player) {
@@ -212,8 +210,7 @@ function createFolderElement(folder, ol) {
   li.dataset.folder = folder
   li.textContent = folder.replace(`${parent}/`, '')
   const a = document.createElement('a')
-  // a.href = '#' + (parent ? encodeURIComponent(parent) + '/' : '') + encodeURIComponent(folder)
-  a.href = '#' + encodeURIComponent(folder)
+  a.href = '?' + new URLSearchParams({folder})
   a.className = 'action add'
   a.title = locale.playFolder
   // a.textContent = '⥅' // '⤅' '⧐' '⏵'
@@ -228,7 +225,6 @@ function createFolderElement(folder, ol) {
     e.preventDefault()
     e.stopPropagation()
     li.classList.add('open')
-    history.pushState(folder, '', a.href)
     document.title = folder
     const cli = createSourceItem('folder', folder, folder)
     setSourceLink(folder)
@@ -260,7 +256,6 @@ function createFolderElement(folder, ol) {
     e.preventDefault()
     e.stopPropagation()
     const isOpen = this.classList.toggle('open')
-    // history.pushState(folder, '', a.href)
     document.title = folder
     const subLists = this.querySelectorAll('li ol')
     if (subLists.length > 0) {
@@ -273,19 +268,30 @@ function createFolderElement(folder, ol) {
     }
   }
   li.appendChild(a)
-  if (linked == folder) {
-    linked = ''
+  const inside = (key) => key.startsWith(folder + folderDelimiter)
+  if (linked.folder.delete(folder)) {
+    // all of it: what is in it is not added again
+    for (const set of [linked.folder, linked.song]) {
+      [...set].filter(inside).forEach(key => set.delete(key))
+    }
     a.click()
   }
-  else if (linked.startsWith(folder + folderDelimiter)) {
-    const target = linked
-    linked = ''
-    li.classList.add('open')
-    li.listing = getFolders(li)
-    li.listing.then(() => {
-      const item = li.querySelector(`li.folder[data-folder="${CSS.escape(target)}"], li.song[data-key="${CSS.escape(target)}"]`)
-      item?.querySelector(':scope > a.add')?.click()
-    })
+  else {
+    const targets = [...linked.folder, ...linked.song].filter(inside)
+    // a playlist in the folder is added as it is listed. Only the folder at the
+    // top lists it, since the listing has the folders in it, too.
+    const hasPlaylist = !ol.closest('li.folder') && [...linked.playlist].some(inside)
+    if (targets.length || hasPlaylist) {
+      targets.forEach(key => (linked.folder.delete(key) || linked.song.delete(key)))
+      li.classList.add('open')
+      li.listing = getFolders(li)
+      li.listing.then(() => {
+        for (const target of targets) {
+          const item = li.querySelector(`li.folder[data-folder="${CSS.escape(target)}"], li.song[data-key="${CSS.escape(target)}"]`)
+          item?.querySelector(':scope > a.add')?.click()
+        }
+      })
+    }
   }
   ol.appendChild(li)
   return li
@@ -307,7 +313,6 @@ async function createSongElement(obj, ol) {
   a.onclick = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    history.pushState(a.href, '', `#${obj.Key}`)
     document.title = a.textContent
     setSourceLink(obj.Key)
     collection.appendChild(createSourceItem('song', obj.Key, obj.Key))
@@ -317,8 +322,7 @@ async function createSongElement(obj, ol) {
   li.addToFolder = () => createAudioTrack(obj)
   li.appendChild(a)
   ol.appendChild(li)
-  if (linked == obj.Key) {
-    linked = ''
+  if (linked.song.delete(obj.Key)) {
     a.click()
   }
   return li
@@ -339,7 +343,6 @@ async function createPlaylistElement(obj, ol) {
     e.preventDefault()
     e.stopPropagation()
     // if (e?.pointerId > 0) {
-      history.pushState(a.href, '', `#${obj.Key}`)
       document.title = a.textContent
       // collection.innerHTML = obj.Key
       const cli = createSourceItem('playlist', obj.Key, obj.Key)
@@ -370,5 +373,8 @@ async function createPlaylistElement(obj, ol) {
   }
   li.appendChild(a)
   ol.appendChild(li)
+  if (linked.playlist.delete(obj.Key)) {
+    a.click()
+  }
   return li
 }

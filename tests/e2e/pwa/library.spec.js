@@ -38,7 +38,7 @@ test('adds a folder to the queue, in order, and plays it', async ({page}) => {
   await expect(queue(page).first().locator('span.duration')).toHaveText('0:02')
   await expect(page.locator('audio-player .collection li')).toHaveText(['ABBA'])
   await expectPlaying(page, 'Dancing Queen')
-  expect(page.url()).toContain('#ABBA')
+  expect(new URL(page.url()).search).toBe('?folder=ABBA')
 })
 
 test('a click on a folder opens it, and its first row adds all of it, and says so', async ({page}) => {
@@ -117,30 +117,45 @@ test('a playlist that cannot be read is told, and leaves the queue as it was', a
 })
 
 test('a link to a folder adds it to the queue', async ({page}) => {
-  await page.goto('./#Miles%20Davis')
-  // only a new load reads the address, not a change of the hash
-  await page.reload()
+  await page.goto('./?folder=Miles%20Davis')
   await expect(titles(page)).toHaveText(['So What', 'Freddie Freeloader'])
 })
 
 test('a link to a folder inside another adds only that folder', async ({page}) => {
-  await page.goto('./#ABBA%2FArrival')
-  await page.reload()
+  await page.goto('./?folder=ABBA%2FArrival')
   await expect(titles(page)).toHaveText(['Dancing Queen', 'Knowing Me, Knowing You', 'Money, Money, Money'])
   await expect(page.locator('audio-player .collection li')).toHaveText(['ABBA/Arrival'])
 })
 
 test('a link to a song adds only the song', async ({page}) => {
-  await page.goto('./#Miles%20Davis%2FKind%20of%20Blue%2F02%20Freddie%20Freeloader.mp3')
-  await page.reload()
+  await page.goto('./?track=Miles%20Davis%2FKind%20of%20Blue%2F02%20Freddie%20Freeloader.mp3')
   await expect(titles(page)).toHaveText(['Freddie Freeloader'])
+})
+
+test('a link with several folders, songs and a playlist adds them all', async ({page}) => {
+  const song = 'ABBA/Arrival/01 Dancing Queen.mp3'
+  await page.goto('./?' + new URLSearchParams([['folder', 'Björk'], ['track', song], ['playlist', 'Road trip.json']]))
+  await expect(titles(page)).toHaveCount(4)
+  await expect(page.locator('audio-player .collection li')).toHaveCount(3)
+})
+
+test('the address follows the queue, as sources are added and removed', async ({page}) => {
+  await addFolder(page, 'Björk')
+  await expect(titles(page)).toHaveText(['Human Behaviour'])
+  await openFolder(page, 'Miles Davis')
+  await folder(page, 'Miles Davis/Kind of Blue').locator('li.song', {hasText: 'Freddie'}).locator('a.add').click()
+  await expect(titles(page)).toHaveCount(2)
+  const params = () => [...new URL(page.url()).searchParams]
+  expect(params()).toEqual([['folder', 'Björk'], ['track', 'Miles Davis/Kind of Blue/02 Freddie Freeloader.mp3']])
+  await page.locator('audio-player .collection li', {hasText: 'Björk'}).locator('a').click()
+  expect(params()).toEqual([['track', 'Miles Davis/Kind of Blue/02 Freddie Freeloader.mp3']])
 })
 
 test('a removed source is not added again on the next load', async ({page}) => {
   await addFolder(page, 'Björk')
   await expect(titles(page)).toHaveText(['Human Behaviour'])
   await page.locator('audio-player .collection li', {hasText: 'Björk'}).locator('a').click()
-  expect(new URL(page.url()).hash).toBe('')
+  expect(new URL(page.url()).search).toBe('')
 
   await page.reload()
   await addFolder(page, 'Miles Davis')
