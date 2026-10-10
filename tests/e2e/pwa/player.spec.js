@@ -30,8 +30,10 @@ test.describe('when nothing plays', () => {
     await expand(page).click()
     await expect.poll(() => isFullScreen(page)).toBe(true)
     await expect(page.locator('#now-playing')).toBeHidden()
+    await expect(expand(page)).toHaveAttribute('title', 'Exit full screen')
     await expand(page).click()
     await expect.poll(() => isFullScreen(page)).toBe(false)
+    await expect(expand(page)).toHaveAttribute('title', 'Full screen')
   })
 
   test('tells when going full screen fails', async ({page}) => {
