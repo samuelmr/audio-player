@@ -340,6 +340,8 @@ share it.
 - The button at the top right, or a tap on the album art, opens *Now
   Playing* over the whole window; on a computer, the button also makes the
   browser full screen. Its own button at the top right, or Esc, closes it.
+  When nothing plays, the button on a computer only toggles full screen; on
+  a phone it is hidden.
 - On a computer, Space plays and pauses, ← and → move to the previous and next
   track, and ↑ and ↓ move in the queue.
 

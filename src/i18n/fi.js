@@ -86,5 +86,7 @@ export default {
   addHint: 'Valitse musiikkia kirjastosta ja paina OK',
   addHintClick: 'Lisää musiikkia jonoon alla olevasta kirjastosta',
   nowPlaying: 'Nyt soi',
+  fullScreen: 'Koko näyttö',
+  fullScreenFailed: 'Koko näyttöön siirtyminen ei onnistunut',
   closeNowPlaying: 'Sulje Nyt soi -näkymä',
 }

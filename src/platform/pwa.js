@@ -2,6 +2,7 @@
 import qrcode from "qrcode-generator"
 import jsQR from "jsqr"
 import { locale } from '../locale.js'
+import { reportError } from '../errors.js'
 import { SETTINGS_CODE_PREFIX } from '../settings-code.js'
 import { initKeyboard } from '../keyboard.js'
 import { expandSVG } from '../icons.js'
@@ -33,14 +34,14 @@ export function init() {
 // the album art, and closes with its own button or Esc. The page under it
 // doesn't scroll meanwhile. On a computer, the expand button also makes the
 // browser full screen, as its icon says, and leaving full screen, such as
-// with Esc, closes Now Playing too. Phones keep their browser as it is:
-// iPhones can't make a page full screen.
+// with Esc, closes Now Playing too. When nothing plays, there is no Now
+// Playing to open, and the button only toggles full screen. Phones keep their
+// browser as it is, and hide the button then: iPhones can't make a page full
+// screen.
 function initNowPlayingButtons(player, now) {
   const expand = document.createElement('button')
   expand.type = 'button'
   expand.className = 'np-open'
-  expand.title = locale.nowPlaying
-  expand.setAttribute('aria-label', locale.nowPlaying)
   expand.innerHTML = expandSVG
   player.appendChild(expand)
 
@@ -54,8 +55,23 @@ function initNowPlayingButtons(player, now) {
     }
     fullScreen = false
   }})
+  // the button's text follows what it does
+  const label = () => {
+    const text = player.classList.contains('idle') ? locale.fullScreen : locale.nowPlaying
+    expand.title = text
+    expand.setAttribute('aria-label', text)
+  }
+  new MutationObserver(label).observe(player, {attributes: true, attributeFilter: ['class']})
+  label()
+  const toggleFullScreen = () => {
+    const change = document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()
+    change.catch(e => reportError(e, locale.fullScreenFailed))
+  }
   const open = (e) => {
-    if (!openNowPlaying()) return
+    if (!openNowPlaying()) {
+      if (e.currentTarget == expand && computer.matches && document.fullscreenEnabled) toggleFullScreen()
+      return
+    }
     document.documentElement.style.overflow = 'hidden'
     view.querySelector('.np-close').focus()
     if (e.currentTarget == expand && computer.matches && document.fullscreenEnabled && !document.fullscreenElement) {
