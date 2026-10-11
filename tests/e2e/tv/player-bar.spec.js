@@ -13,7 +13,7 @@ test.beforeEach(async ({page}) => {
 
 test('tells how to start when nothing plays', async ({page}) => {
   await expect(bar(page)).toHaveClass(/idle/)
-  await expect(bar(page).locator('.now-title')).toHaveText('Nothing playing')
+  await expect(bar(page).locator('.now-title')).toHaveText('Ready to play')
   await expect(bar(page).locator('.now-subtitle')).toHaveText('Pick music from the library and press OK')
   await expect(backdrop(page)).toHaveClass(/no-art/)
 })
