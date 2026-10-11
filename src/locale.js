@@ -1,9 +1,13 @@
 import en from './i18n/en.js'
 import fi from './i18n/fi.js'
+import fr from './i18n/fr.js'
+import es from './i18n/es.js'
+import de from './i18n/de.js'
+import sv from './i18n/sv.js'
 
 // To add a language, copy i18n/en.js, translate it, and list it here.
 // All of them are bundled: the TV app is a single script.
-export const translations = { en, fi }
+export const translations = { en, fi, fr, es, de, sv }
 
 // the stored choice; none (or '') follows the device's language
 export const LANGUAGE_KEY = 'language'
