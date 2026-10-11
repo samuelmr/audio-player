@@ -26,7 +26,7 @@ test.describe('from a device that has the settings', () => {
     expect(decode(code)).toMatchObject(SETTINGS)
   })
 
-  test('shows the settings code as a QR code', async ({page}) => {
+  test('shows the settings as a QR code of a link', async ({page}) => {
     await transferButton(page, 'Show QR code').click()
     const qr = dialog(page).locator('.qr svg')
     await expect(qr).toBeVisible()
@@ -44,7 +44,10 @@ test.describe('from a device that has the settings', () => {
       return [...ctx.getImageData(0, 0, 400, 400).data]
     })
     const result = jsQR(Uint8ClampedArray.from(image), 400, 400)
-    expect(decode(result.data)).toMatchObject(SETTINGS)
+    const link = new URL(result.data)
+    expect(link.origin + link.pathname).toBe(new URL(page.url()).origin + new URL(page.url()).pathname)
+    expect(decode(new URLSearchParams(link.hash.slice(1)).get('settings'))).toMatchObject(SETTINGS)
+    await expect(dialog(page).locator('.qr p')).toContainText('scan the code again')
 
     await transferButton(page, 'Hide QR code').click()
     await expect(qr).toHaveCount(0)
@@ -78,5 +81,23 @@ test.describe('on a new device', () => {
     await transferButton(page, 'Paste settings code').click()
     await expect(dialog(page).locator('fieldset.transfer .error')).toHaveText('Not a valid settings code')
     expect(await page.evaluate(() => localStorage.getItem('accessKeyId'))).toBeNull()
+  })
+})
+
+test.describe('opening a link from a QR code on a new device', () => {
+  test.use({settings: null})
+
+  test('stores the settings of a link, as opened from a QR code', async ({page}) => {
+    await page.goto('./#settings=' + encodeURIComponent(settingsCode(SETTINGS)))
+    await expect(folder(page, 'ABBA')).toBeVisible()
+    await expect(dialog(page)).toBeHidden()
+    expect(await page.evaluate(() => localStorage.getItem('accessKeyId'))).toBe(SETTINGS.accessKeyId)
+    expect(page.url()).not.toContain('settings=')
+  })
+
+  test('tells of a link with invalid settings', async ({page}) => {
+    await page.goto('./#settings=nonsense')
+    await expect(page.locator('.toast, [role=status]').filter({hasText: 'not valid'}).first()).toBeVisible()
+    expect(page.url()).not.toContain('settings=')
   })
 })

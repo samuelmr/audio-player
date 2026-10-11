@@ -316,11 +316,15 @@ To move the settings to another device, use *Transfer settings* at the top:
 - *Copy settings code* and *Paste settings code* move them through the
   clipboard.
 - *Show QR code* shows them as a QR code, and *Scan QR code* reads one with
-  the camera.
+  the camera. The QR code is a link to the player: scan it with the camera app
+  of a phone or a tablet, and the player opens in its browser with the
+  settings stored. The settings are in the part of the link after the `#`,
+  which the browser doesn't send to any server.
 
 A home screen app on iOS has storage of its own, separate from Safari, so it
-needs the settings too. The settings code contains your secret key, so don't
-share it.
+needs the settings too: after saving the player to the home screen, scan the
+QR code again, or use the settings code. The settings code and the QR code
+contain your secret key, so don't share them.
 
 ### Using the player
 

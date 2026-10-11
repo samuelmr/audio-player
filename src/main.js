@@ -10,9 +10,24 @@ import { initPlayer, clearQueue } from './player.js'
 import { initOffline, runDownloads } from './offline.js'
 import { clearMeta, hasMeta } from './db.js'
 import { scanLibrary, stopLibraryScan } from './scan.js'
-import { initErrorHandling } from './errors.js'
+import { initErrorHandling, reportError } from './errors.js'
+import { applySettingsLink } from './settings-code.js'
+import { locale, LANGUAGE_KEY } from './locale.js'
+import { notify } from './adding.js'
 
 initErrorHandling()
+
+// a link from the QR code of another device carries its settings
+let linkedSettings = false, linkError
+try {
+  const language = localStorage.getItem(LANGUAGE_KEY)
+  linkedSettings = applySettingsLink()
+  // the texts are set as the app starts
+  if (linkedSettings && localStorage.getItem(LANGUAGE_KEY) != language) location.reload()
+} catch(e) {
+  // told once the page is up
+  linkError = e
+}
 
 const storedColor = localStorage.getItem('playerColor')
 if (storedColor) {
@@ -69,6 +84,8 @@ const settings = initSettings(player, {
 initPlayer(player)
 initOffline(player)
 platform.init()
+if (linkedSettings) notify(locale.settingsImported)
+if (linkError) reportError(linkError, locale.invalidLink)
 
 try {
   initS3()
