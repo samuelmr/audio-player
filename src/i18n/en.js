@@ -85,7 +85,7 @@ export default {
   upNext: 'Up next',
   queue: (count) => `Queue: ${count} ${count == 1 ? 'track' : 'tracks'}`,
   upNextTrack: (track) => `Up next: ${track}`,
-  nothingPlaying: 'Nothing playing',
+  nothingPlaying: 'Ready to play',
   addHint: 'Pick music from the library and press OK',
   addHintClick: 'Add music to the queue from the library below',
   nowPlaying: 'Now Playing',

@@ -82,7 +82,7 @@ export default {
   upNext: 'Seuraavaksi',
   queue: (count) => `Jonossa ${count} ${count == 1 ? 'kappale' : 'kappaletta'}`,
   upNextTrack: (track) => `Seuraavaksi: ${track}`,
-  nothingPlaying: 'Mitään ei soi',
+  nothingPlaying: 'Valmiina toistamaan',
   addHint: 'Valitse musiikkia kirjastosta ja paina OK',
   addHintClick: 'Lisää musiikkia jonoon alla olevasta kirjastosta',
   nowPlaying: 'Nyt soi',
