@@ -87,6 +87,7 @@ export default {
   addHintClick: 'Lisää musiikkia jonoon alla olevasta kirjastosta',
   nowPlaying: 'Nyt soi',
   fullScreen: 'Koko näyttö',
+  exitFullScreen: 'Poistu koko näytöstä',
   fullScreenFailed: 'Koko näyttöön siirtyminen ei onnistunut',
   closeNowPlaying: 'Sulje Nyt soi -näkymä',
 }

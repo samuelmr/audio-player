@@ -5,7 +5,7 @@ import { locale } from '../locale.js'
 import { reportError } from '../errors.js'
 import { SETTINGS_CODE_PREFIX } from '../settings-code.js'
 import { initKeyboard } from '../keyboard.js'
-import { expandSVG } from '../icons.js'
+import { expandSVG, compressSVG } from '../icons.js'
 import { playerList } from '../player.js'
 import { initPlayerBar } from '../player-bar.js'
 import { initQueue } from '../queue.js'
@@ -55,13 +55,17 @@ function initNowPlayingButtons(player, now) {
     }
     fullScreen = false
   }})
-  // the button's text follows what it does
+  // the button's text and icon follow what it does
   const label = () => {
-    const text = player.classList.contains('idle') ? locale.fullScreen : locale.nowPlaying
+    const idle = player.classList.contains('idle')
+    const leaving = idle && document.fullscreenElement
+    const text = leaving ? locale.exitFullScreen : idle ? locale.fullScreen : locale.nowPlaying
     expand.title = text
     expand.setAttribute('aria-label', text)
+    expand.innerHTML = leaving ? compressSVG : expandSVG
   }
   new MutationObserver(label).observe(player, {attributes: true, attributeFilter: ['class']})
+  document.addEventListener('fullscreenchange', label)
   label()
   const toggleFullScreen = () => {
     const change = document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()
