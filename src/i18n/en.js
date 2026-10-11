@@ -42,6 +42,9 @@ export default {
   copied: 'Settings code copied. It contains your secret key, so keep it safe.',
   pastePrompt: 'Paste settings code',
   invalidCode: 'Not a valid settings code',
+  qrInfo: 'Scan this with the camera of a phone or a tablet to open the player there with these settings. The player saved to the home screen has settings of its own, so scan the code again there, or use the settings code.',
+  settingsImported: 'Settings imported',
+  invalidLink: 'The settings in the link are not valid',
 
   scanTitle: 'Library scan',
   scanInfo: 'Read the metadata of every track and store it on this device. This can take a long time.',

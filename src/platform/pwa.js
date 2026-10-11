@@ -3,7 +3,7 @@ import qrcode from "qrcode-generator"
 import jsQR from "jsqr"
 import { locale } from '../locale.js'
 import { reportError } from '../errors.js'
-import { SETTINGS_CODE_PREFIX } from '../settings-code.js'
+import { isSettingsCode, settingsLink } from '../settings-code.js'
 import { initKeyboard } from '../keyboard.js'
 import { expandSVG, compressSVG } from '../icons.js'
 import { playerList } from '../player.js'
@@ -96,7 +96,8 @@ function initNowPlayingButtons(player, now) {
   })
 }
 
-// the settings code moves through the clipboard or a QR code
+// the settings code moves through the clipboard or a QR code. The QR code is
+// a link, so a camera app can open it, and the scanner here reads it as well
 export function addTransferControls({ dialog, container, addButton, exportCode, importCode, setMessage }) {
   addButton(locale.copySettings, async () => {
     await navigator.clipboard.writeText(exportCode())
@@ -110,7 +111,7 @@ export function addTransferControls({ dialog, container, addButton, exportCode, 
     } catch(e) {
       // clipboard read not allowed, let the user paste manually
     }
-    if (!code?.startsWith(SETTINGS_CODE_PREFIX)) {
+    if (!isSettingsCode(code)) {
       code = prompt(locale.pastePrompt)
     }
     if (code) {
@@ -137,9 +138,12 @@ export function addTransferControls({ dialog, container, addButton, exportCode, 
     }
     stopScan()
     const qr = qrcode(0, 'M')
-    qr.addData(exportCode())
+    qr.addData(settingsLink(exportCode(), location.href))
     qr.make()
     qrContainer.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 4, scalable: true })
+    const info = document.createElement('p')
+    info.textContent = locale.qrInfo
+    qrContainer.appendChild(info)
     qrButton.textContent = locale.hideQR
   })
 
@@ -171,7 +175,7 @@ export function addTransferControls({ dialog, container, addButton, exportCode, 
         ctx.drawImage(scanVideo, 0, 0)
         const image = ctx.getImageData(0, 0, scanCanvas.width, scanCanvas.height)
         const result = jsQR(image.data, image.width, image.height, { inversionAttempts: 'dontInvert' })
-        if (result?.data?.startsWith(SETTINGS_CODE_PREFIX)) {
+        if (isSettingsCode(result?.data)) {
           stopScan()
           importCode(result.data)
           return

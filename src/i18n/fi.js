@@ -39,6 +39,9 @@ export default {
   copied: 'Asetuskoodi kopioitu. Se sisältää salaisen avaimesi, joten säilytä sitä huolella.',
   pastePrompt: 'Liitä asetuskoodi',
   invalidCode: 'Virheellinen asetuskoodi',
+  qrInfo: 'Lue koodi puhelimen tai tabletin kameralla, niin soitin aukeaa siellä näillä asetuksilla. Aloitusnäytölle tallennetulla soittimella on omat asetuksensa, joten lue koodi uudelleen siellä tai käytä asetuskoodia.',
+  settingsImported: 'Asetukset tuotu',
+  invalidLink: 'Linkin asetukset eivät kelpaa',
 
   scanTitle: 'Kirjaston läpikäynti',
   scanInfo: 'Lue kaikkien kappaleiden metatiedot ja tallenna ne laitteelle. Tämä voi kestää pitkään.',
