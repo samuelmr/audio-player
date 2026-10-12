@@ -157,6 +157,21 @@ test('a link to a song adds only the song', async ({page}) => {
   await expect(titles(page)).toHaveText(['Freddie Freeloader'])
 })
 
+test('a track without a length shows none', async ({page}) => {
+  // the metadata of the track has no length. Not one at the top of the
+  // bucket, whose metadata came with the listing
+  await page.route(url => url.pathname.endsWith('/01%20Human%20Behaviour.mp3'), async route => {
+    if (route.request().method() != 'HEAD') return route.continue()
+    const response = await route.fetch()
+    const headers = response.headers()
+    delete headers['x-amz-meta-length']
+    await route.fulfill({response, headers})
+  })
+  await page.goto('./?track=Bj%C3%B6rk%2FDebut%2F01%20Human%20Behaviour.mp3')
+  await expect(titles(page)).toHaveText(['Human Behaviour'])
+  await expect(queue(page).locator('span.duration')).toHaveText('')
+})
+
 test('a link with several folders, songs and a playlist adds them all', async ({page}) => {
   const song = 'ABBA/Arrival/01 Dancing Queen.mp3'
   await page.goto('./?' + new URLSearchParams([['folder', 'Björk'], ['track', song], ['playlist', 'Road trip.json']]))

@@ -456,7 +456,7 @@ export async function createAudioTrack(obj, source) {
   let myAlbum = ''
   let myTitle = ''
   let myTrackNumber = ''
-  let myDuration = '0:00'
+  let myDuration = ''
   let myYear = ''
   let myPlaylist = ''
   let myGenre = ''
@@ -556,10 +556,11 @@ export async function createAudioTrack(obj, source) {
   const durationSpan = document.createElement('span')
   durationSpan.className = 'duration'
   duration.appendChild(durationSpan)
-  if (myDuration && Number.isFinite(parseInt(myDuration))) {
-    myDuration = parseInt(myDuration)/1000 // ms to s
-    const min = Math.floor(myDuration / 60)
-    const sec = Math.round(myDuration % 60)
+  // a track without a length, or with 0, shows none
+  const seconds = Math.round(parseInt(myDuration) / 1000) // ms to s
+  if (seconds > 0) {
+    const min = Math.floor(seconds / 60)
+    const sec = seconds % 60
     durationMeta.content = `PT${min}M${sec}S`
     durationSpan.textContent = [min, sec.toString().padStart(2, '0')].join(':')
   }
