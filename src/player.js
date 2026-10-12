@@ -5,7 +5,7 @@ import { s3, objectUrl } from './s3.js'
 import { decode, parseTrackNumber, replayGainVolume } from './track-metadata.js'
 import { reportError } from './errors.js'
 import { mirrorQueue } from './address.js'
-import { offlineReady, offlineKeys, failedKeys, trackMeta, downloadKey, downloadRunning, getOfflineUrl } from './offline.js'
+import { offlineReady, offlineKeys, failedKeys, trackMeta, downloadKey, downloadRunning, getOfflineUrl, fetchAudio } from './offline.js'
 
 export let audio, play, collection, playerList
 let cursor, trackLength, trackTitle, progress
@@ -14,8 +14,12 @@ let seekTarget, seekTimeout
 // tracks in a row that failed to play
 let failedInRow = 0
 
-const preloadCache = {}
-let preloading = false
+// The next track is downloaded whole while the current one plays, and plays
+// from memory: on iOS an app in the background is suspended as soon as the
+// music stops, and on a slow connection the next track from the bucket would
+// take that long to start.
+let prepared // {track, href, controller, url}
+let playingUrl // object URL of the prepared track that plays now
 
 // mediaSession is missing from some browser engines, such as older TVs
 const setPlaybackState = (state) => {
@@ -162,6 +166,7 @@ export function initPlayer(player) {
   }
   audio.onplaying = (e) => {
     failedInRow = 0
+    prepareNext()
     play.innerHTML = pauseSVG
     play.classList.remove('stalled')
     setPlaybackState('playing')
@@ -198,6 +203,8 @@ export function initPlayer(player) {
 
   playerList = document.createElement('nav')
   player.appendChild(playerList)
+  // a change in the queue may change the next track
+  new MutationObserver(prepareNext).observe(playerList, {childList: true})
 
   const updateTime = () => {
       const seconds = parseInt(audio.currentTime)
@@ -322,7 +329,7 @@ const isPlayable = (track) => {
   return track.classList.contains('offline-saved') || (navigator.onLine && Boolean(track.dataset.src))
 }
 
-export const playNext = () => {
+const nextPlayable = () => {
   const playing = playerList.querySelector('.playing')
   const tracks = [...playerList.querySelectorAll('audio-track')]
   const start = tracks.indexOf(playing) + 1
@@ -330,9 +337,13 @@ export const playNext = () => {
   for (let i = 0; i < tracks.length; i++) {
     const candidate = tracks[(start + i) % tracks.length]
     if (isPlayable(candidate)) {
-      return playTrack(candidate)
+      return candidate
     }
   }
+}
+
+export const playNext = () => {
+  playTrack(nextPlayable())
 }
 
 export const playPrevious = () => {
@@ -358,7 +369,11 @@ const playTrack = async (track) => {
     playerList.querySelector('.playing')?.classList.remove('playing')
     track.classList.add('playing')
     track.scrollIntoView({block: "nearest", inline: "nearest"})
-    audio.src = track.dataset['src']
+    const previousUrl = playingUrl
+    playingUrl = prepared?.track == track && prepared.href == track.dataset.src ? prepared.url : undefined
+    if (playingUrl) prepared = undefined
+    audio.src = playingUrl || track.dataset['src']
+    if (previousUrl && previousUrl != playingUrl) URL.revokeObjectURL(previousUrl)
     audio.volume = replayGainVolume(trackMeta.get(track))
     // call play() synchronously instead of waiting for 'canplay': on iOS a
     // backgrounded PWA is suspended as soon as audio stops, so an async gap
@@ -424,41 +439,36 @@ function getHue(r, g, b) {
   return Math.round(h*360)
 }
 
-export async function preloadAudio() {
-  const cacheKeys = Object.keys(preloadCache)
-  // saving offline playlists goes first
-  if (preloading || downloadRunning || !navigator.onLine || cacheKeys.length < 1) {
-    return false
-  }
-  const href = cacheKeys[0]
-  delete(preloadCache[href])
-  preloading = href
-  const dummyAudio = document.createElement('audio')
-  dummyAudio.src = href
-  dummyAudio.load()
-  // an address that can't be loaded must not stop the preloading
-  dummyAudio.oncanplay = dummyAudio.onerror = (e) => {
-    dummyAudio.oncanplay = dummyAudio.onerror = null
-    dummyAudio.src = ''
-    preloading = false
-    preloadAudio()
-  }
+function discardPrepared() {
+  prepared?.controller.abort()
+  if (prepared?.url) URL.revokeObjectURL(prepared.url)
+  prepared = undefined
 }
 
-async function queuePreload(href) {
-  if (!href) return
-  preloadCache[href] = true
-  preloadAudio()
+export function prepareNext() {
+  const track = nextPlayable()
+  // offline tracks are on the device already, and a track alone in the queue
+  // is loading now
+  const ready = !track || track.classList.contains('offline-saved') || track.classList.contains('playing')
+  const href = !ready && track.dataset.src
+  if (href && prepared?.track == track && prepared.href == href) return
+  discardPrepared()
+  // the playing track is loaded first, and saving offline playlists goes first
+  if (!href || audio.paused || audio.readyState < audio.HAVE_FUTURE_DATA || downloadRunning || !navigator.onLine) {
+    return
+  }
+  const preparing = prepared = {track, href, controller: new AbortController()}
+  fetchAudio(href, track.dataset.key, preparing.controller.signal).then(blob => {
+    if (prepared == preparing) prepared.url = URL.createObjectURL(blob)
+  }).catch(e => {
+    // the track plays from the bucket instead
+    if (e.name != 'AbortError') console.warn('Getting the next track ready failed:', e)
+  })
 }
 
 export async function createAudioTrack(obj, source) {
 
   await offlineReady
-
-  // pre-fetch content to cache
-  if (!offlineKeys.has(obj.Key)) {
-    queuePreload(obj.href)
-  }
 
   let myArtist = ''
   let myAlbum = ''
