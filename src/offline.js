@@ -2,7 +2,7 @@
 //
 // A saved playlist is a fixed list of S3 keys. The downloader saves the tracks
 // one at a time, in the order the playlists were saved, until every saved
-// playlist is complete. Downloading goes before preloading.
+// playlist is complete. Downloading goes before getting the next track ready.
 
 import { locale } from './locale.js'
 import { offlineSVG, addSVG, removeSVG } from './icons.js'
@@ -10,7 +10,7 @@ import { db, dbReady, requestResult, OFFLINE_PLAYLISTS, OFFLINE_AUDIO } from './
 import { s3, objectUrl } from './s3.js'
 import { browserList } from './browser.js'
 import { reportError } from './errors.js'
-import { audio, collection, playerList, createAudioTrack, createSourceItem, setSourceLink, preloadAudio } from './player.js'
+import { audio, collection, playerList, createAudioTrack, createSourceItem, setSourceLink, prepareNext } from './player.js'
 
 export const offlineKeys = new Set() // keys of the tracks stored in OFFLINE_AUDIO
 const offlineUrls = new Map() // key -> object URL of the stored blob
@@ -251,19 +251,25 @@ async function nextMissingKey() {
   }
 }
 
+// the whole track from the bucket, to save or to play from memory
+export async function fetchAudio(url, key, signal) {
+  const response = await fetch(url, {signal})
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`)
+  }
+  const blob = await response.blob()
+  // Safari won't play a blob without an audio type
+  if (!blob.type.startsWith('audio/')) {
+    return new Blob([blob], {type: key.endsWith('.mp3') ? 'audio/mpeg' : 'audio/*'})
+  }
+  return blob
+}
+
 async function downloadTrack(key) {
   // before the first await, so that an abort during it is not lost
   downloadController = new AbortController()
   const url = await objectUrl(key)
-  const response = await fetch(url, {signal: downloadController.signal})
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
-  }
-  let blob = await response.blob()
-  // Safari won't play a blob without an audio type
-  if (!blob.type.startsWith('audio/')) {
-    blob = new Blob([blob], {type: key.endsWith('.mp3') ? 'audio/mpeg' : 'audio/*'})
-  }
+  const blob = await fetchAudio(url, key, downloadController.signal)
   return storeDownload(key, blob)
 }
 
@@ -313,7 +319,7 @@ export async function runDownloads() {
   finally {
     downloadKey = downloadController = null
     downloadRunning = false
-    preloadAudio()
+    prepareNext()
   }
 }
 

@@ -59,6 +59,66 @@ test('moves on at the end of a track, and from the last back to the first', asyn
   await expectPlaying(page, 'Dancing Queen')
 })
 
+// the next track got ready in advance, not its metadata (HEAD) or its playing
+const isDownload = (request) => request.resourceType() == 'fetch' && request.method() == 'GET'
+
+// on iOS, an app in the background is suspended when its playing pauses
+test('does not tell the system it paused while the next track loads', async ({page}) => {
+  await page.addInitScript(() => {
+    window.playbackStates = []
+    const property = Object.getOwnPropertyDescriptor(MediaSession.prototype, 'playbackState')
+    Object.defineProperty(MediaSession.prototype, 'playbackState', {
+      ...property,
+      set(state) {
+        window.playbackStates.push(state)
+        property.set.call(this, state)
+      },
+    })
+  })
+  await page.reload()
+  await page.route(/Knowing/, async (route) => {
+    // not got ready in advance, but loaded slowly when its turn comes
+    if (isDownload(route.request())) return route.abort()
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    await route.continue()
+  })
+  await addFolder(page, 'ABBA')
+  await expectPlaying(page, 'Dancing Queen')
+  await expect(play(page)).toHaveClass(/stalled/)
+  await expectPlaying(page, 'Knowing Me, Knowing You')
+  await expect(play(page)).not.toHaveClass(/stalled/)
+  expect(await page.evaluate(() => window.playbackStates)).not.toContain('paused')
+})
+
+test('downloads the next track while one plays, and plays it from memory', async ({page}) => {
+  await addFolder(page, 'ABBA')
+  await expectPlaying(page, 'Dancing Queen')
+  expect((await audioState(page)).src).not.toMatch(/^blob:/)
+  await expectPlaying(page, 'Knowing Me, Knowing You')
+  expect((await audioState(page)).src).toMatch(/^blob:/)
+  await expectPlaying(page, 'Money, Money, Money')
+  expect((await audioState(page)).src).toMatch(/^blob:/)
+})
+
+test('plays the next track from the bucket when downloading it fails', async ({page}) => {
+  await page.route(/Knowing/, (route) => {
+    if (isDownload(route.request())) return route.abort()
+    return route.continue()
+  })
+  await addFolder(page, 'ABBA')
+  await expectPlaying(page, 'Dancing Queen')
+  await expectPlaying(page, 'Knowing Me, Knowing You')
+  expect((await audioState(page)).src).not.toMatch(/^blob:/)
+  await expectPlaying(page, 'Money, Money, Money')
+  await expect(page.locator('.toast')).toBeHidden()
+})
+
+test('tells Safari that it plays music', async ({page}) => {
+  await page.addInitScript(() => { navigator.audioSession = {type: 'auto'} })
+  await page.reload()
+  await expect.poll(() => page.evaluate(() => navigator.audioSession.type)).toBe('playback')
+})
+
 test.describe('with long tracks queued', () => {
   test.beforeEach(async ({page}) => {
     await addFolder(page, 'Miles Davis')
