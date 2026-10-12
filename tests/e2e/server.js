@@ -64,7 +64,9 @@ for (const track of TRACKS) {
   objects.set(track.key, {body: silentMp3(track.seconds), type: 'audio/mpeg', meta: track.meta})
 }
 for (const [key, playlist] of Object.entries(PLAYLISTS)) {
-  objects.set(key, {body: Buffer.from(JSON.stringify(playlist)), type: 'application/json', meta: {}})
+  objects.set(key, typeof playlist == 'string'
+    ? {body: Buffer.from(playlist), type: 'audio/x-mpegurl', meta: {}}
+    : {body: Buffer.from(JSON.stringify(playlist)), type: 'application/json', meta: {}})
 }
 const keys = [...objects.keys()].sort()
 

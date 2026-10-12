@@ -59,7 +59,7 @@ music/                                 ← the bucket
 │       ├── 01 So What.mp3
 │       └── cover.jpg
 ├── Road trip.json                     ← a playlist
-└── Sunday morning.json                ← another playlist
+└── Sunday morning.m3u                 ← another playlist
 ```
 
 Without any other information, the player takes the artist, album and title of
@@ -92,8 +92,16 @@ the art.
 
 ### Playlists
 
-A playlist is a JSON file at the root of the bucket. Its file name is the name
-shown in the player. `url` is the key of the track in the bucket. The other
+A playlist is a JSON or M3U file at the root of the bucket. Its file name is
+the name shown in the player. When a playlist is there in both formats, such
+as `Road trip.json` and `Road trip.m3u`, the player lists only the JSON one.
+
+What a playlist leaves out of a track, the player takes from the track's
+metadata in the bucket, as it does for the tracks in the folders. A playlist
+of keys alone is enough, but the player reads the metadata of each track it
+hasn't seen before.
+
+In a JSON playlist, `url` is the key of the track in the bucket. The other
 fields of a track are the same as the metadata keys above, written out without
 URL-encoding:
 
@@ -117,6 +125,26 @@ URL-encoding:
   ]
 }
 ```
+
+The player also reads playlists in schema.org's
+[`MusicPlaylist`](https://schema.org/MusicPlaylist) format, with the tracks as
+`MusicRecording`s. It takes `byArtist` as the artist, `inAlbum` as the album,
+`position` as the track number and `duration` (such as `PT10M1S`) as the
+length. An empty field is filled from the metadata.
+
+An M3U playlist (`.m3u`, or `.m3u8`) has the key of a track on each line,
+relative to the playlist:
+
+```text
+#EXTM3U
+#EXTINF:230,ABBA - Dancing Queen
+ABBA/Arrival/01 Dancing Queen.mp3
+Miles Davis/Kind of Blue/01 So What.mp3
+```
+
+The `#EXTINF` lines are optional. One gives the length of the next track in
+seconds, and its artist and title. Web addresses, and paths outside the
+bucket, are skipped.
 
 ### Uploading music
 
@@ -150,6 +178,11 @@ Upload playlists with `aws s3 cp`:
 ```sh
 aws --endpoint-url "$S3ENDPOINT" s3 cp "Road trip.json" "s3://$S3BUCKET/" \
   --content-type application/json
+```
+
+```sh
+aws --endpoint-url "$S3ENDPOINT" s3 cp "Sunday morning.m3u" "s3://$S3BUCKET/" \
+  --content-type audio/x-mpegurl
 ```
 
 The player keeps the metadata of the tracks it has seen in the browser, and

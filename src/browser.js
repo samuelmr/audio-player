@@ -8,6 +8,7 @@ import { notify } from './adding.js'
 import { parseAddress } from './address.js'
 import { reportError } from './errors.js'
 import { getAllMeta } from './db.js'
+import { parsePlaylist, playlistType, playlistBase } from './playlist.js'
 import { SORT_KEY, SORT_NAME_YEAR, folderSortName, trackYear, earlierYear, sortByKey, sortByName, shortcutLetter } from './library-order.js'
 
 export let browserList, playlistList
@@ -128,11 +129,8 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
             }
           }).catch(e => reportError(e, locale.trackFailed(obj.Key.replace(/^.*\//, ''))))
         }
-        else if (obj.Key.endsWith('.json')) {
-          const li = createPlaylistElement(obj, playlistList)
-        }
-        else if (obj.Key.endsWith('.m3u')) {
-          // playlists.push(obj.Key)
+        else if (playlistType(obj.Key)) {
+          createPlaylistElement(obj, playlistList)
         }
       }
     }
@@ -328,10 +326,26 @@ async function createSongElement(obj, ol) {
   return li
 }
 
-async function createPlaylistElement(obj, ol) {
+// the metadata of the next tracks of a playlist is read while the ones before
+// them are added
+const READ_AHEAD = 6
+
+// The listing comes in key order, so a playlist in .json comes before the
+// same in .m3u, and is the one listed (see PLAYLIST_TYPES)
+function createPlaylistElement(obj, ol) {
+  const base = playlistBase(obj.Key)
+  const listed = [...ol.children].find(li => li.dataset.base == base)
+  if (listed) {
+    // an address may name the playlist in either format
+    if (linked.playlist.delete(obj.Key)) {
+      listed.querySelector(':scope > a.add').click()
+    }
+    return listed
+  }
   const parent = ol.parentNode.dataset.folder
   const li = document.createElement('li')
   li.className = 'playlist'
+  li.dataset.base = base
   li.textContent = obj.Key.replace(`${parent}/`, '') + ' '
   const a = document.createElement('a')
   a.className = 'action add'
@@ -350,15 +364,25 @@ async function createPlaylistElement(obj, ol) {
       collection.appendChild(cli)
     // }
     try {
-      const json = await getObjectText(obj.Key)
-      const playlist = JSON.parse(json)
-      const base = obj.Key.replace(/\/[^\/]+$/, '')
+      const tracks = parsePlaylist(obj.Key, await getObjectText(obj.Key))
+      // the metadata of the track in the bucket fills what the playlist
+      // leaves out, such as the length. Without it, the playlist's will do.
+      const bucketMeta = []
+      const readMeta = (i) => {
+        if (i >= tracks.length) return
+        bucketMeta[i] = getS3Meta(tracks[i].url).catch(e => {
+          console.warn(`Could not read the metadata of '${tracks[i].url}' for a playlist`, e)
+          return {}
+        })
+      }
+      for (let i = 0; i < READ_AHEAD; i++) readMeta(i)
       // one at a time, to keep the queue in the listed order
-      for (const track of playlist?.track || []) {
+      for (const [i, track] of tracks.entries()) {
+        readMeta(i + READ_AHEAD)
         const song = {
           Bucket: bucketName,
           Key: track.url,
-          Metadata: track,
+          Metadata: {...await bucketMeta[i], ...track},
         }
         song.href = await objectUrl(song.Key)
         await createAudioTrack(song)

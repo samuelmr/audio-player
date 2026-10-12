@@ -216,7 +216,7 @@ test.describe('clearing the local data', () => {
     await expect(folder(page, 'ABBA')).toBeVisible()
     await expect(folders).toHaveCount(3)
     await page.locator('#playlists > li.folder').click({position: {x: 5, y: 5}})
-    await expect(page.locator('#playlists li.playlist')).toHaveText(['Road trip.json'])
+    await expect(page.locator('#playlists li.playlist')).toHaveText(['Road trip.json', 'Sunday jazz.json', 'Swedish.m3u'])
   })
 
   test('a new source empties the queue, except for offline playlists', async ({page}) => {

@@ -41,7 +41,9 @@ export const TRACKS = [
 // the album art of Kind of Blue: one color, from which the player takes its hue
 export const COVER = {key: 'Miles Davis/Kind of Blue/cover.png', rgb: [30, 60, 200], hue: 229}
 
-// at the root of the bucket, in the format of the playlists made for the app
+// at the root of the bucket: in the format of the playlists made for the app,
+// in schema.org's MusicPlaylist format, and as .m3u lists of keys. A text is
+// served as it is, the others as JSON.
 export const PLAYLISTS = {
   'Road trip.json': {
     title: 'Road trip',
@@ -50,6 +52,18 @@ export const PLAYLISTS = {
       {url: 'ABBA/Arrival/01 Dancing Queen.mp3', title: 'Dancing Queen', artist: 'ABBA'},
     ],
   },
+  // the length of Freddie Freeloader comes from its metadata
+  'Sunday jazz.json': {
+    '@type': 'MusicPlaylist',
+    name: 'Sunday jazz',
+    track: [
+      {'@type': 'MusicRecording', byArtist: 'Miles Davis', inAlbum: 'Kind of Blue', position: '02', name: 'Freddie Freeloader', duration: '', url: 'Miles Davis/Kind of Blue/02 Freddie Freeloader.mp3'},
+      {'@type': 'MusicRecording', byArtist: 'Miles Davis', inAlbum: 'Kind of Blue', position: '01', name: 'So What', duration: 'PT1M5S', url: 'Miles Davis/Kind of Blue/01 So What.mp3'},
+    ],
+  },
+  // the same playlist, which isn't listed beside the .json
+  'Sunday jazz.m3u': 'Miles Davis/Kind of Blue/01 So What.mp3\n',
+  'Swedish.m3u': '#EXTM3U\n#EXTINF:125,ABBA - Money, Money, Money\nABBA/Arrival/03 Money, Money, Money.mp3\r\n\nABBA/Arrival/02 Knowing Me, Knowing You.mp3\n',
 }
 
 export const titleOf = (key) => TRACKS.find(t => t.key == key).meta.title
