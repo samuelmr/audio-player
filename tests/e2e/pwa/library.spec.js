@@ -6,6 +6,9 @@ const titles = (page) => queue(page).locator('.name a')
 // the folder's own row, not the + link or its contents
 const openFolder = (page, name) => folder(page, name).click({position: {x: 5, y: 5}})
 
+const openPlaylists = (page) => page.locator('#playlists > li.folder').click({position: {x: 5, y: 5}})
+const playlist = (page, name) => page.locator('#playlists li.playlist', {hasText: name})
+
 test.beforeEach(async ({page}) => {
   await page.goto('./')
 })
@@ -15,9 +18,10 @@ test('lists the folders and playlists at the top of the bucket', async ({page}) 
   await expect.poll(() => folders.evaluateAll(items => items.map(li => li.dataset.folder))).toEqual(['ABBA', 'Björk', 'Miles Davis'])
   // a shortcut for each first letter, after the player's and the playlists'
   await expect(page.locator('#skipNav ol a')).toHaveText(['', '#', 'A', 'B', 'M'])
-  // the playlist is on the second page of the listing
+  // the playlists are on the second page of the listing. Sunday jazz is
+  // also in .m3u, and listed once
   await page.locator('#playlists > li.folder').click({position: {x: 5, y: 5}})
-  await expect(page.locator('#playlists li.playlist')).toHaveText(['Road trip.json'])
+  await expect(page.locator('#playlists li.playlist')).toHaveText(['Road trip.json', 'Sunday jazz.json', 'Swedish.m3u'])
 })
 
 test('opens a folder', async ({page}) => {
@@ -89,18 +93,39 @@ test('adds a single song', async ({page}) => {
 })
 
 test('adds a playlist, in its order', async ({page}) => {
-  await page.locator('#playlists > li.folder').click({position: {x: 5, y: 5}})
-  await page.locator('#playlists li.playlist').locator('a.add').click()
+  await openPlaylists(page)
+  await playlist(page, 'Road trip').locator('a.add').click()
   await expect(titles(page)).toHaveText(['So What', 'Dancing Queen'])
   await expectPlaying(page, 'So What')
 })
 
 test('a click on a playlist adds it, and keeps the playlists open', async ({page}) => {
-  await page.locator('#playlists > li.folder').click({position: {x: 5, y: 5}})
-  await page.locator('#playlists li.playlist').click()
+  await openPlaylists(page)
+  await playlist(page, 'Road trip').click()
   await expect(titles(page)).toHaveText(['So What', 'Dancing Queen'])
   await expect(page.locator('#playlists > li.folder')).toHaveClass(/open/)
-  await expect(page.locator('#playlists li.playlist')).toBeVisible()
+  await expect(playlist(page, 'Road trip')).toBeVisible()
+})
+
+test('a schema.org playlist gets what it leaves out from the metadata of the tracks', async ({page}) => {
+  await openPlaylists(page)
+  await playlist(page, 'Sunday jazz').click()
+  await expect(titles(page)).toHaveText(['Freddie Freeloader', 'So What'])
+  // the playlist's duration wins over the metadata's 30 seconds
+  await expect(queue(page).locator('span.duration')).toHaveText(['0:30', '1:05'])
+})
+
+test('adds an .m3u playlist, with the metadata of its tracks', async ({page}) => {
+  await openPlaylists(page)
+  await playlist(page, 'Swedish').click()
+  await expect(titles(page)).toHaveText(['Money, Money, Money', 'Knowing Me, Knowing You'])
+  // the first from its #EXTINF line
+  await expect(queue(page).locator('span.duration')).toHaveText(['2:05', '0:02'])
+})
+
+test('a link to a playlist in the format that is not listed adds the listed one', async ({page}) => {
+  await page.goto('./?' + new URLSearchParams([['playlist', 'Sunday jazz.m3u']]))
+  await expect(titles(page)).toHaveText(['Freddie Freeloader', 'So What'])
 })
 
 test('a playlist that cannot be read is told, and leaves the queue as it was', async ({page}) => {
@@ -109,8 +134,8 @@ test('a playlist that cannot be read is told, and leaves the queue as it was', a
     contentType: 'application/xml',
     body: '<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message></Error>',
   }))
-  await page.locator('#playlists > li.folder').click({position: {x: 5, y: 5}})
-  await page.locator('#playlists li.playlist').click()
+  await openPlaylists(page)
+  await playlist(page, 'Road trip').click()
   await expect(page.locator('.toast')).toHaveText('Could not read the playlist Road trip.json')
   await expect(titles(page)).toHaveCount(0)
   await expect(page.locator('li.playlist[data-source]')).toHaveCount(0)
@@ -130,6 +155,21 @@ test('a link to a folder inside another adds only that folder', async ({page}) =
 test('a link to a song adds only the song', async ({page}) => {
   await page.goto('./?track=Miles%20Davis%2FKind%20of%20Blue%2F02%20Freddie%20Freeloader.mp3')
   await expect(titles(page)).toHaveText(['Freddie Freeloader'])
+})
+
+test('a track without a length shows none', async ({page}) => {
+  // the metadata of the track has no length. Not one at the top of the
+  // bucket, whose metadata came with the listing
+  await page.route(url => url.pathname.endsWith('/01%20Human%20Behaviour.mp3'), async route => {
+    if (route.request().method() != 'HEAD') return route.continue()
+    const response = await route.fetch()
+    const headers = response.headers()
+    delete headers['x-amz-meta-length']
+    await route.fulfill({response, headers})
+  })
+  await page.goto('./?track=Bj%C3%B6rk%2FDebut%2F01%20Human%20Behaviour.mp3')
+  await expect(titles(page)).toHaveText(['Human Behaviour'])
+  await expect(queue(page).locator('span.duration')).toHaveText('')
 })
 
 test('a link with several folders, songs and a playlist adds them all', async ({page}) => {

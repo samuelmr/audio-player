@@ -8,6 +8,7 @@
 // document; the stylesheet only moves the list aside.
 
 import { getObjectText } from '../s3.js'
+import { parsePlaylist } from '../playlist.js'
 import { queueKeys } from '../search.js'
 import { play as playButton } from '../player.js'
 import { itemName, startAdding, currentAdding, notify } from '../adding.js'
@@ -191,8 +192,7 @@ async function openPlaylist(item) {
   item.appendChild(list)
   const key = item.querySelector(':scope > a.action')?.getAttribute('href') || ''
   try {
-    const playlist = JSON.parse(await getObjectText(key))
-    for (const track of playlist.track || []) {
+    for (const track of parsePlaylist(key, await getObjectText(key))) {
       const song = document.createElement('li')
       song.className = 'song'
       song.textContent = trackTitle(track) + ' '

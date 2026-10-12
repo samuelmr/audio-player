@@ -111,6 +111,17 @@ test('opens a playlist and adds a track from it', async ({page, remote}) => {
   await expectPlaying(page, 'Dancing Queen')
 })
 
+test('opens an .m3u playlist', async ({page, remote}) => {
+  await focusOn(page.locator('#playlists > li.folder'))
+  await remote.press('Right')
+  await remote.press('Right')
+  await remote.press('Down', {times: 2})
+  await expect(focused(page)).toHaveText('Swedish.m3u')
+  await remote.press('Right')
+  // without a title in the playlist, a track is shown by its file name
+  await expect(page.locator('#playlists li.playlist li.song')).toHaveText(['Money, Money, Money', '02 Knowing Me, Knowing You.mp3'])
+})
+
 test('the shortcuts move the focus to their letter', async ({page, remote}) => {
   await focusOn(folder(page, 'ABBA'))
   // Back goes to the shortcut of the item's letter
