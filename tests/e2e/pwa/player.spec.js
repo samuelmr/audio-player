@@ -59,6 +59,38 @@ test('moves on at the end of a track, and from the last back to the first', asyn
   await expectPlaying(page, 'Dancing Queen')
 })
 
+// on iOS, an app in the background is suspended when its playing pauses
+test('does not tell the system it paused while the next track loads', async ({page}) => {
+  await page.addInitScript(() => {
+    window.playbackStates = []
+    const property = Object.getOwnPropertyDescriptor(MediaSession.prototype, 'playbackState')
+    Object.defineProperty(MediaSession.prototype, 'playbackState', {
+      ...property,
+      set(state) {
+        window.playbackStates.push(state)
+        property.set.call(this, state)
+      },
+    })
+  })
+  await page.reload()
+  await page.route(/Knowing/, async (route) => {
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    await route.continue()
+  })
+  await addFolder(page, 'ABBA')
+  await expectPlaying(page, 'Dancing Queen')
+  await expect(play(page)).toHaveClass(/stalled/)
+  await expectPlaying(page, 'Knowing Me, Knowing You')
+  await expect(play(page)).not.toHaveClass(/stalled/)
+  expect(await page.evaluate(() => window.playbackStates)).not.toContain('paused')
+})
+
+test('tells Safari that it plays music', async ({page}) => {
+  await page.addInitScript(() => { navigator.audioSession = {type: 'auto'} })
+  await page.reload()
+  await expect.poll(() => page.evaluate(() => navigator.audioSession.type)).toBe('playback')
+})
+
 test.describe('with long tracks queued', () => {
   test.beforeEach(async ({page}) => {
     await addFolder(page, 'Miles Davis')

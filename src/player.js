@@ -25,6 +25,13 @@ const setPlaybackState = (state) => {
 }
 
 export function initPlayer(player) {
+  // Safari: this is a music player, which plays on in the background
+  try {
+    if ('audioSession' in navigator) navigator.audioSession.type = 'playback'
+  } catch (err) {
+    console.warn('Setting the audio session type failed:', err)
+  }
+
   const buttons = document.createElement('div')
   buttons.id = 'buttons'
   const prev = document.createElement('button')
@@ -147,10 +154,11 @@ export function initPlayer(player) {
     setPlaybackState('paused')
     wakelockCooldown = setTimeout(() => wakeLock?.release(), WAKELOCK_CLEAR_TIMEOUT)
   }
+  // 'waiting' fires between tracks while the next one loads, and when the
+  // network is slow; playing goes on, so iOS mustn't hear that it is paused
   audio.onwaiting = (e) => {
+    play.classList.add('stalled')
     cursor.disabled = false
-    play.innerHTML = playSVG
-    setPlaybackState('paused')
   }
   audio.onplaying = (e) => {
     failedInRow = 0
