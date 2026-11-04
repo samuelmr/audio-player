@@ -5,6 +5,7 @@ import { s3, objectUrl } from './s3.js'
 import { decode, parseTrackNumber, replayGainVolume } from './track-metadata.js'
 import { reportError } from './errors.js'
 import { mirrorQueue } from './address.js'
+import { initDebugLog, debugLog } from './debug-log.js'
 import { offlineReady, offlineKeys, failedKeys, trackMeta, downloadKey, downloadRunning, getOfflineUrl, fetchAudio } from './offline.js'
 
 export let audio, play, collection, playerList
@@ -61,6 +62,7 @@ export function initPlayer(player) {
   audio.className = 'current'
   audio.preload = 'auto'
   player.appendChild(audio)
+  initDebugLog(audio)
 
   const audioTime = document.createElement('div')
   audioTime.className = 'audio-time'
@@ -184,12 +186,14 @@ export function initPlayer(player) {
     // }
   }
   audio.onended = next.onclick = (e) => {
+    debugLog(`${e?.type} handler: calling playNext()`)
     playNext()
   }
   // a track that won't play is skipped, unless none of them play
   audio.onerror = () => {
     // not the empty source of an emptied queue
     if (!audio.getAttribute('src')) return
+    debugLog(`audio onerror ${audio.error?.code}`)
     reportError(audio.error, locale.trackFailed(trackTitle.value))
     if (++failedInRow < playerList.querySelectorAll('audio-track').length) {
       playNext()
@@ -378,7 +382,11 @@ const playTrack = async (track) => {
     // call play() synchronously instead of waiting for 'canplay': on iOS a
     // backgrounded PWA is suspended as soon as audio stops, so an async gap
     // between tracks would stop playback at the end of the first track
-    audio.play().catch(err => console.warn('Playback failed:', err))
+    debugLog(`playTrack: src ${playingUrl ? 'blob' : 'remote'}, calling play()`)
+    audio.play().then(() => debugLog('play() resolved')).catch(err => {
+      debugLog(`play() rejected: ${err.name} ${err.message}`)
+      console.warn('Playback failed:', err)
+    })
     if (track.dataset.albumArt) {
       const image = new Image()
       let url = track.dataset.albumArt
