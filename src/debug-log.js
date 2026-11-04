@@ -27,6 +27,8 @@ export function debugLog(message) {
 let panelText
 
 export function initDebugLog(audio) {
+  // the TV app has no use for it, and its remote would focus the button
+  if (typeof tizen !== 'undefined') return
   audioElement = audio
   debugLog(`page loaded, standalone=${navigator.standalone}, audioSession=${navigator.audioSession?.type}, ${navigator.userAgent}`)
 
