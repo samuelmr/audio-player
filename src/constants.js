@@ -7,3 +7,11 @@ export const MAX_SEARCH_RESULTS = 50
 export const MAX_FOLDER_RESULTS = 20
 export const MIN_SEARCH_LENGTH = 2
 export const SEARCH_DEBOUNCE = 250
+
+// requests for the metadata of tracks at a time
+export const META_PARALLEL = 3
+// a track of a playlist waits this long for its metadata in the bucket, and is
+// added with what the playlist has when it is late
+export const META_TIMEOUT = 5000
+// the library waits this long for the first track of the address to play
+export const LIBRARY_HOLD_TIMEOUT = 20000

@@ -1,7 +1,8 @@
 import { S3Client } from "@aws-sdk/client-s3"
 import { HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
-import { EXPIRE_SECONDS } from './constants.js'
+import { EXPIRE_SECONDS, META_PARALLEL } from './constants.js'
+import { createLimiter } from './limit.js'
 import { db, dbReady, requestResult } from './db.js'
 import { locale } from './locale.js'
 import { setting } from './defaults.js'
@@ -94,7 +95,11 @@ export async function getObjectText(key) {
 // listing: an object uploaded again is newer, and its metadata is fetched
 // again. Not its ETag, which stays the same when only the metadata changes.
 // Without the time, the cached metadata is used.
-export async function getS3Meta(key, lastModified) {
+// Only the requests to the bucket are limited, not the cache. The tracks that
+// are going to the queue are asked for before the ones that fill the library.
+const limitMeta = createLimiter(META_PARALLEL)
+
+export async function getS3Meta(key, lastModified, lane = 'queue') {
   const modified = lastModified ? new Date(lastModified).toISOString() : ''
   await dbReady
   const cached = await requestResult(db.transaction("meta", "readonly").objectStore("meta").index("key").get(key))
@@ -103,7 +108,7 @@ export async function getS3Meta(key, lastModified) {
   }
   let head
   try {
-    head = await s3.send(new HeadObjectCommand({Bucket: bucketName, Key: key}))
+    head = await limitMeta(() => s3.send(new HeadObjectCommand({Bucket: bucketName, Key: key})), lane)
   }
   catch(e) {
     console.warn(`Error retrieving metadata for '${key}' from S3 bucket '${bucketName}'`, e)

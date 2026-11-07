@@ -24,7 +24,7 @@ export async function scanLibrary(onProgress) {
       while (!state.stopped && next < keys.length) {
         const key = keys[next++]
         try {
-          await getS3Meta(key, lastModified(key))
+          await getS3Meta(key, lastModified(key), 'library')
         } catch(e) {
           state.failed++
         }
