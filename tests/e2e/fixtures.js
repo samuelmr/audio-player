@@ -106,7 +106,7 @@ export { expect }
 // helpers for the parts of the apps that both share
 
 export const audioState = (page) => page.evaluate(() => {
-  const audio = document.querySelector('audio-player audio')
+  const audio = document.querySelector('audio-player audio.current')
   return {src: audio.src, paused: audio.paused, currentTime: audio.currentTime, duration: audio.duration}
 })
 

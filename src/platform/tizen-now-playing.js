@@ -4,7 +4,7 @@
 //   OK plays and pauses, Left and Right go to the previous and next track
 //   Back, Up and Down return to browsing, with the focus where it was
 
-import { audio, play, playerList, playNext, playPrevious } from '../player.js'
+import { audio, onAudio, play, playerList, playNext, playPrevious } from '../player.js'
 import { initNowPlaying as initView, isOpen, open as openView, close } from '../now-playing.js'
 import { focusPlayer } from './tizen-library.js'
 
@@ -31,7 +31,7 @@ const keys = {
 
 export function initNowPlaying() {
   initView({onClose: returnToFocus})
-  audio.addEventListener('play', resetIdle)
+  onAudio('play', resetIdle)
 
   // registered before the other key handlers, so that it can take the keys first
   window.addEventListener('keydown', (e) => {

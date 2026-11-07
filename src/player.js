@@ -15,12 +15,60 @@ let seekTarget, seekTimeout
 // tracks in a row that failed to play
 let failedInRow = 0
 
-// The next track is downloaded whole while the current one plays, and plays
-// from memory: on iOS an app in the background is suspended as soon as the
-// music stops, and on a slow connection the next track from the bucket would
-// take that long to start.
-let prepared // {track, href, controller, url}
+// The next track is downloaded whole while the current one plays, and put
+// into a second audio element, which plays it when the current track ends. On
+// iOS an app in the background is suspended as soon as the music stops, and
+// loading a track into the playing element only after the previous one has
+// ended sometimes stalls then, with the app suspended before any sound.
+let standby // the audio element that isn't playing
+let prepared // {track, href, controller, url, owned, ready}
 let playingUrl // object URL of the prepared track that plays now
+
+// The other modules listen to the events of the current element, whichever it is
+export function onAudio(type, handler) {
+  for (const el of [audio, standby]) {
+    el.addEventListener(type, (e) => { if (el === audio) handler(e) })
+  }
+}
+
+function createAudioElement(name) {
+  const el = document.createElement('audio')
+  el.preload = 'auto'
+  el.dataset.name = name
+  return el
+}
+
+// iOS lets only an audio element that the user has started play on its own
+// later. The element that waits is started silently on a tap, once.
+const SILENCE = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA'
+const unlocked = new WeakSet()
+
+function initUnlock() {
+  const unlock = () => {
+    const el = standby
+    // the current element was started by the user, or will be
+    if (unlocked.has(el) || el.getAttribute('src')) return
+    el.muted = true
+    el.src = SILENCE
+    el.play().then(() => {
+      unlocked.add(el)
+      debugLog(`unlocked ${el.dataset.name}`, el)
+    }).catch(err => {
+      debugLog(`unlocking ${el.dataset.name} failed: ${err.name} ${err.message}`, el)
+    }).finally(() => {
+      // unless it has been given a track to hold in the meantime
+      if (el.getAttribute('src') == SILENCE) {
+        el.pause()
+        el.removeAttribute('src')
+        el.load()
+      }
+    })
+  }
+  // before the handlers of the buttons, to be inside the same tap
+  for (const type of ['click', 'touchend', 'keydown']) {
+    document.addEventListener(type, unlock, true)
+  }
+}
 
 // mediaSession is missing from some browser engines, such as older TVs
 const setPlaybackState = (state) => {
@@ -58,11 +106,12 @@ export function initPlayer(player) {
 
   player.appendChild(buttons)
 
-  audio = document.createElement('audio')
-  audio.className = 'current'
-  audio.preload = 'auto'
-  player.appendChild(audio)
-  initDebugLog(audio)
+  audio = createAudioElement('A')
+  standby = createAudioElement('B')
+  audio.classList.add('current')
+  player.append(audio, standby)
+  initDebugLog(() => audio, [audio, standby])
+  initUnlock()
 
   const audioTime = document.createElement('div')
   audioTime.className = 'audio-time'
@@ -138,66 +187,71 @@ export function initPlayer(player) {
       console.warn(`${err.name}: ${err.message}`)
     }
   }
-  audio.onloadedmetadata = updateDuration
-  audio.oncanplay = (e) => {
-    play.disabled = false
-  }
-  audio.onplay = () => {
-    // play.textContent = '⏸'
-    play.innerHTML = pauseSVG
-    cursor.disabled = true
-    setPlaybackState('playing')
-    play.classList.remove('stalled')
-    requestWakeLock()
-  }
-  audio.onpause = () => {
-    // 'pause' also fires when a track ends; the next track starts right away,
-    // so don't tell iOS that the session is paused
-    if (audio.ended) return
-    // play.textContent = '⏵'
-    cursor.disabled = false
-    play.innerHTML = playSVG
-    setPlaybackState('paused')
-    wakelockCooldown = setTimeout(() => wakeLock?.release(), WAKELOCK_CLEAR_TIMEOUT)
-  }
-  // 'waiting' fires between tracks while the next one loads, and when the
-  // network is slow; playing goes on, so iOS mustn't hear that it is paused
-  audio.onwaiting = (e) => {
-    play.classList.add('stalled')
-    cursor.disabled = false
-  }
-  audio.onplaying = (e) => {
-    failedInRow = 0
-    prepareNext()
-    play.innerHTML = pauseSVG
-    play.classList.remove('stalled')
-    setPlaybackState('playing')
-    cursor.disabled = true
-  }
-  audio.onstalled = (e) => {
-    // play.innerHTML = '<span class="fa-solid fa-play"></span>'
-    play.classList.add('stalled')
-    cursor.disabled = false
-  }
-  audio.onseeking = audio.onseeked = (e) => {
-    // console.log(e.timeStamp, e.target.currentTime, e.target.seekable, e)
-    // for (let i=0; i<e.target.seekable.length; i++) {
-    //   console.log(e.target.seekable.start(i), e.target.seekable.end(i))
-    // }
-  }
-  audio.onended = next.onclick = (e) => {
-    debugLog(`${e?.type} handler: calling playNext()`)
-    playNext()
-  }
-  // a track that won't play is skipped, unless none of them play
-  audio.onerror = () => {
-    // not the empty source of an emptied queue
-    if (!audio.getAttribute('src')) return
-    debugLog(`audio onerror ${audio.error?.code}`)
-    reportError(audio.error, locale.trackFailed(trackTitle.value))
-    if (++failedInRow < playerList.querySelectorAll('audio-track').length) {
+  // The handlers are on both audio elements, and act on the events of the one
+  // that is current. The other one is getting the next track ready.
+  const bindAudio = (el) => {
+    const current = (handler) => (e) => { if (el === audio) handler(e) }
+    el.onloadedmetadata = current(updateDuration)
+    el.oncanplay = current((e) => {
+      play.disabled = false
+    })
+    el.onplay = current(() => {
+      // play.textContent = '⏸'
+      play.innerHTML = pauseSVG
+      cursor.disabled = true
+      setPlaybackState('playing')
+      play.classList.remove('stalled')
+      requestWakeLock()
+    })
+    el.onpause = current(() => {
+      // 'pause' also fires when a track ends; the next track starts right away,
+      // so don't tell iOS that the session is paused
+      if (el.ended) return
+      // play.textContent = '⏵'
+      cursor.disabled = false
+      play.innerHTML = playSVG
+      setPlaybackState('paused')
+      wakelockCooldown = setTimeout(() => wakeLock?.release(), WAKELOCK_CLEAR_TIMEOUT)
+    })
+    // 'waiting' fires between tracks while the next one loads, and when the
+    // network is slow; playing goes on, so iOS mustn't hear that it is paused
+    el.onwaiting = current((e) => {
+      play.classList.add('stalled')
+      cursor.disabled = false
+    })
+    el.onplaying = current((e) => {
+      failedInRow = 0
+      prepareNext()
+      play.innerHTML = pauseSVG
+      play.classList.remove('stalled')
+      setPlaybackState('playing')
+      cursor.disabled = true
+    })
+    el.onstalled = current((e) => {
+      // play.innerHTML = '<span class="fa-solid fa-play"></span>'
+      play.classList.add('stalled')
+      cursor.disabled = false
+    })
+    el.onended = current((e) => {
+      debugLog(`${e?.type} handler: calling playNext()`)
       playNext()
-    }
+    })
+    // a track that won't play is skipped, unless none of them play
+    el.onerror = current(() => {
+      // not the empty source of an emptied queue
+      if (!audio.getAttribute('src')) return
+      debugLog(`audio onerror ${audio.error?.code}`)
+      reportError(audio.error, locale.trackFailed(trackTitle.value))
+      if (++failedInRow < playerList.querySelectorAll('audio-track').length) {
+        playNext()
+      }
+    })
+    el.addEventListener('canplay', () => standbyLoaded(el, 'canplay'))
+    el.addEventListener('canplaythrough', () => standbyLoaded(el, 'canplaythrough'))
+    el.addEventListener("timeupdate", current(updateTime))
+  }
+  next.onclick = (e) => {
+    playNext()
   }
 
   collection = document.createElement('ol')
@@ -232,7 +286,8 @@ export function initPlayer(player) {
         }
       }
   }
-  audio.addEventListener("timeupdate", updateTime)
+  bindAudio(audio)
+  bindAudio(standby)
 
   prev.onclick = (e) => {
     playPrevious()
@@ -374,19 +429,51 @@ const playTrack = async (track) => {
     track.classList.add('playing')
     track.scrollIntoView({block: "nearest", inline: "nearest"})
     const previousUrl = playingUrl
-    playingUrl = prepared?.track == track && prepared.href == track.dataset.src ? prepared.url : undefined
-    if (playingUrl) prepared = undefined
-    audio.src = playingUrl || track.dataset['src']
-    if (previousUrl && previousUrl != playingUrl) URL.revokeObjectURL(previousUrl)
-    audio.volume = replayGainVolume(trackMeta.get(track))
-    // call play() synchronously instead of waiting for 'canplay': on iOS a
-    // backgrounded PWA is suspended as soon as audio stops, so an async gap
-    // between tracks would stop playback at the end of the first track
-    debugLog(`playTrack: src ${playingUrl ? 'blob' : 'remote'}, calling play()`)
-    audio.play().then(() => debugLog('play() resolved')).catch(err => {
-      debugLog(`play() rejected: ${err.name} ${err.message}`)
-      console.warn('Playback failed:', err)
-    })
+    const staged = takeStandby(track)
+    // the track that was loaded at the other element, playing it needs no loading
+    const release = (el) => {
+      el.pause()
+      el.removeAttribute('src')
+      el.load()
+      if (previousUrl && previousUrl != playingUrl) URL.revokeObjectURL(previousUrl)
+    }
+    const volume = replayGainVolume(trackMeta.get(track))
+    if (staged) {
+      const old = audio
+      switchTo(staged.el)
+      playingUrl = staged.owned ? staged.url : undefined
+      audio.volume = volume
+      debugLog(`playTrack: swapping to ${audio.dataset.name}, calling play()`)
+      audio.play().then(() => {
+        debugLog('play() resolved')
+        release(old)
+      }).catch(err => {
+        // the element may not be allowed to start on its own: the track plays
+        // in the element that played the previous one
+        debugLog(`play() rejected: ${err.name} ${err.message}`)
+        console.warn('Playback failed:', err)
+        const failed = audio
+        switchTo(old)
+        old.src = staged.url
+        old.volume = volume
+        old.play().catch(err => console.warn('Playback failed:', err))
+        release(failed)
+      })
+    }
+    else {
+      playingUrl = undefined
+      audio.src = track.dataset['src']
+      if (previousUrl) URL.revokeObjectURL(previousUrl)
+      audio.volume = volume
+      // call play() synchronously instead of waiting for 'canplay': on iOS a
+      // backgrounded PWA is suspended as soon as audio stops, so an async gap
+      // between tracks would stop playback at the end of the first track
+      debugLog('playTrack: src remote, calling play()')
+      audio.play().then(() => debugLog('play() resolved')).catch(err => {
+        debugLog(`play() rejected: ${err.name} ${err.message}`)
+        console.warn('Playback failed:', err)
+      })
+    }
     if (track.dataset.albumArt) {
       const image = new Image()
       let url = track.dataset.albumArt
@@ -447,27 +534,91 @@ function getHue(r, g, b) {
   return Math.round(h*360)
 }
 
+function switchTo(el) {
+  standby = audio
+  audio = el
+  standby.classList.remove('current')
+  audio.classList.add('current')
+  audio.muted = false
+}
+
+// the track in the other element, if it is the one to play and is ready
+function takeStandby(track) {
+  const ready = prepared?.ready && prepared.track == track && prepared.href == track.dataset.src && standby.getAttribute('src') == prepared.url
+  debugLog(`standby ${prepared ? (prepared.ready ? 'ready' : 'not ready') : 'empty'}${prepared && prepared.track != track ? ', for another track' : ''}, ${unlocked.has(standby) ? 'unlocked' : 'locked'}, rs${standby.readyState}`, standby)
+  if (!ready) return
+  const {url, owned} = prepared
+  prepared = undefined
+  return {el: standby, url, owned}
+}
+
+// the other element has the next track loaded
+function standbyLoaded(el, type) {
+  if (el === audio || !prepared?.url || el.getAttribute('src') != prepared.url || prepared.ready) return
+  // while it plays silently it is ready when it can play through, otherwise when it can play
+  if (type == 'canplay' && !el.paused) return
+  if (el.readyState < el.HAVE_FUTURE_DATA) return
+  // loaded in silence, and waiting at the start
+  el.pause()
+  el.currentTime = 0
+  prepared.ready = true
+  debugLog(`standby ready: ${prepared.track.querySelector('.name')?.textContent}`, el)
+}
+
 function discardPrepared() {
   prepared?.controller.abort()
-  if (prepared?.url) URL.revokeObjectURL(prepared.url)
+  // the other element lets go of the track, unless it is silent for unlocking
+  if (prepared?.url) {
+    if (standby.getAttribute('src') == prepared.url) {
+      standby.pause()
+      standby.removeAttribute('src')
+      standby.load()
+    }
+    if (prepared.owned) URL.revokeObjectURL(prepared.url)
+  }
   prepared = undefined
+}
+
+// load the track into the other element, silent until it plays
+function stageStandby(preparing, url, owned) {
+  preparing.url = url
+  preparing.owned = owned
+  const el = standby
+  el.muted = true
+  el.src = url
+  debugLog(`standby loading: ${preparing.track.querySelector('.name')?.textContent}`, el)
+  // iOS may load no more than the metadata of an element that isn't playing,
+  // so it is played silently until it has loaded
+  el.play().catch(err => {
+    // paused when loaded, or replaced by another track
+    if (err.name != 'AbortError') console.warn('Getting the next track ready failed:', err)
+    debugLog(`silent play of standby: ${err.name}`, el)
+  })
 }
 
 export function prepareNext() {
   const track = nextPlayable()
-  // offline tracks are on the device already, and a track alone in the queue
-  // is loading now
-  const ready = !track || track.classList.contains('offline-saved') || track.classList.contains('playing')
-  const href = !ready && track.dataset.src
+  // a track alone in the queue is loading now
+  const href = track && !track.classList.contains('playing') && track.dataset.src
   if (href && prepared?.track == track && prepared.href == href) return
   discardPrepared()
-  // the playing track is loaded first, and saving offline playlists goes first
-  if (!href || audio.paused || audio.readyState < audio.HAVE_FUTURE_DATA || downloadRunning || !navigator.onLine) {
+  // the playing track is loaded first
+  if (!href || audio.paused || audio.readyState < audio.HAVE_FUTURE_DATA || !navigator.onLine) {
     return
   }
   const preparing = prepared = {track, href, controller: new AbortController()}
+  // offline tracks are on the device already
+  if (track.classList.contains('offline-saved')) {
+    stageStandby(preparing, href, false)
+    return
+  }
+  // saving offline playlists goes first
+  if (downloadRunning) {
+    prepared = undefined
+    return
+  }
   fetchAudio(href, track.dataset.key, preparing.controller.signal).then(blob => {
-    if (prepared == preparing) prepared.url = URL.createObjectURL(blob)
+    if (prepared == preparing) stageStandby(preparing, URL.createObjectURL(blob), true)
   }).catch(e => {
     // the track plays from the bucket instead
     if (e.name != 'AbortError') console.warn('Getting the next track ready failed:', e)

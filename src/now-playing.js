@@ -10,7 +10,7 @@
 
 import { locale } from './locale.js'
 import { playSVG, pauseSVG, returnSVG, forwardSVG, compressSVG } from './icons.js'
-import { audio, play, playerList, playNext, playPrevious } from './player.js'
+import { audio, onAudio, play, playerList, playNext, playPrevious } from './player.js'
 import { trackDetails } from './player-bar.js'
 
 const UP_NEXT = 3
@@ -25,9 +25,9 @@ export function initNowPlaying({ controls = false, onClose: closed } = {}) {
   // the playing track changes by class, and its details arrive with it
   new MutationObserver(update).observe(playerList, {childList: true, subtree: true, attributeFilter: ['class']})
   for (const event of ['play', 'pause', 'loadedmetadata', 'emptied']) {
-    audio.addEventListener(event, update)
+    onAudio(event, update)
   }
-  audio.addEventListener('timeupdate', updateTime)
+  onAudio('timeupdate', updateTime)
   update()
   return view
 }

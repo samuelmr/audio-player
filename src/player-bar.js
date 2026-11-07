@@ -5,7 +5,7 @@
 // played part on every browser, such as the oldest TVs (Chromium 76).
 
 import { locale } from './locale.js'
-import { audio, playerList } from './player.js'
+import { audio, onAudio, playerList } from './player.js'
 
 let playerElement, now, art, title, subtitle, progress, hint, onCover
 
@@ -44,8 +44,8 @@ export function initPlayerBar(player, options) {
   player.insertBefore(now, player.firstChild)
 
   progress = player.querySelector('#progress')
-  audio.addEventListener('timeupdate', updateProgress)
-  audio.addEventListener('emptied', updateProgress)
+  onAudio('timeupdate', updateProgress)
+  onAudio('emptied', updateProgress)
 
   // the playing track changes by class, and its details arrive with it
   new MutationObserver(update).observe(playerList, {childList: true, subtree: true, attributeFilter: ['class']})

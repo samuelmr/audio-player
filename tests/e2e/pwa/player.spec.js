@@ -100,6 +100,40 @@ test('downloads the next track while one plays, and plays it from memory', async
   expect((await audioState(page)).src).toMatch(/^blob:/)
 })
 
+// iOS suspends an app in the background if loading a track after the previous
+// one has ended stalls: the next track is loaded in advance, into the other element
+test('plays the next track in the element that loaded it while the previous one played', async ({page}) => {
+  const elements = () => page.evaluate(() => [...document.querySelectorAll('audio-player audio')].map(el => ({
+    name: el.dataset.name, current: el.classList.contains('current'), src: el.getAttribute('src'),
+  })))
+  await addFolder(page, 'ABBA')
+  await expectPlaying(page, 'Dancing Queen')
+  await expect.poll(async () => (await elements()).find(el => !el.current)?.src).toMatch(/^blob:/)
+  const waiting = (await elements()).find(el => !el.current)
+  await expectPlaying(page, 'Knowing Me, Knowing You')
+  const current = (await elements()).find(el => el.current)
+  expect(current).toEqual({...waiting, current: true})
+})
+
+test('plays the next track in the same element when the other one may not start', async ({page}) => {
+  await page.addInitScript(() => {
+    const play = HTMLMediaElement.prototype.play
+    HTMLMediaElement.prototype.play = function() {
+      // the other element, once it has a track to play
+      if (this.dataset.name == 'B' && !this.muted) {
+        return Promise.reject(new DOMException('not allowed', 'NotAllowedError'))
+      }
+      return play.call(this)
+    }
+  })
+  await page.reload()
+  await addFolder(page, 'ABBA')
+  await expectPlaying(page, 'Dancing Queen')
+  await expectPlaying(page, 'Knowing Me, Knowing You')
+  await expectPlaying(page, 'Money, Money, Money')
+  await expect(page.locator('.toast')).toBeHidden()
+})
+
 test('plays the next track from the bucket when downloading it fails', async ({page}) => {
   await page.route(/Knowing/, (route) => {
     if (isDownload(route.request())) return route.abort()

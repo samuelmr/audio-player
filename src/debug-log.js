@@ -12,9 +12,9 @@ try {
 
 const clock = () => new Date().toTimeString().slice(0, 8)
 
-let audioElement
-export function debugLog(message) {
-  const a = audioElement
+let currentAudio
+export function debugLog(message, element) {
+  const a = element || currentAudio?.()
   const state = a ? ` [${document.visibilityState} rs${a.readyState} t${a.currentTime.toFixed(1)}/${Number.isFinite(a.duration) ? a.duration.toFixed(1) : '?'}${a.paused ? ' paused' : ''}${a.ended ? ' ended' : ''}]` : ''
   entries.push(`${clock()} +${((Date.now() - t0) / 1000).toFixed(1)}s ${message}${state}`)
   if (entries.length > MAX) entries = entries.slice(-MAX)
@@ -26,18 +26,22 @@ export function debugLog(message) {
 
 let panelText
 
-export function initDebugLog(audio) {
+export function initDebugLog(getAudio, elements) {
   // the TV app has no use for it, and its remote would focus the button
   if (typeof tizen !== 'undefined') return
-  audioElement = audio
+  currentAudio = getAudio
   debugLog(`page loaded, standalone=${navigator.standalone}, audioSession=${navigator.audioSession?.type}, ${navigator.userAgent}`)
 
-  for (const type of ['loadstart', 'loadedmetadata', 'canplay', 'canplaythrough', 'play', 'playing', 'pause',
-    'waiting', 'stalled', 'suspend', 'abort', 'emptied', 'ended', 'seeking', 'error']) {
-    audio.addEventListener(type, () => {
-      const src = audio.currentSrc.startsWith('blob:') ? 'blob' : audio.currentSrc ? 'remote' : 'none'
-      debugLog(`audio ${type} (${src}${audio.error ? ', error ' + audio.error.code + ' ' + audio.error.message : ''})`)
-    })
+  for (const audio of elements) {
+    for (const type of ['loadstart', 'loadedmetadata', 'canplay', 'canplaythrough', 'play', 'playing', 'pause',
+      'waiting', 'stalled', 'suspend', 'abort', 'emptied', 'ended', 'seeking', 'error']) {
+      audio.addEventListener(type, () => {
+        const src = audio.currentSrc.startsWith('blob:') ? 'blob' : audio.currentSrc.startsWith('data:') ? 'silence' : audio.currentSrc ? 'remote' : 'none'
+        // the events of the silent unlocking only clutter the log
+        if (src == 'silence') return
+        debugLog(`${audio.dataset.name}${audio === getAudio() ? '' : ' (standby)'} ${type} (${src}${audio.error ? ', error ' + audio.error.code + ' ' + audio.error.message : ''})`, audio)
+      })
+    }
   }
   for (const type of ['visibilitychange', 'freeze', 'resume']) {
     document.addEventListener(type, () => debugLog(`document ${type}`))
