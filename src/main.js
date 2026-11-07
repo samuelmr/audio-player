@@ -2,7 +2,8 @@
 // to src/platform/pwa.js or src/platform/tizen.js
 import * as platform from '#platform'
 import { connectS3 } from './s3.js'
-import { initBrowser, browserList, getFolders, orderLibrary, clearLibrary } from './browser.js'
+import { initBrowser, browserList, getFolders, orderLibrary, clearLibrary, takeLinkedPlaylists, linkedNeedsListing, addLinkedPlaylists } from './browser.js'
+import { holdLibrary, releaseLibrary, whenLibraryMayStart } from './startup.js'
 import { initSearch, resetSearchKeys } from './search.js'
 import { initSettings } from './settings.js'
 import { setting } from './defaults.js'
@@ -54,7 +55,16 @@ function initS3() {
   connectS3()
   resetSearchKeys()
   clearLibrary()
-  getFolders(browserList)
+  // The playlists in the address are read first, and the first track gets
+  // the connection to itself: the library waits for it. Folders and songs in
+  // the address are found in the listing, so it can't wait for them.
+  const playlists = takeLinkedPlaylists()
+  if (playlists.length && !linkedNeedsListing()) holdLibrary()
+  addLinkedPlaylists(playlists).finally(() => {
+    // nothing came of them: nothing to wait for
+    if (!document.querySelector('audio-player audio-track')) releaseLibrary()
+  })
+  whenLibraryMayStart(() => getFolders(browserList))
 }
 
 initSearch(initBrowser(browser, player))

@@ -1,5 +1,5 @@
-import { ListObjectsV2Command } from "@aws-sdk/client-s3"
-import { folderDelimiter } from './constants.js'
+import { ListObjectsV2Command, HeadObjectCommand } from "@aws-sdk/client-s3"
+import { folderDelimiter, META_TIMEOUT } from './constants.js'
 import { locale } from './locale.js'
 import { addSVG, playSVG } from './icons.js'
 import { s3, bucketName, objectUrl, getObjectText, getS3Meta } from './s3.js'
@@ -9,7 +9,7 @@ import { parseAddress } from './address.js'
 import { reportError } from './errors.js'
 import { debugLog } from './debug-log.js'
 import { getAllMeta } from './db.js'
-import { parsePlaylist, playlistType, playlistBase } from './playlist.js'
+import { parsePlaylist, playlistType, playlistBase, PLAYLIST_TYPES } from './playlist.js'
 import { SORT_KEY, SORT_NAME_YEAR, folderSortName, trackYear, earlierYear, sortByKey, sortByName, shortcutLetter } from './library-order.js'
 
 export let browserList, playlistList
@@ -117,7 +117,7 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
         if (obj.Key.endsWith('.mp3')) {
           // a track whose metadata can't be read is listed without it
           try {
-            obj.Metadata = await getS3Meta(obj.Key, obj.LastModified)
+            obj.Metadata = await getS3Meta(obj.Key, obj.LastModified, autoAdd ? 'queue' : 'library')
           } catch(e) {
             obj.Metadata = {}
           }
@@ -278,10 +278,7 @@ function createFolderElement(folder, ol) {
   }
   else {
     const targets = [...linked.folder, ...linked.song].filter(inside)
-    // a playlist in the folder is added as it is listed. Only the folder at the
-    // top lists it, since the listing has the folders in it, too.
-    const hasPlaylist = !ol.closest('li.folder') && [...linked.playlist].some(inside)
-    if (targets.length || hasPlaylist) {
+    if (targets.length) {
       targets.forEach(key => (linked.folder.delete(key) || linked.song.delete(key)))
       li.classList.add('open')
       li.listing = getFolders(li)
@@ -332,18 +329,99 @@ async function createSongElement(obj, ol) {
 // them are added
 const READ_AHEAD = 6
 
+const late = (ms) => new Promise(resolve => setTimeout(resolve, ms, undefined))
+
+// The tracks of a playlist go to the queue in the order of the list, under an
+// entry of their own.
+async function addPlaylist(key) {
+  const cli = createSourceItem('playlist', key, key)
+  setSourceLink(key)
+  collection.appendChild(cli)
+  try {
+    debugLog(`playlist ${key}: reading`)
+    const tracks = parsePlaylist(key, await getObjectText(key))
+    debugLog(`playlist ${key}: ${tracks.length} tracks`)
+    // the metadata of the track in the bucket fills what the playlist
+    // leaves out, such as the length. Without it, the playlist's will do.
+    const bucketMeta = []
+    const readMeta = (i) => {
+      if (i >= tracks.length) return
+      bucketMeta[i] = getS3Meta(tracks[i].url).catch(e => {
+        console.warn(`Could not read the metadata of '${tracks[i].url}' for a playlist`, e)
+        return {}
+      })
+    }
+    for (let i = 0; i < READ_AHEAD; i++) readMeta(i)
+    // one at a time, to keep the queue in the listed order
+    for (const [i, track] of tracks.entries()) {
+      readMeta(i + READ_AHEAD)
+      // a slow request doesn't hold up the tracks after it: the track is
+      // added with what the playlist has, and the metadata is cached for later
+      const fromBucket = await Promise.race([bucketMeta[i], late(META_TIMEOUT)])
+      if (!fromBucket) console.warn(`The metadata of '${track.url}' came late, adding it without`)
+      const song = {
+        Bucket: bucketName,
+        Key: track.url,
+        Metadata: {...fromBucket, ...track},
+      }
+      song.href = await objectUrl(song.Key)
+      await createAudioTrack(song)
+      if (i == 0) debugLog('playlist: first track added')
+    }
+    debugLog('playlist: all tracks added')
+  }
+  catch(e) {
+    // the playlist may be gone, such as after a change of bucket
+    console.error(e)
+    cli.querySelector('a').click()
+    notify(locale.playlistFailed(key.replace(/^.*\//, '')))
+  }
+}
+
+// The playlists in the address are read at once, by their keys, without
+// waiting for the listing of the library to find them. They are added one
+// after the other. When a playlist is in two formats, the one the library
+// lists is the one that is added.
+export function takeLinkedPlaylists() {
+  const keys = [...linked.playlist]
+  linked.playlist.clear()
+  return keys
+}
+
+// folders and songs in the address are found in the listing
+export const linkedNeedsListing = () => linked.folder.size > 0 || linked.song.size > 0
+
+async function listedPlaylistKey(key) {
+  const type = playlistType(key)
+  const base = playlistBase(key)
+  // the formats the library prefers to this one
+  for (const preferred of PLAYLIST_TYPES.slice(0, type ? PLAYLIST_TYPES.indexOf(type) : 0)) {
+    try {
+      await s3.send(new HeadObjectCommand({Bucket: bucketName, Key: base + preferred}))
+      return base + preferred
+    } catch(e) {
+      // not there
+    }
+  }
+  return key
+}
+
+export async function addLinkedPlaylists(keys) {
+  for (const key of keys) {
+    try {
+      await addPlaylist(await listedPlaylistKey(key))
+    } catch(e) {
+      reportError(e, locale.playlistFailed(key.replace(/^.*\//, '')))
+    }
+  }
+}
+
 // The listing comes in key order, so a playlist in .json comes before the
 // same in .m3u, and is the one listed (see PLAYLIST_TYPES)
 function createPlaylistElement(obj, ol) {
   const base = playlistBase(obj.Key)
   const listed = [...ol.children].find(li => li.dataset.base == base)
-  if (listed) {
-    // an address may name the playlist in either format
-    if (linked.playlist.delete(obj.Key)) {
-      listed.querySelector(':scope > a.add').click()
-    }
-    return listed
-  }
+  if (listed) return listed
   const parent = ol.parentNode.dataset.folder
   const li = document.createElement('li')
   li.className = 'playlist'
@@ -355,56 +433,13 @@ function createPlaylistElement(obj, ol) {
   a.title = locale.playPlaylist
   // a.textContent = '⧐' // '⥅' '⏵'
   a.innerHTML = addSVG
-  a.onclick = async (e) => {
+  a.onclick = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    // if (e?.pointerId > 0) {
-      document.title = a.textContent
-      // collection.innerHTML = obj.Key
-      const cli = createSourceItem('playlist', obj.Key, obj.Key)
-      setSourceLink(obj.Key)
-      collection.appendChild(cli)
-    // }
-    try {
-      debugLog(`playlist ${obj.Key}: reading`)
-      const tracks = parsePlaylist(obj.Key, await getObjectText(obj.Key))
-      debugLog(`playlist ${obj.Key}: ${tracks.length} tracks`)
-      // the metadata of the track in the bucket fills what the playlist
-      // leaves out, such as the length. Without it, the playlist's will do.
-      const bucketMeta = []
-      const readMeta = (i) => {
-        if (i >= tracks.length) return
-        bucketMeta[i] = getS3Meta(tracks[i].url).catch(e => {
-          console.warn(`Could not read the metadata of '${tracks[i].url}' for a playlist`, e)
-          return {}
-        })
-      }
-      for (let i = 0; i < READ_AHEAD; i++) readMeta(i)
-      // one at a time, to keep the queue in the listed order
-      for (const [i, track] of tracks.entries()) {
-        readMeta(i + READ_AHEAD)
-        const song = {
-          Bucket: bucketName,
-          Key: track.url,
-          Metadata: {...await bucketMeta[i], ...track},
-        }
-        song.href = await objectUrl(song.Key)
-        await createAudioTrack(song)
-        if (i == 0) debugLog('playlist: first track added')
-      }
-      debugLog('playlist: all tracks added')
-    }
-    catch(e) {
-      // the playlist may be gone, such as after a change of bucket
-      console.error(e)
-      cli.querySelector('a').click()
-      notify(locale.playlistFailed(obj.Key.replace(/^.*\//, '')))
-    }
+    document.title = a.textContent
+    return addPlaylist(obj.Key)
   }
   li.appendChild(a)
   ol.appendChild(li)
-  if (linked.playlist.delete(obj.Key)) {
-    a.click()
-  }
   return li
 }

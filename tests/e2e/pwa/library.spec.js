@@ -141,6 +141,64 @@ test('a playlist that cannot be read is told, and leaves the queue as it was', a
   await expect(page.locator('li.playlist[data-source]')).toHaveCount(0)
 })
 
+const isListing = (request) => new URL(request.url()).searchParams.get('list-type') == '2'
+
+// the first track gets the connection to itself, which the library would
+// otherwise fill with requests for metadata
+test('reads a playlist in the address first, and lists the library when its first track can play', async ({page}) => {
+  let playlistAt, listedAt, arrivedAt
+  // the page loaded before the test has finished asking
+  await page.waitForLoadState('networkidle')
+  page.on('request', request => {
+    if (decodeURIComponent(request.url()).includes('/Road trip.json')) playlistAt ??= Date.now()
+    if (isListing(request)) listedAt ??= Date.now()
+  })
+  // the first track takes a while to arrive
+  await page.route(/\.mp3/, async route => {
+    if (route.request().resourceType() == 'media') {
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      arrivedAt ??= Date.now()
+    }
+    await route.continue()
+  })
+  await page.goto('./?playlist=Road+trip.json')
+  await expect(titles(page)).toHaveText(['So What', 'Dancing Queen'])
+  await expect.poll(() => listedAt).toBeDefined()
+  expect(playlistAt).toBeLessThan(listedAt)
+  expect(listedAt).toBeGreaterThanOrEqual(arrivedAt)
+  // and then the library is there, with the playlists
+  await expect(folder(page, 'ABBA')).toBeVisible()
+})
+
+test('lists the library at once when a playlist in the address cannot be read', async ({page}) => {
+  await page.goto('./?playlist=Gone.json')
+  await expect(page.locator('.toast')).toHaveText('Could not read the playlist Gone.json')
+  await expect(folder(page, 'ABBA')).toBeVisible()
+})
+
+test('lists the library at once when the address has a folder, which the listing has to find', async ({page}) => {
+  let listedAt
+  await page.waitForLoadState('networkidle')
+  page.on('request', request => { if (isListing(request)) listedAt ??= Date.now() })
+  await page.route(/\.mp3/, async route => {
+    if (route.request().resourceType() == 'media') await new Promise(resolve => setTimeout(resolve, 1500))
+    await route.continue()
+  })
+  const start = Date.now()
+  await page.goto('./?playlist=Road+trip.json&folder=ABBA')
+  await expect.poll(() => listedAt).toBeDefined()
+  expect(listedAt - start).toBeLessThan(1500)
+})
+
+test('adds the track of a playlist without its metadata when that is late, and the ones after it', async ({page}) => {
+  await page.route(/01%20So%20What\.mp3|01 So What\.mp3/, async route => {
+    if (route.request().method() == 'HEAD') await new Promise(resolve => setTimeout(resolve, 9000))
+    await route.continue()
+  })
+  await page.goto('./?playlist=Road+trip.json')
+  await expect(titles(page)).toHaveText(['So What', 'Dancing Queen'], {timeout: 8000})
+})
+
 test('a link to a folder adds it to the queue', async ({page}) => {
   await page.goto('./?folder=Miles%20Davis')
   await expect(titles(page)).toHaveText(['So What', 'Freddie Freeloader'])
