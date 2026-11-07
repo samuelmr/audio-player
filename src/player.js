@@ -302,6 +302,11 @@ export function initPlayer(player) {
   new MutationObserver(prepareNext).observe(playerList, {childList: true})
 
   const updateTime = () => {
+      // 'stalled' only says that no data came for a while: a track that plays
+      // with data in hand is not stalled, and nothing else clears the pulse
+      if (!audio.paused && audio.readyState >= audio.HAVE_FUTURE_DATA) {
+        play.classList.remove('stalled')
+      }
       const seconds = parseInt(audio.currentTime)
   /*
       cursor.value = [
@@ -480,6 +485,10 @@ const playTrack = async (track) => {
       switchTo(staged.el)
       playingUrl = staged.owned ? staged.url : undefined
       audio.volume = volume
+      // iOS may let the position of a paused element run on in the background
+      // (its time is not always up to date either), so the track starts from
+      // the beginning, not from where the clock got to
+      audio.currentTime = 0
       debugLog(`playTrack: swapping to ${audio.dataset.name}, calling play()`)
       audio.play().then(() => {
         debugLog('play() resolved')

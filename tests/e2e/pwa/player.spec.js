@@ -115,6 +115,34 @@ test('plays the next track in the element that loaded it while the previous one 
   expect(current).toEqual({...waiting, current: true})
 })
 
+// iOS may let the position of a paused element run on in the background
+test('starts the next track from the beginning, also when the other element has run on', async ({page}) => {
+  await page.addInitScript(() => {
+    window.startedAt = []
+    const play = HTMLMediaElement.prototype.play
+    HTMLMediaElement.prototype.play = function() {
+      window.startedAt.push({name: this.dataset.name, muted: this.muted, currentTime: this.currentTime})
+      return play.call(this)
+    }
+  })
+  await page.reload()
+  await addFolder(page, 'ABBA')
+  await expectPlaying(page, 'Dancing Queen')
+  // the element that waits has run on, as iOS sometimes lets it
+  await expect.poll(() => page.evaluate(() => {
+    const waiting = [...document.querySelectorAll('audio-player audio')].find(el => !el.classList.contains('current'))
+    if (!waiting?.getAttribute('src') || waiting.readyState < 3) return false
+    waiting.currentTime = waiting.duration - 0.2
+    window.ranOn = waiting.dataset.name
+    return true
+  })).toBe(true)
+  // the track it has plays from the beginning: the first start was the first track
+  await expect.poll(() => page.evaluate(() => window.startedAt.filter(call => !call.muted).length)).toBeGreaterThan(1)
+  const [first, second] = await page.evaluate(() => window.startedAt.filter(call => !call.muted))
+  expect(second.name).not.toBe(first.name)
+  expect(second.currentTime).toBe(0)
+})
+
 test('plays the next track in the same element when the other one may not start', async ({page}) => {
   await page.addInitScript(() => {
     const play = HTMLMediaElement.prototype.play
@@ -158,6 +186,14 @@ test.describe('with long tracks queued', () => {
     await addFolder(page, 'Miles Davis')
     await expect(queue(page)).toHaveCount(2)
     await expectPlaying(page, 'So What')
+  })
+
+  test('the play button stops pulsing when a stalled track plays on', async ({page}) => {
+    await page.evaluate(() => document.querySelector('audio-player audio.current').dispatchEvent(new Event('stalled')))
+    await expect(play(page)).toHaveClass(/stalled/)
+    // the track has its data: it plays on, and the next time update says so
+    await expect(play(page)).not.toHaveClass(/stalled/)
+    expect((await audioState(page)).paused).toBe(false)
   })
 
   test('shows the title and length of the track', async ({page}) => {
