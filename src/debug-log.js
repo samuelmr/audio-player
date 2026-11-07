@@ -3,7 +3,7 @@
 // localStorage (it survives the page being killed), and shows it in a panel
 // opened by the "log" button in the corner. Not meant for main.
 const KEY = 'debugLog'
-const MAX = 400
+const MAX = 800
 const t0 = Date.now()
 let entries = []
 try {
@@ -25,6 +25,45 @@ export function debugLog(message, element) {
 }
 
 let panelText
+
+// Requests of the S3 client, counted by kind (HeadObject, ListObjectsV2, GetObject),
+// with how long they took from the call to the answer. That includes the time a
+// request waits in the browser for a free connection.
+const net = {}
+export function trackNet(kind) {
+  const n = net[kind] ||= {inflight: 0, done: 0, failed: 0, ms: 0, maxInflight: 0}
+  n.inflight++
+  n.maxInflight = Math.max(n.maxInflight, n.inflight)
+  const start = Date.now()
+  return (failed) => {
+    n.inflight--
+    n[failed ? 'failed' : 'done']++
+    n.ms += Date.now() - start
+  }
+}
+
+// what the page has loaded, by what asked for it (img, css, fetch, audio...)
+const resources = {}
+try {
+  new PerformanceObserver(list => {
+    for (const entry of list.getEntries()) {
+      resources[entry.initiatorType] = (resources[entry.initiatorType] || 0) + 1
+    }
+  }).observe({type: 'resource', buffered: true})
+} catch (e) { /* no resource timing */ }
+
+let lastSummary = ''
+function summary() {
+  const kinds = Object.entries(net).map(([kind, n]) =>
+    `${kind.replace(/Command|Object/g, '')} ${n.inflight} now/${n.maxInflight} max/${n.done} done${n.failed ? '/' + n.failed + ' failed' : ''}/avg ${n.done ? Math.round(n.ms / n.done) : 0}ms`)
+  const loaded = Object.entries(resources).map(([type, count]) => `${type} ${count}`)
+  const text = `net: ${kinds.join(', ')}; loaded: ${loaded.join(', ')}; queue ${document.querySelectorAll('audio-track').length}`
+  // only when something changed
+  if (text != lastSummary) {
+    lastSummary = text
+    debugLog(text)
+  }
+}
 
 export function initDebugLog(getAudio, elements) {
   // the TV app has no use for it, and its remote would focus the button
@@ -49,6 +88,8 @@ export function initDebugLog(getAudio, elements) {
   for (const type of ['pagehide', 'pageshow', 'online', 'offline']) {
     window.addEventListener(type, () => debugLog(`window ${type}`))
   }
+
+  setInterval(summary, 2000)
 
   // a timer that is late shows that the page was throttled or suspended
   let last = Date.now()
