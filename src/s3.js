@@ -6,7 +6,6 @@ import { createLimiter } from './limit.js'
 import { db, dbReady, requestResult } from './db.js'
 import { locale } from './locale.js'
 import { setting } from './defaults.js'
-import { trackNet } from './debug-log.js'
 
 export let s3, bucketName
 // the address of a public bucket, read without keys
@@ -52,18 +51,6 @@ export function connectS3() {
   bucketName = params['bucketName']
   publicUrl = isPublic ? `${params['endpoint'].replace(/\/+$/, '')}/${encodeURIComponent(bucketName)}` : null
   s3 = new S3Client(s3opts)
-  // TEMPORARY, for the debug log: counts the requests
-  s3.middlewareStack.add((next, context) => async (args) => {
-    const done = trackNet(context.commandName || 'request')
-    try {
-      const result = await next(args)
-      done()
-      return result
-    } catch (e) {
-      done(true)
-      throw e
-    }
-  }, {step: 'initialize', name: 'debugNet'})
   // A cache in front of a public bucket may answer by the address alone,
   // with the headers of a request that had no Origin, such as the audio
   // element's: then the browser hides the metadata. The app's own requests

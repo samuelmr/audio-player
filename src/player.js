@@ -5,7 +5,6 @@ import { s3, objectUrl } from './s3.js'
 import { decode, parseTrackNumber, replayGainVolume } from './track-metadata.js'
 import { reportError } from './errors.js'
 import { mirrorQueue } from './address.js'
-import { initDebugLog, debugLog } from './debug-log.js'
 import { offlineReady, offlineKeys, failedKeys, trackMeta, downloadKey, downloadRunning, getOfflineUrl, fetchAudio } from './offline.js'
 
 export let audio, play, collection, playerList
@@ -84,18 +83,14 @@ function initUnlock() {
       }
       delete el.dataset.unlocking
     }
-    const giveUp = setTimeout(() => {
-      debugLog(`unlocking ${el.dataset.name} did not start, giving up`, el)
-      release()
-    }, 3000)
+    const giveUp = setTimeout(release, 3000)
     el.dataset.unlocking = 'yes'
     el.muted = true
     el.src = url
     el.play().then(() => {
       unlocked.add(el)
-      debugLog(`unlocked ${el.dataset.name}`, el)
     }).catch(err => {
-      debugLog(`unlocking ${el.dataset.name} failed: ${err.name} ${err.message}`, el)
+      console.warn(`Unlocking an audio element failed:`, err)
     }).finally(() => {
       clearTimeout(giveUp)
       release()
@@ -147,7 +142,6 @@ export function initPlayer(player) {
   standby = createAudioElement('B')
   audio.classList.add('current')
   player.append(audio, standby)
-  initDebugLog(() => audio, [audio, standby])
   initUnlock()
 
   const audioTime = document.createElement('div')
@@ -269,15 +263,11 @@ export function initPlayer(player) {
       play.classList.add('stalled')
       cursor.disabled = false
     })
-    el.onended = current((e) => {
-      debugLog(`${e?.type} handler: calling playNext()`)
-      playNext()
-    })
+    el.onended = current(() => playNext())
     // a track that won't play is skipped, unless none of them play
     el.onerror = current(() => {
       // not the empty source of an emptied queue
       if (!audio.getAttribute('src')) return
-      debugLog(`audio onerror ${audio.error?.code}`)
       reportError(audio.error, locale.trackFailed(trackTitle.value))
       if (++failedInRow < playerList.querySelectorAll('audio-track').length) {
         playNext()
@@ -489,14 +479,9 @@ const playTrack = async (track) => {
       // (its time is not always up to date either), so the track starts from
       // the beginning, not from where the clock got to
       audio.currentTime = 0
-      debugLog(`playTrack: swapping to ${audio.dataset.name}, calling play()`)
-      audio.play().then(() => {
-        debugLog('play() resolved')
-        release(old)
-      }).catch(err => {
+      audio.play().then(() => release(old)).catch(err => {
         // the element may not be allowed to start on its own: the track plays
         // in the element that played the previous one
-        debugLog(`play() rejected: ${err.name} ${err.message}`)
         console.warn('Playback failed:', err)
         const failed = audio
         switchTo(old)
@@ -514,9 +499,7 @@ const playTrack = async (track) => {
       // call play() synchronously instead of waiting for 'canplay': on iOS a
       // backgrounded PWA is suspended as soon as audio stops, so an async gap
       // between tracks would stop playback at the end of the first track
-      debugLog('playTrack: src remote, calling play()')
-      audio.play().then(() => debugLog('play() resolved')).catch(err => {
-        debugLog(`play() rejected: ${err.name} ${err.message}`)
+      audio.play().catch(err => {
         console.warn('Playback failed:', err)
       })
     }
@@ -591,7 +574,6 @@ function switchTo(el) {
 // the track in the other element, if it is the one to play and is ready
 function takeStandby(track) {
   const ready = prepared?.ready && prepared.track == track && prepared.href == track.dataset.src && standby.getAttribute('src') == prepared.url
-  debugLog(`standby ${prepared ? (prepared.ready ? 'ready' : 'not ready') : 'empty'}${prepared && prepared.track != track ? ', for another track' : ''}, ${unlocked.has(standby) ? 'unlocked' : 'locked'}, rs${standby.readyState}`, standby)
   if (!ready) return
   const {url, owned} = prepared
   prepared = undefined
@@ -608,7 +590,6 @@ function standbyLoaded(el, type) {
   el.pause()
   el.currentTime = 0
   prepared.ready = true
-  debugLog(`standby ready: ${prepared.track.querySelector('.name')?.textContent}`, el)
 }
 
 function discardPrepared() {
@@ -632,13 +613,11 @@ function stageStandby(preparing, url, owned) {
   const el = standby
   el.muted = true
   el.src = url
-  debugLog(`standby loading: ${preparing.track.querySelector('.name')?.textContent}`, el)
   // iOS may load no more than the metadata of an element that isn't playing,
   // so it is played silently until it has loaded
   el.play().catch(err => {
     // paused when loaded, or replaced by another track
     if (err.name != 'AbortError') console.warn('Getting the next track ready failed:', err)
-    debugLog(`silent play of standby: ${err.name}`, el)
   })
 }
 

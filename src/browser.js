@@ -7,7 +7,6 @@ import { collection, createAudioTrack, createSourceItem, setSourceLink } from '.
 import { notify } from './adding.js'
 import { parseAddress } from './address.js'
 import { reportError } from './errors.js'
-import { debugLog } from './debug-log.js'
 import { getAllMeta } from './db.js'
 import { parsePlaylist, playlistType, playlistBase, PLAYLIST_TYPES } from './playlist.js'
 import { SORT_KEY, SORT_NAME_YEAR, folderSortName, trackYear, earlierYear, sortByKey, sortByName, shortcutLetter } from './library-order.js'
@@ -86,7 +85,6 @@ export async function getFolders(parentElement=null, autoAdd=false, token=null) 
     }
     // the albums by year are added once they are in order
     const byYear = input.Prefix && localStorage.getItem(SORT_KEY) == SORT_NAME_YEAR
-    debugLog(`listing ${input.Prefix || 'top level'}`)
     const command = new ListObjectsV2Command(input)
     const response = await s3.send(command)
     if (response.CommonPrefixes) {
@@ -338,9 +336,7 @@ async function addPlaylist(key) {
   setSourceLink(key)
   collection.appendChild(cli)
   try {
-    debugLog(`playlist ${key}: reading`)
     const tracks = parsePlaylist(key, await getObjectText(key))
-    debugLog(`playlist ${key}: ${tracks.length} tracks`)
     // the metadata of the track in the bucket fills what the playlist
     // leaves out, such as the length. Without it, the playlist's will do.
     const bucketMeta = []
@@ -366,9 +362,7 @@ async function addPlaylist(key) {
       }
       song.href = await objectUrl(song.Key)
       await createAudioTrack(song)
-      if (i == 0) debugLog('playlist: first track added')
     }
-    debugLog('playlist: all tracks added')
   }
   catch(e) {
     // the playlist may be gone, such as after a change of bucket
