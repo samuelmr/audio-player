@@ -36,9 +36,9 @@ export function initDebugLog(getAudio, elements) {
     for (const type of ['loadstart', 'loadedmetadata', 'canplay', 'canplaythrough', 'play', 'playing', 'pause',
       'waiting', 'stalled', 'suspend', 'abort', 'emptied', 'ended', 'seeking', 'error']) {
       audio.addEventListener(type, () => {
-        const src = audio.currentSrc.startsWith('blob:') ? 'blob' : audio.currentSrc.startsWith('data:') ? 'silence' : audio.currentSrc ? 'remote' : 'none'
+        const src = audio.currentSrc.startsWith('blob:') ? 'blob' : audio.currentSrc ? 'remote' : 'none'
         // the events of the silent unlocking only clutter the log
-        if (src == 'silence') return
+        if (audio.dataset.unlocking) return
         debugLog(`${audio.dataset.name}${audio === getAudio() ? '' : ' (standby)'} ${type} (${src}${audio.error ? ', error ' + audio.error.code + ' ' + audio.error.message : ''})`, audio)
       })
     }

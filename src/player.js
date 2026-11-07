@@ -39,29 +39,66 @@ function createAudioElement(name) {
 }
 
 // iOS lets only an audio element that the user has started play on its own
-// later. The element that waits is started silently on a tap, once.
-const SILENCE = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA'
+// later. The element that waits is started silently on a tap, once, with half
+// a second of silence (a clip too short to play never starts, and leaves the
+// element holding it).
 const unlocked = new WeakSet()
+let silence
+
+function silenceUrl() {
+  if (!silence) {
+    const samples = 4000 // 8 kHz, 8 bits, mono
+    const bytes = new Uint8Array(44 + samples).fill(128)
+    const view = new DataView(bytes.buffer)
+    const text = (offset, chars) => [...chars].forEach((c, i) => { bytes[offset + i] = c.charCodeAt(0) })
+    text(0, 'RIFF')
+    view.setUint32(4, 36 + samples, true)
+    text(8, 'WAVEfmt ')
+    view.setUint32(16, 16, true)
+    view.setUint16(20, 1, true) // PCM
+    view.setUint16(22, 1, true) // mono
+    view.setUint32(24, 8000, true)
+    view.setUint32(28, 8000, true)
+    view.setUint16(32, 1, true)
+    view.setUint16(34, 8, true)
+    text(36, 'data')
+    view.setUint32(40, samples, true)
+    silence = URL.createObjectURL(new Blob([bytes], {type: 'audio/wav'}))
+  }
+  return silence
+}
 
 function initUnlock() {
   const unlock = () => {
     const el = standby
-    // the current element was started by the user, or will be
+    // the current element was started by the user, or will be; one that has a
+    // track, or is being unlocked, is left alone
     if (unlocked.has(el) || el.getAttribute('src')) return
+    const url = silenceUrl()
+    // not left holding the silence if it doesn't start
+    const release = () => {
+      if (el.getAttribute('src') == url) {
+        el.pause()
+        el.removeAttribute('src')
+        el.load()
+      }
+      delete el.dataset.unlocking
+    }
+    const giveUp = setTimeout(() => {
+      debugLog(`unlocking ${el.dataset.name} did not start, giving up`, el)
+      release()
+    }, 3000)
+    el.dataset.unlocking = 'yes'
     el.muted = true
-    el.src = SILENCE
+    el.src = url
     el.play().then(() => {
       unlocked.add(el)
       debugLog(`unlocked ${el.dataset.name}`, el)
     }).catch(err => {
       debugLog(`unlocking ${el.dataset.name} failed: ${err.name} ${err.message}`, el)
     }).finally(() => {
-      // unless it has been given a track to hold in the meantime
-      if (el.getAttribute('src') == SILENCE) {
-        el.pause()
-        el.removeAttribute('src')
-        el.load()
-      }
+      clearTimeout(giveUp)
+      release()
     })
   }
   // before the handlers of the buttons, to be inside the same tap
