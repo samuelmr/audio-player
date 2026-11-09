@@ -113,3 +113,38 @@ test.describe('the media keys', () => {
     await expect.poll(() => currentTime(page)).toBeLessThan(10)
   })
 })
+
+// The TV plays one audio element at a time: a track loaded into the other
+// element stops the one that plays
+test.describe('one audio element', () => {
+  const current = (page) => page.evaluate(() => {
+    const audio = document.querySelector('audio-player audio.current')
+    return {name: audio.dataset.name, src: audio.getAttribute('src')}
+  })
+
+  test('plays the next track from memory in the same element', async ({page, remote}) => {
+    await page.evaluate(() => {
+      window.otherLoaded = []
+      new MutationObserver((records) => {
+        for (const {target} of records) {
+          if (!target.classList.contains('current') && target.getAttribute('src')) {
+            window.otherLoaded.push(target.getAttribute('src'))
+          }
+        }
+      }).observe(document.querySelector('audio-player'), {subtree: true, attributes: true, attributeFilter: ['src']})
+    })
+    const first = await current(page)
+    // the keys of the remote leave the other element alone too
+    await focusOn(summary(page))
+    await remote.press('OK')
+    await remote.press('OK')
+    await expect.poll(() => page.evaluate(() => performance.getEntriesByType('resource')
+      .some(entry => entry.initiatorType == 'fetch' && entry.name.includes('Freeloader')))).toBe(true)
+    await remote.press('MediaTrackNext')
+    await expectPlaying(page, 'Freddie Freeloader')
+    const second = await current(page)
+    expect(second.name).toBe(first.name)
+    expect(second.src).toMatch(/^blob:/)
+    expect(await page.evaluate(() => window.otherLoaded)).toEqual([])
+  })
+})

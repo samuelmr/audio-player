@@ -12,6 +12,9 @@ import { initQueue } from '../queue.js'
 import { initAdding, itemName, startAdding } from '../adding.js'
 import { initNowPlaying, open as openNowPlaying, close as closeNowPlaying, isOpen } from '../now-playing.js'
 
+// a browser plays two audio elements at once (player.js)
+export const oneAudioElement = false
+
 export function init() {
   const player = document.querySelector('audio-player')
   initQueue(player, playerList)

@@ -19,6 +19,11 @@ let failedInRow = 0
 // iOS an app in the background is suspended as soon as the music stops, and
 // loading a track into the playing element only after the previous one has
 // ended sometimes stalls then, with the app suspended before any sound.
+//
+// A TV plays one media element at a time: loading a track into the other
+// element stops the one that plays. There the next track is downloaded the
+// same way, but played in the same element when the current one ends.
+let oneElement = false
 let standby // the audio element that isn't playing
 let prepared // {track, href, controller, url, owned, ready}
 let playingUrl // object URL of the prepared track that plays now
@@ -69,6 +74,7 @@ function silenceUrl() {
 
 function initUnlock() {
   const unlock = () => {
+    if (oneElement) return
     const el = standby
     // the current element was started by the user, or will be; one that has a
     // track, or is being unlocked, is left alone
@@ -109,7 +115,8 @@ const setPlaybackState = (state) => {
   }
 }
 
-export function initPlayer(player) {
+export function initPlayer(player, {oneAudioElement = false} = {}) {
+  oneElement = oneAudioElement
   // Safari: this is a music player, which plays on in the background
   try {
     if ('audioSession' in navigator) navigator.audioSession.type = 'playback'
@@ -492,8 +499,9 @@ const playTrack = async (track) => {
       })
     }
     else {
-      playingUrl = undefined
-      audio.src = track.dataset['src']
+      // a track downloaded for the single element of a TV
+      playingUrl = takeDownloaded(track)
+      audio.src = playingUrl || track.dataset['src']
       if (previousUrl) URL.revokeObjectURL(previousUrl)
       audio.volume = volume
       // call play() synchronously instead of waiting for 'canplay': on iOS a
@@ -580,6 +588,14 @@ function takeStandby(track) {
   return {el: standby, url, owned}
 }
 
+// the next track, downloaded but not put into the other element
+function takeDownloaded(track) {
+  if (!oneElement || !prepared?.url || prepared.track != track || prepared.href != track.dataset.src) return
+  const {url} = prepared
+  prepared = undefined
+  return url
+}
+
 // the other element has the next track loaded
 function standbyLoaded(el, type) {
   if (el === audio || !prepared?.url || el.getAttribute('src') != prepared.url || prepared.ready) return
@@ -634,7 +650,8 @@ export function prepareNext() {
   const preparing = prepared = {track, href, controller: new AbortController()}
   // offline tracks are on the device already
   if (track.classList.contains('offline-saved')) {
-    stageStandby(preparing, href, false)
+    if (oneElement) prepared = undefined
+    else stageStandby(preparing, href, false)
     return
   }
   // saving offline playlists goes first
@@ -643,7 +660,12 @@ export function prepareNext() {
     return
   }
   fetchAudio(href, track.dataset.key, preparing.controller.signal).then(blob => {
-    if (prepared == preparing) stageStandby(preparing, URL.createObjectURL(blob), true)
+    if (prepared != preparing) return
+    if (oneElement) {
+      preparing.url = URL.createObjectURL(blob)
+      preparing.owned = true
+    }
+    else stageStandby(preparing, URL.createObjectURL(blob), true)
   }).catch(e => {
     // the track plays from the bucket instead
     if (e.name != 'AbortError') console.warn('Getting the next track ready failed:', e)

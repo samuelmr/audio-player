@@ -91,7 +91,7 @@ const settings = initSettings(player, {
   scanLibrary: (onProgress) => scanLibrary(onProgress).finally(orderLibrary),
   stopLibraryScan,
 })
-initPlayer(player)
+initPlayer(player, {oneAudioElement: platform.oneAudioElement})
 initOffline(player)
 platform.init()
 if (linkedSettings) notify(locale.settingsImported)

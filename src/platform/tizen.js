@@ -27,6 +27,9 @@ const mediaKeys = {
   MediaFastForward: () => { audio.currentTime = Math.min(audio.currentTime + SEEK_SECONDS, audio.duration) },
 }
 
+// the TV plays one audio element at a time (player.js)
+export const oneAudioElement = true
+
 let exitDialog
 
 export function init() {
