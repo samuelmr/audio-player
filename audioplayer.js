@@ -919,7 +919,7 @@ async function Ym(){const e=Vm?.querySelector(":scope > ol:not(.playlists)");if(
 // a.textContent = '⥅' // '⤅' '⧐' '⏵'
 // a.innerHTML = '<i class="fa-solid fa-album-circle-plus"></i>'
 // the web app shows the label, as the first row of the open folder
-s.innerHTML=ye;const a=document.createElement("span");a.className="label",a.textContent=U.playFolder,s.appendChild(a),s.onclick=async function(t){t.preventDefault(),t.stopPropagation(),o.classList.add("open"),document.title=e;const r=Yp("folder",e,e);Zp(e);try{
+s.innerHTML=ye;const a=document.createElement("span");a.className="label",a.textContent=U.playFolder,s.appendChild(a),s.onclick=async function(t){t.preventDefault(),t.stopPropagation(),o.classList.add("open"),document.title=e;const r=eg("folder",e,e);Yp(e);try{
 // all of the folder, also when it was opened a moment ago and is
 // still being listed, by itself or as part of a folder above it
 for(let e=o;e;e=e.parentNode.closest("li.folder"))await e.listing;o.querySelector("ol")?t?.target?.closest(".folder")?.querySelectorAll("li.song").forEach(e=>e.addToFolder()):await Jm(o,!0)}catch(e){Q(e,U.listingFailed)}Mp.appendChild(r);
@@ -934,15 +934,15 @@ for(const e of[Qm.folder,Qm.song])[...e].filter(i).forEach(t=>e.delete(t));s.cli
 // a.textContent = '⧐' // '⥅' '⏵'
 o.innerHTML=ye,
 // the song by itself, with an entry of its own above the queue
-o.onclick=t=>{t.preventDefault(),t.stopPropagation(),document.title=o.textContent,Zp(e.Key),Mp.appendChild(Yp("song",e.Key,e.Key)),ug(e,e.Key).catch(t=>Q(t,U.trackFailed(e.Key.replace(/^.*\//,""))))},
+o.onclick=t=>{t.preventDefault(),t.stopPropagation(),document.title=o.textContent,Yp(e.Key),Mp.appendChild(eg("song",e.Key,e.Key)),fg(e,e.Key).catch(t=>Q(t,U.trackFailed(e.Key.replace(/^.*\//,""))))},
 // as part of the folder being added, which has the entry
-n.addToFolder=()=>ug(e),n.appendChild(o),t.appendChild(n),Qm.song.delete(e.Key)&&o.click(),n}
+n.addToFolder=()=>fg(e),n.appendChild(o),t.appendChild(n),Qm.song.delete(e.Key)&&o.click(),n}
 // the metadata of the next tracks of a playlist is read while the ones before
 // them are added
 const rp=6,np=e=>new Promise(t=>setTimeout(t,e,void 0));
 // The tracks of a playlist go to the queue in the order of the list, under an
 // entry of their own.
-async function op(e){const t=Yp("playlist",e,e);Zp(e),Mp.appendChild(t);try{const t=Wm(e,await async function(e){return(await Em.send(new hm({Bucket:xm,Key:e}))).Body.transformToString()}(e)),r=[],n=e=>{e>=t.length||(r[e]=Im(t[e].url).catch(r=>(console.warn(`Could not read the metadata of '${t[e].url}' for a playlist`,r),{})))};
+async function op(e){const t=eg("playlist",e,e);Yp(e),Mp.appendChild(t);try{const t=Wm(e,await async function(e){return(await Em.send(new hm({Bucket:xm,Key:e}))).Body.transformToString()}(e)),r=[],n=e=>{e>=t.length||(r[e]=Im(t[e].url).catch(r=>(console.warn(`Could not read the metadata of '${t[e].url}' for a playlist`,r),{})))};
 // the metadata of the track in the bucket fills what the playlist
 // leaves out, such as the length. Without it, the playlist's will do.
 for(let e=0;e<rp;e++)n(e);
@@ -950,7 +950,7 @@ for(let e=0;e<rp;e++)n(e);
 for(const[e,o]of t.entries()){n(e+rp);
 // a slow request doesn't hold up the tracks after it: the track is
 // added with what the playlist has, and the metadata is cached for later
-const t=await Promise.race([r[e],np(/* inlined export .META_TIMEOUT */5e3)]);t||console.warn(`The metadata of '${o.url}' came late, adding it without`);const s={Bucket:xm,Key:o.url,Metadata:{...t,...o}};s.href=await Rm(s.Key),await ug(s)}}catch(r){
+const t=await Promise.race([r[e],np(/* inlined export .META_TIMEOUT */5e3)]);t||console.warn(`The metadata of '${o.url}' came late, adding it without`);const s={Bucket:xm,Key:o.url,Metadata:{...t,...o}};s.href=await Rm(s.Key),await fg(s)}}catch(r){
 // the playlist may be gone, such as after a change of bucket
 console.error(r),t.querySelector("a").click(),W(U.playlistFailed(e.replace(/^.*\//,"")))}}
 // The playlists in the address are read at once, by their keys, without
@@ -983,55 +983,59 @@ return o.type.startsWith("audio/")?o:new Blob([o],{type:t.endsWith(".mp3")?"audi
 // before the first await, so that an abort during it is not lost
 fp=new AbortController;const t=await Rm(e);return function(e,t){return new Promise((r,n)=>{const o=km.transaction([ym,wm],"readwrite");let s=!1;
 // the playlist may have been removed during the download
-o.objectStore(ym).getAll().onsuccess=r=>{yp(r.target.result).has(e)&&(o.objectStore(wm).put({key:e,blob:t,type:t.type,size:t.size}),s=!0)},o.oncomplete=()=>r(s),o.onerror=o.onabort=()=>n(o.error)})}(e,await Bp(t,e,fp.signal))}async function Ep(){if(!gp&&Em){gp=!0;try{let e;for(await kp;navigator.onLine&&(e=await Sp());){up=e,vp(e,"downloading");try{if(await Pp(e)){ip.add(e);const t=await bp(e);for(const r of Cp(e))r.dataset.src=t;vp(e,"saved")}else vp(e,null)}catch(t){if("QuotaExceededError"==t.name){vp(e,null),pp.textContent=U.storageFull;break}if("AbortError"==t.name||!navigator.onLine){vp(e,null),await Ap();continue}console.warn(`Saving '${e}' offline failed`,t),lp.add(e),vp(e,"failed")}await Ap()}}catch(e){console.error(e)}finally{up=fp=null,gp=!1,dg()}}}async function xp(e){const t=`offline:${e.id}`;Mp.appendChild(Yp("playlist",e.title,t));
+o.objectStore(ym).getAll().onsuccess=r=>{yp(r.target.result).has(e)&&(o.objectStore(wm).put({key:e,blob:t,type:t.type,size:t.size}),s=!0)},o.oncomplete=()=>r(s),o.onerror=o.onabort=()=>n(o.error)})}(e,await Bp(t,e,fp.signal))}async function Ep(){if(!gp&&Em){gp=!0;try{let e;for(await kp;navigator.onLine&&(e=await Sp());){up=e,vp(e,"downloading");try{if(await Pp(e)){ip.add(e);const t=await bp(e);for(const r of Cp(e))r.dataset.src=t;vp(e,"saved")}else vp(e,null)}catch(t){if("QuotaExceededError"==t.name){vp(e,null),pp.textContent=U.storageFull;break}if("AbortError"==t.name||!navigator.onLine){vp(e,null),await Ap();continue}console.warn(`Saving '${e}' offline failed`,t),lp.add(e),vp(e,"failed")}await Ap()}}catch(e){console.error(e)}finally{up=fp=null,gp=!1,ug()}}}async function xp(e){const t=`offline:${e.id}`;Mp.appendChild(eg("playlist",e.title,t));
 // one at a time, to keep the queue in the listed order
 for(const r of e.track)try{const e={Key:r.url,Metadata:r,href:""};Em&&(
 // signing doesn't need the network
-e.href=await Rm(r.url)),Zp(t),await ug(e)}catch(e){Q(e,U.trackFailed(String(r.url).replace(/^.*\//,"")))}}async function Ap(){const e=await wp();hp.hidden=e.length<1,mp.innerHTML="";for(const t of e){const e=yp([t]),r=[...e].filter(e=>ip.has(e)).length,n=document.createElement("li");n.className="playlist",n.textContent=t.title+" ";const o=document.createElement("span");o.className="offline-status",o.textContent=`${r}/${e.size}`,n.appendChild(o);const s=document.createElement("a");s.className="action add",s.href="#",s.title=U.playOfflinePlaylist,s.innerHTML=ye,s.onclick=e=>{e.preventDefault(),e.stopPropagation(),xp(t).catch(e=>Q(e))},n.appendChild(s);const a=document.createElement("a");a.className="action remove",a.href="#",a.title=U.removeOffline,a.innerHTML=ke,a.onclick=e=>{var r;e.preventDefault(),e.stopPropagation(),confirm(U.confirmRemoveOffline(t.title))&&(r=t.id,new Promise((e,t)=>{const n=km.transaction([ym,wm],"readwrite"),o=n.objectStore(ym),s=n.objectStore(wm),a=[];let i;o.delete(r),o.getAll().onsuccess=e=>{i=yp(e.target.result),s.getAllKeys().onsuccess=e=>{for(const t of e.target.result)i.has(t)||(s.delete(t),a.push(t))}},n.oncomplete=()=>e({removed:a,keep:i}),n.onerror=n.onabort=()=>t(n.error)}).then(({removed:e,keep:t})=>{for(const t of e){ip.delete(t);const e=cp.get(t);cp.delete(t);for(const e of Cp(t))e.dataset.src=e.dataset.href;vp(t,null),
+e.href=await Rm(r.url)),Yp(t),await fg(e)}catch(e){Q(e,U.trackFailed(String(r.url).replace(/^.*\//,"")))}}async function Ap(){const e=await wp();hp.hidden=e.length<1,mp.innerHTML="";for(const t of e){const e=yp([t]),r=[...e].filter(e=>ip.has(e)).length,n=document.createElement("li");n.className="playlist",n.textContent=t.title+" ";const o=document.createElement("span");o.className="offline-status",o.textContent=`${r}/${e.size}`,n.appendChild(o);const s=document.createElement("a");s.className="action add",s.href="#",s.title=U.playOfflinePlaylist,s.innerHTML=ye,s.onclick=e=>{e.preventDefault(),e.stopPropagation(),xp(t).catch(e=>Q(e))},n.appendChild(s);const a=document.createElement("a");a.className="action remove",a.href="#",a.title=U.removeOffline,a.innerHTML=ke,a.onclick=e=>{var r;e.preventDefault(),e.stopPropagation(),confirm(U.confirmRemoveOffline(t.title))&&(r=t.id,new Promise((e,t)=>{const n=km.transaction([ym,wm],"readwrite"),o=n.objectStore(ym),s=n.objectStore(wm),a=[];let i;o.delete(r),o.getAll().onsuccess=e=>{i=yp(e.target.result),s.getAllKeys().onsuccess=e=>{for(const t of e.target.result)i.has(t)||(s.delete(t),a.push(t))}},n.oncomplete=()=>e({removed:a,keep:i}),n.onerror=n.onabort=()=>t(n.error)}).then(({removed:e,keep:t})=>{for(const t of e){ip.delete(t);const e=cp.get(t);cp.delete(t);for(const e of Cp(t))e.dataset.src=e.dataset.href;vp(t,null),
 // the current track keeps playing from its blob
 e&&Tp.src!=e&&URL.revokeObjectURL(e)}up&&!t.has(up)&&fp?.abort(),pp.textContent="",Ap().catch(e=>console.error(e)),Ep()})).catch(e=>Q(e))},n.appendChild(a),mp.appendChild(n)}}// ./src/player.js
-let Tp,Rp,Mp,Ip,Lp,Np,$p,Op,Dp,jp,_p,Up,zp,qp,Hp,Fp,Kp=0;// object URL of the prepared track that plays now
+let Tp,Rp,Mp,Ip,Lp,Np,$p,Op,Dp,jp,_p,Up,zp,qp,Hp,Fp,Kp=0,Wp=!1;// object URL of the prepared track that plays now
 // The other modules listen to the events of the current element, whichever it is
-function Wp(e,t){for(const r of[Tp,qp])r.addEventListener(e,e=>{r===Tp&&t(e)})}function Vp(e){const t=document.createElement("audio");return t.preload="auto",t.dataset.name=e,t}
+function Vp(e,t){for(const r of[Tp,qp])r.addEventListener(e,e=>{r===Tp&&t(e)})}function Xp(e){const t=document.createElement("audio");return t.preload="auto",t.dataset.name=e,t}
 // iOS lets only an audio element that the user has started play on its own
 // later. The element that waits is started silently on a tap, once, with half
 // a second of silence (a clip too short to play never starts, and leaves the
 // element holding it).
-const Xp=new WeakSet;let Gp;function Qp(){const e=()=>{const e=qp;
+const Gp=new WeakSet;let Qp;function Jp(){const e=()=>{if(Wp)return;const e=qp;
 // the current element was started by the user, or will be; one that has a
 // track, or is being unlocked, is left alone
-if(Xp.has(e)||e.getAttribute("src"))return;const t=function(){if(!Gp){const e=4e3,t=new Uint8Array(44+e).fill(128),r=new DataView(t.buffer),n=(e,r)=>[...r].forEach((r,n)=>{t[e+n]=r.charCodeAt(0)});// 8 kHz, 8 bits, mono
+if(Gp.has(e)||e.getAttribute("src"))return;const t=function(){if(!Qp){const e=4e3,t=new Uint8Array(44+e).fill(128),r=new DataView(t.buffer),n=(e,r)=>[...r].forEach((r,n)=>{t[e+n]=r.charCodeAt(0)});// 8 kHz, 8 bits, mono
 n(0,"RIFF"),r.setUint32(4,36+e,!0),n(8,"WAVEfmt "),r.setUint32(16,16,!0),r.setUint16(20,1,!0),// PCM
 r.setUint16(22,1,!0),// mono
-r.setUint32(24,8e3,!0),r.setUint32(28,8e3,!0),r.setUint16(32,1,!0),r.setUint16(34,8,!0),n(36,"data"),r.setUint32(40,e,!0),Gp=URL.createObjectURL(new Blob([t],{type:"audio/wav"}))}return Gp}(),r=()=>{e.getAttribute("src")==t&&(e.pause(),e.removeAttribute("src"),e.load()),delete e.dataset.unlocking},n=setTimeout(r,3e3);
+r.setUint32(24,8e3,!0),r.setUint32(28,8e3,!0),r.setUint16(32,1,!0),r.setUint16(34,8,!0),n(36,"data"),r.setUint32(40,e,!0),Qp=URL.createObjectURL(new Blob([t],{type:"audio/wav"}))}return Qp}(),r=()=>{e.getAttribute("src")==t&&(e.pause(),e.removeAttribute("src"),e.load()),delete e.dataset.unlocking},n=setTimeout(r,3e3);
 // not left holding the silence if it doesn't start
-e.dataset.unlocking="yes",e.muted=!0,e.src=t,e.play().then(()=>{Xp.add(e)}).catch(e=>{console.warn("Unlocking an audio element failed:",e)}).finally(()=>{clearTimeout(n),r()})};
+e.dataset.unlocking="yes",e.muted=!0,e.src=t,e.play().then(()=>{Gp.add(e)}).catch(e=>{console.warn("Unlocking an audio element failed:",e)}).finally(()=>{clearTimeout(n),r()})};
 // before the handlers of the buttons, to be inside the same tap
 for(const t of["click","touchend","keydown"])document.addEventListener(t,e,!0)}
 // mediaSession is missing from some browser engines, such as older TVs
-const Jp=e=>{"mediaSession"in navigator&&(navigator.mediaSession.playbackState=e)};
+const Zp=e=>{"mediaSession"in navigator&&(navigator.mediaSession.playbackState=e)};
 // Queue sources: the folders, playlists and tracks listed above the queue
-function Zp(e){Dp=e}function Yp(e,t,r){const n=document.createElement("li");n.onclick=eg,n.className=e,n.textContent=t+" ",n.dataset.source=r;const o=document.createElement("a");return o.innerHTML=ke,o.onclick=tg,n.appendChild(o),n}function eg(e){const t=this.dataset.source,r=this.closest("audio-player").querySelector(`audio-track[data-source="${t}"]`);r&&(r.scrollIntoView({block:"nearest",inline:"nearest",behavior:"smooth"}),r.focus())}
+function Yp(e){Dp=e}function eg(e,t,r){const n=document.createElement("li");n.onclick=tg,n.className=e,n.textContent=t+" ",n.dataset.source=r;const o=document.createElement("a");return o.innerHTML=ke,o.onclick=rg,n.appendChild(o),n}function tg(e){const t=this.dataset.source,r=this.closest("audio-player").querySelector(`audio-track[data-source="${t}"]`);r&&(r.scrollIntoView({block:"nearest",inline:"nearest",behavior:"smooth"}),r.focus())}
 // empties the queue of what came from the bucket; the offline playlists play
 // from the device and stay
-function tg(e){e.stopPropagation();const t=this.closest("li"),r=t.dataset.source,n=t.closest("audio-player").querySelectorAll(`audio-track[data-source="${r}"]`);for(const e of n)e.classList.contains("playing")&&(Tp.paused||Rp.click(),Np.value=Op.value=0,
+function rg(e){e.stopPropagation();const t=this.closest("li"),r=t.dataset.source,n=t.closest("audio-player").querySelectorAll(`audio-track[data-source="${r}"]`);for(const e of n)e.classList.contains("playing")&&(Tp.paused||Rp.click(),Np.value=Op.value=0,
 // cursor.value = '00:00:00'
 Lp.value="0:00",$p.value="",Tp.src=""),e.parentNode.removeChild(e);const o=this.closest("li");o?.parentNode?.removeChild(o)}
 // offline, only the tracks saved to offline storage can be played
-const rg=e=>e.classList.contains("offline-saved")||navigator.onLine&&Boolean(e.dataset.src),ng=()=>{const e=Ip.querySelector(".playing"),t=[...Ip.querySelectorAll("audio-track")],r=t.indexOf(e)+1;
+const ng=e=>e.classList.contains("offline-saved")||navigator.onLine&&Boolean(e.dataset.src),og=()=>{const e=Ip.querySelector(".playing"),t=[...Ip.querySelectorAll("audio-track")],r=t.indexOf(e)+1;
 // wrap around to the beginning of the list
-for(let e=0;e<t.length;e++){const n=t[(r+e)%t.length];if(rg(n))return n}},og=()=>{ag(ng())},sg=()=>{let e=Ip.querySelector(".playing")?.previousElementSibling;for(;e&&!rg(e);)e=e.previousElementSibling;ag(e)},ag=async e=>{if(e){let t;document.title=e.querySelector(".name").textContent,"mediaSession"in navigator&&(t={title:document.title,artist:e.querySelector(".artist")?.textContent||"Unknown Artist",album:e.querySelector(".album")?.textContent||"Unknown Album"}),$p.value=document.title,Ip.querySelector(".playing")?.classList.remove("playing"),e.classList.add("playing"),e.scrollIntoView({block:"nearest",inline:"nearest"});const r=Fp,n=
+for(let e=0;e<t.length;e++){const n=t[(r+e)%t.length];if(ng(n))return n}},sg=()=>{ig(og())},ag=()=>{let e=Ip.querySelector(".playing")?.previousElementSibling;for(;e&&!ng(e);)e=e.previousElementSibling;ig(e)},ig=async e=>{if(e){let t;document.title=e.querySelector(".name").textContent,"mediaSession"in navigator&&(t={title:document.title,artist:e.querySelector(".artist")?.textContent||"Unknown Artist",album:e.querySelector(".album")?.textContent||"Unknown Album"}),$p.value=document.title,Ip.querySelector(".playing")?.classList.remove("playing"),e.classList.add("playing"),e.scrollIntoView({block:"nearest",inline:"nearest"});const r=Fp,n=
 // the track in the other element, if it is the one to play and is ready
 function(e){const t=Hp?.ready&&Hp.track==e&&Hp.href==e.dataset.src&&qp.getAttribute("src")==Hp.url;if(!t)return;const{url:r,owned:n}=Hp;return Hp=void 0,{el:qp,url:r,owned:n}}
-// the other element has the next track loaded
-(e),o=e=>{e.pause(),e.removeAttribute("src"),e.load(),r&&r!=Fp&&URL.revokeObjectURL(r)},s=function(e){const t=Nm(e?.replaygaintrackgain)??Nm(e?.replaygainalbumgain);return null==t?1:Math.min(1,10**(t/20))}(dp.get(e));if(n){const e=Tp;ig(n.el),Fp=n.owned?n.url:void 0,Tp.volume=s,
+// the next track, downloaded but not put into the other element
+(e),o=e=>{e.pause(),e.removeAttribute("src"),e.load(),r&&r!=Fp&&URL.revokeObjectURL(r)},s=function(e){const t=Nm(e?.replaygaintrackgain)??Nm(e?.replaygainalbumgain);return null==t?1:Math.min(1,10**(t/20))}(dp.get(e));if(n){const e=Tp;cg(n.el),Fp=n.owned?n.url:void 0,Tp.volume=s,
 // iOS may let the position of a paused element run on in the background
 // (its time is not always up to date either), so the track starts from
 // the beginning, not from where the clock got to
 Tp.currentTime=0,Tp.play().then(()=>o(e)).catch(t=>{
 // the element may not be allowed to start on its own: the track plays
 // in the element that played the previous one
-console.warn("Playback failed:",t);const r=Tp;ig(e),e.src=n.url,e.volume=s,e.play().catch(e=>console.warn("Playback failed:",e)),o(r)})}else Fp=void 0,Tp.src=e.dataset.src,r&&URL.revokeObjectURL(r),Tp.volume=s,
+console.warn("Playback failed:",t);const r=Tp;cg(e),e.src=n.url,e.volume=s,e.play().catch(e=>console.warn("Playback failed:",e)),o(r)})}else
+// a track downloaded for the single element of a TV
+Fp=function(e){if(!Wp||!Hp?.url||Hp.track!=e||Hp.href!=e.dataset.src)return;const{url:t}=Hp;return Hp=void 0,t}
+// the other element has the next track loaded
+(e),Tp.src=Fp||e.dataset.src,r&&URL.revokeObjectURL(r),Tp.volume=s,
 // call play() synchronously instead of waiting for 'canplay': on iOS a
 // backgrounded PWA is suspended as soon as audio stops, so an async gap
 // between tracks would stop playback at the end of the first track
@@ -1039,18 +1043,18 @@ Tp.play().catch(e=>{console.warn("Playback failed:",e)});if(e.dataset.albumArt){
 // the art is decoration: when it can't be read, playing goes on without it
 r.onload=async function(){
 // another track may have started while the art was loading
-if(e.classList.contains("playing")){if(t)try{const o=await fetch(n),s=await o.blob();t.artwork=[{src:n,sizes:`${r.naturalWidth}x${r.naturalHeight}`,type:s.type}],e.classList.contains("playing")&&(navigator.mediaSession.metadata=new MediaMetadata(t))}catch(e){console.warn("Reading the album art failed:",e)}try{const e=document.createElement("canvas").getContext("2d");e.drawImage(r,0,0,1,1);const t=e.getImageData(0,0,1,1).data,n=function(e,t,r){e/=255,t/=255,r/=255;const n=Math.max(e,t,r),o=Math.min(e,t,r);let s=0;if(n!=o){const a=n-o;switch(n){case e:s=(t-r)/a+(t<r?6:0);break;case t:s=(r-e)/a+2;break;case r:s=(e-t)/a+4}s/=6}return Math.round(360*s)}(t[0],t[1],t[2]);document.documentElement.style.setProperty("--base-hue",n)}catch(e){console.warn("Reading the color of the album art failed:",e)}}},r.onerror=()=>console.warn("Loading the album art failed:",n)}t&&(navigator.mediaSession.metadata=new MediaMetadata(t))}};function ig(e){qp=Tp,Tp=e,qp.classList.remove("current"),Tp.classList.add("current"),Tp.muted=!1}function cg(e,t){e!==Tp&&Hp?.url&&e.getAttribute("src")==Hp.url&&!Hp.ready&&("canplay"!=t||e.paused)&&(e.readyState<e.HAVE_FUTURE_DATA||(
+if(e.classList.contains("playing")){if(t)try{const o=await fetch(n),s=await o.blob();t.artwork=[{src:n,sizes:`${r.naturalWidth}x${r.naturalHeight}`,type:s.type}],e.classList.contains("playing")&&(navigator.mediaSession.metadata=new MediaMetadata(t))}catch(e){console.warn("Reading the album art failed:",e)}try{const e=document.createElement("canvas").getContext("2d");e.drawImage(r,0,0,1,1);const t=e.getImageData(0,0,1,1).data,n=function(e,t,r){e/=255,t/=255,r/=255;const n=Math.max(e,t,r),o=Math.min(e,t,r);let s=0;if(n!=o){const a=n-o;switch(n){case e:s=(t-r)/a+(t<r?6:0);break;case t:s=(r-e)/a+2;break;case r:s=(e-t)/a+4}s/=6}return Math.round(360*s)}(t[0],t[1],t[2]);document.documentElement.style.setProperty("--base-hue",n)}catch(e){console.warn("Reading the color of the album art failed:",e)}}},r.onerror=()=>console.warn("Loading the album art failed:",n)}t&&(navigator.mediaSession.metadata=new MediaMetadata(t))}};function cg(e){qp=Tp,Tp=e,qp.classList.remove("current"),Tp.classList.add("current"),Tp.muted=!1}function lg(e,t){e!==Tp&&Hp?.url&&e.getAttribute("src")==Hp.url&&!Hp.ready&&("canplay"!=t||e.paused)&&(e.readyState<e.HAVE_FUTURE_DATA||(
 // loaded in silence, and waiting at the start
 e.pause(),e.currentTime=0,Hp.ready=!0));
 // while it plays silently it is ready when it can play through, otherwise when it can play
 }
 // load the track into the other element, silent until it plays
-function lg(e,t,r){e.url=t,e.owned=r;const n=qp;n.muted=!0,n.src=t,
+function dg(e,t,r){e.url=t,e.owned=r;const n=qp;n.muted=!0,n.src=t,
 // iOS may load no more than the metadata of an element that isn't playing,
 // so it is played silently until it has loaded
 n.play().catch(e=>{
 // paused when loaded, or replaced by another track
-"AbortError"!=e.name&&console.warn("Getting the next track ready failed:",e)})}function dg(){const e=ng(),t=e&&!e.classList.contains("playing")&&e.dataset.src;
+"AbortError"!=e.name&&console.warn("Getting the next track ready failed:",e)})}function ug(){const e=og(),t=e&&!e.classList.contains("playing")&&e.dataset.src;
 // a track alone in the queue is loading now
 if(t&&Hp?.track==e&&Hp.href==t)return;
 // the playing track is loaded first
@@ -1058,81 +1062,81 @@ if(Hp?.controller.abort(),
 // the other element lets go of the track, unless it is silent for unlocking
 Hp?.url&&(qp.getAttribute("src")==Hp.url&&(qp.pause(),qp.removeAttribute("src"),qp.load()),Hp.owned&&URL.revokeObjectURL(Hp.url)),Hp=void 0,!t||Tp.paused||Tp.readyState<Tp.HAVE_FUTURE_DATA||!navigator.onLine)return;const r=Hp={track:e,href:t,controller:new AbortController};
 // offline tracks are on the device already
-e.classList.contains("offline-saved")?lg(r,t,!1):
+e.classList.contains("offline-saved")?Wp?Hp=void 0:dg(r,t,!1):
 // saving offline playlists goes first
-gp?Hp=void 0:Bp(t,e.dataset.key,r.controller.signal).then(e=>{Hp==r&&lg(r,URL.createObjectURL(e),!0)}).catch(e=>{
+gp?Hp=void 0:Bp(t,e.dataset.key,r.controller.signal).then(e=>{Hp==r&&(Wp?(r.url=URL.createObjectURL(e),r.owned=!0):dg(r,URL.createObjectURL(e),!0))}).catch(e=>{
 // the track plays from the bucket instead
-"AbortError"!=e.name&&console.warn("Getting the next track ready failed:",e)})}async function ug(e,t){await kp;let r="",n="",o="",s="",a="",i="",c="",l="",d="",u="";const f=e.Key.match(/([^\/]*)\/?([^\/]*)\/([^\/]*)\.mp3/);f&&4==f.length?(r=f[1],n=f[2],o=f[3]):f&&f.length>0&&(r=f[1],o=f[2]),e.Metadata.artist&&(r=Lm(e.Metadata.artist)),e.Metadata.album&&(n=Lm(e.Metadata.album)),e.Metadata.name&&(o=Lm(e.Metadata.name)),e.Metadata.title&&(o=Lm(e.Metadata.title)),e.Metadata.tracknumber&&(s=function(e){const t=Lm(e??"").trim(),r=t.match(/^\d+/);return r?String(parseInt(r[0],10)):t}(e.Metadata.tracknumber)),e.Metadata.length&&(a=Lm(e.Metadata.length)),e.Metadata.datePublished&&(i=Lm(e.Metadata.datePublished)),e.Metadata.recordingtime&&(i=Lm(e.Metadata.recordingtime)),e.Metadata.year&&(i=Lm(e.Metadata.year)),e.Metadata.playlist&&(c=Lm(e.Metadata.playlist)),e.Metadata.genre&&(l=Lm(e.Metadata.genre)),e.Metadata.keywords&&(d=Lm(e.Metadata.keywords)),e.Metadata.image&&(u=Lm(e.Metadata.image));const h=document.createElement("audio-track");if(h.tabIndex=0,h.itemprop="track",h.itemscope="",h.itemtype="https://schema.org/MusicRecording",h.dataset.src=e.href,h.dataset.href=e.href,h.dataset.key=e.Key,h.dataset.source=t||Dp,dp.set(h,e.Metadata),ip.has(e.Key))try{h.dataset.src=await bp(e.Key),h.classList.add("offline-saved")}catch(t){
+"AbortError"!=e.name&&console.warn("Getting the next track ready failed:",e)})}async function fg(e,t){await kp;let r="",n="",o="",s="",a="",i="",c="",l="",d="",u="";const f=e.Key.match(/([^\/]*)\/?([^\/]*)\/([^\/]*)\.mp3/);f&&4==f.length?(r=f[1],n=f[2],o=f[3]):f&&f.length>0&&(r=f[1],o=f[2]),e.Metadata.artist&&(r=Lm(e.Metadata.artist)),e.Metadata.album&&(n=Lm(e.Metadata.album)),e.Metadata.name&&(o=Lm(e.Metadata.name)),e.Metadata.title&&(o=Lm(e.Metadata.title)),e.Metadata.tracknumber&&(s=function(e){const t=Lm(e??"").trim(),r=t.match(/^\d+/);return r?String(parseInt(r[0],10)):t}(e.Metadata.tracknumber)),e.Metadata.length&&(a=Lm(e.Metadata.length)),e.Metadata.datePublished&&(i=Lm(e.Metadata.datePublished)),e.Metadata.recordingtime&&(i=Lm(e.Metadata.recordingtime)),e.Metadata.year&&(i=Lm(e.Metadata.year)),e.Metadata.playlist&&(c=Lm(e.Metadata.playlist)),e.Metadata.genre&&(l=Lm(e.Metadata.genre)),e.Metadata.keywords&&(d=Lm(e.Metadata.keywords)),e.Metadata.image&&(u=Lm(e.Metadata.image));const h=document.createElement("audio-track");if(h.tabIndex=0,h.itemprop="track",h.itemscope="",h.itemtype="https://schema.org/MusicRecording",h.dataset.src=e.href,h.dataset.href=e.href,h.dataset.key=e.Key,h.dataset.source=t||Dp,dp.set(h,e.Metadata),ip.has(e.Key))try{h.dataset.src=await bp(e.Key),h.classList.add("offline-saved")}catch(t){
 // the saved track is gone, and plays from the bucket
 console.warn(`Reading '${e.Key}' from offline storage failed`,t)}else e.Key==up?h.classList.add("offline-downloading"):lp.has(e.Key)&&h.classList.add("offline-failed");
 // album art is not stored offline
-if(u&&navigator.onLine&&Em){const e=await Rm(u);h.style.backgroundImage=`url(${e})`,h.dataset.albumArt=e}const m=document.createElement("section");m.className="artist";const p=document.createElement("a");p.itemprop="byArtist",p.textContent=r,m.appendChild(p),h.appendChild(m);const g=document.createElement("section");g.className="name track";const y=document.createElement("a");y.href=e.href,y.onclick=e=>{e.preventDefault(),ag(h)};const w=document.createElement("span");w.itemprop="name",y.appendChild(w),y.textContent=o;const k=document.createElement("span");k.className="offline-icon",k.innerHTML=we,g.appendChild(k),g.appendChild(y),h.appendChild(g);const b=document.createElement("section");b.className="duration";const C=document.createElement("meta");C.itemprop="duration",b.appendChild(C);const v=document.createElement("span");v.className="duration",b.appendChild(v);
+if(u&&navigator.onLine&&Em){const e=await Rm(u);h.style.backgroundImage=`url(${e})`,h.dataset.albumArt=e}const m=document.createElement("section");m.className="artist";const p=document.createElement("a");p.itemprop="byArtist",p.textContent=r,m.appendChild(p),h.appendChild(m);const g=document.createElement("section");g.className="name track";const y=document.createElement("a");y.href=e.href,y.onclick=e=>{e.preventDefault(),ig(h)};const w=document.createElement("span");w.itemprop="name",y.appendChild(w),y.textContent=o;const k=document.createElement("span");k.className="offline-icon",k.innerHTML=we,g.appendChild(k),g.appendChild(y),h.appendChild(g);const b=document.createElement("section");b.className="duration";const C=document.createElement("meta");C.itemprop="duration",b.appendChild(C);const v=document.createElement("span");v.className="duration",b.appendChild(v);
 // a track without a length, or with 0, shows none
 const S=Math.round(parseInt(a)/1e3);// ms to s
-if(S>0){const e=Math.floor(S/60),t=S%60;C.content=`PT${e}M${t}S`,v.textContent=[e,t.toString().padStart(2,"0")].join(":")}h.appendChild(b);const B=document.createElement("section");B.className="trackNumber";const P=document.createElement("span");P.itemprop="position",P.textContent=s,B.appendChild(P),h.appendChild(B);const E=document.createElement("section");E.className="album";const x=document.createElement("a");x.itemprop="inAlbum",x.textContent=n,E.appendChild(x),h.appendChild(E);const A=document.createElement("section");A.className="published";const T=document.createElement("span");T.itemprop="datePublished",T.textContent=i,A.appendChild(T),h.appendChild(A);const R=document.createElement("section");R.className="playlist";const M=document.createElement("a");M.itemprop="inPlaylist",M.textContent=c,R.appendChild(M),h.appendChild(R);const I=document.createElement("section");I.className="genre";const L=document.createElement("span");L.itemprop="genre",L.textContent=l,I.appendChild(L),h.appendChild(I);const N=document.createElement("section");N.className="keywords";const $=document.createElement("span");$.itemprop="keywords",$.textContent=d,N.appendChild($),h.appendChild(N),Ip.appendChild(h);!Ip.querySelector(".playing")&&rg(h)&&y.click()}// ./src/player-bar.js
+if(S>0){const e=Math.floor(S/60),t=S%60;C.content=`PT${e}M${t}S`,v.textContent=[e,t.toString().padStart(2,"0")].join(":")}h.appendChild(b);const B=document.createElement("section");B.className="trackNumber";const P=document.createElement("span");P.itemprop="position",P.textContent=s,B.appendChild(P),h.appendChild(B);const E=document.createElement("section");E.className="album";const x=document.createElement("a");x.itemprop="inAlbum",x.textContent=n,E.appendChild(x),h.appendChild(E);const A=document.createElement("section");A.className="published";const T=document.createElement("span");T.itemprop="datePublished",T.textContent=i,A.appendChild(T),h.appendChild(A);const R=document.createElement("section");R.className="playlist";const M=document.createElement("a");M.itemprop="inPlaylist",M.textContent=c,R.appendChild(M),h.appendChild(R);const I=document.createElement("section");I.className="genre";const L=document.createElement("span");L.itemprop="genre",L.textContent=l,I.appendChild(L),h.appendChild(I);const N=document.createElement("section");N.className="keywords";const $=document.createElement("span");$.itemprop="keywords",$.textContent=d,N.appendChild($),h.appendChild(N),Ip.appendChild(h);!Ip.querySelector(".playing")&&ng(h)&&y.click()}// ./src/player-bar.js
 // The player bar's small Now Playing: the album art, title, artist and album
 // of the playing track, or a hint of how to start, which the platform gives,
 // as the TV adds music with the remote. onCover hears of each new album art.
 // Also fills the progress bar by --played, as a range input can't color its
 // played part on every browser, such as the oldest TVs (Chromium 76).
-let fg,hg,mg,pg,gg,yg,wg,kg;const bg=(e,t)=>e?.querySelector(t)?.textContent.trim()||"";
+let hg,mg,pg,gg,yg,wg,kg,bg;const Cg=(e,t)=>e?.querySelector(t)?.textContent.trim()||"";
 // what is shown of a queued track: here, in the queue's summary and on the TV
-function Cg(e){return{title:bg(e,".name a"),artist:bg(e,".artist"),album:[bg(e,".album"),bg(e,".published")].filter(Boolean).join(" · "),genre:bg(e,".genre"),keywords:bg(e,".keywords"),cover:e.dataset.albumArt||"",line:[bg(e,".name a"),bg(e,".artist")].filter(Boolean).join(" – ")}}
+function vg(e){return{title:Cg(e,".name a"),artist:Cg(e,".artist"),album:[Cg(e,".album"),Cg(e,".published")].filter(Boolean).join(" · "),genre:Cg(e,".genre"),keywords:Cg(e,".keywords"),cover:e.dataset.albumArt||"",line:[Cg(e,".name a"),Cg(e,".artist")].filter(Boolean).join(" – ")}}
 // returns the element, for the platform to add to
-function vg(e,t){return fg=e,wg=t.hint,kg=t.onCover||(()=>{}),hg=document.createElement("div"),hg.className="now",hg.innerHTML='\n    <div class="now-art"><img alt=""></div>\n    <div class="now-text"><div class="now-title"></div><div class="now-subtitle"></div></div>',mg=hg.querySelector("img"),pg=hg.querySelector(".now-title"),gg=hg.querySelector(".now-subtitle"),mg.onerror=()=>{hg.classList.add("no-art"),kg("")},e.insertBefore(hg,e.firstChild),yg=e.querySelector("#progress"),Wp("timeupdate",Bg),Wp("emptied",Bg),
+function Sg(e,t){return hg=e,kg=t.hint,bg=t.onCover||(()=>{}),mg=document.createElement("div"),mg.className="now",mg.innerHTML='\n    <div class="now-art"><img alt=""></div>\n    <div class="now-text"><div class="now-title"></div><div class="now-subtitle"></div></div>',pg=mg.querySelector("img"),gg=mg.querySelector(".now-title"),yg=mg.querySelector(".now-subtitle"),pg.onerror=()=>{mg.classList.add("no-art"),bg("")},e.insertBefore(mg,e.firstChild),wg=e.querySelector("#progress"),Vp("timeupdate",Pg),Vp("emptied",Pg),
 // the playing track changes by class, and its details arrive with it
-new MutationObserver(Sg).observe(Ip,{childList:!0,subtree:!0,attributeFilter:["class"]}),Sg(),hg}function Sg(){const e=Ip.querySelector("audio-track.playing"),t=e&&Cg(e);hg.classList.toggle("idle",!e),
+new MutationObserver(Bg).observe(Ip,{childList:!0,subtree:!0,attributeFilter:["class"]}),Bg(),mg}function Bg(){const e=Ip.querySelector("audio-track.playing"),t=e&&vg(e);mg.classList.toggle("idle",!e),
 // the progress bar is empty, without its knob
-fg.classList.toggle("idle",!e),pg.textContent=t?t.title:U.nothingPlaying,gg.textContent=t?[t.artist,t.album].filter(Boolean).join(" · "):wg;const r=t?.cover||"";hg.classList.toggle("no-art",!r),r?mg.getAttribute("src")!=r&&(mg.src=r,kg(r)):kg("")}function Bg(){const e=Tp.duration?100*Tp.currentTime/Tp.duration:0;yg.style.setProperty("--played",`${e}%`)}// ./src/queue.js
+hg.classList.toggle("idle",!e),gg.textContent=t?t.title:U.nothingPlaying,yg.textContent=t?[t.artist,t.album].filter(Boolean).join(" · "):kg;const r=t?.cover||"";mg.classList.toggle("no-art",!r),r?pg.getAttribute("src")!=r&&(pg.src=r,bg(r)):bg("")}function Pg(){const e=Tp.duration?100*Tp.currentTime/Tp.duration:0;wg.style.setProperty("--played",`${e}%`)}// ./src/queue.js
 // The queue's summary row: the number of tracks and the next one. Clicking
 // it, or OK on the TV, collapses the queue to the row and expands it again;
 // the player bar still shows the playing track (player-bar.js). Expanded,
 // the player also shows where the tracks came from and Save offline: it has
 // the queue-open class.
-let Pg,Eg,xg,Ag,Tg;const Rg=()=>Tg.classList.contains("collapsed");function Mg(){const e=Tg.querySelectorAll("audio-track").length;Eg.textContent=U.queue(e);const t=Tg.querySelector("audio-track.playing")?.nextElementSibling;xg.textContent=t?U.upNextTrack(Cg(t).line):"",Pg.hidden=0==e}function Ig(){return Tg.classList.remove("collapsed"),Pg.classList.add("open"),Pg.setAttribute("aria-expanded","true"),Ag.classList.add("queue-open"),!0}function Lg(){return Tg.classList.add("collapsed"),Pg.classList.remove("open"),Pg.setAttribute("aria-expanded","false"),Ag.classList.remove("queue-open"),!0}let Ng,$g,Og,Dg,jg,_g,Ug,zg,qg,Hg,Fg,Kg,Wg,Vg;function Xg({controls:e=!1,onClose:t}={}){Vg=t||(()=>{}),function(e){Ng=document.createElement("div"),Ng.id="now-playing",Ng.hidden=!0,Ng.innerHTML=`\n    <div class="background"></div>\n    <div class="cover">\n      <img alt="">\n      <div class="paused">${me}</div>\n    </div>\n    <div class="details">\n      <h1 class="np-title"></h1>\n      <p class="np-artist"></p>\n      <p class="np-album"></p>\n      <p class="np-meta"></p>\n      <div class="progress"><div class="bar"><div class="fill"></div></div><span class="time"></span></div>\n      <h2 class="up-next-title"></h2>\n      <ol class="up-next"></ol>\n    </div>`,$g=Ng.querySelector(".background"),Og=Ng.querySelector(".cover img"),Dg=Ng.querySelector(".paused"),jg=Ng.querySelector(".np-title"),_g=Ng.querySelector(".np-artist"),Ug=Ng.querySelector(".np-album"),zg=Ng.querySelector(".np-meta"),qg=Ng.querySelector(".bar"),Hg=Ng.querySelector(".fill"),Fg=Ng.querySelector(".time"),Kg=Ng.querySelector(".up-next"),Ng.querySelector(".up-next-title").textContent=U.upNext,Og.onerror=()=>Ng.classList.add("no-art"),e&&function(){Ng.classList.add("controls");const e=(e,t,r,n)=>{const o=document.createElement("button");return o.type="button",o.className=e,o.title=t,o.setAttribute("aria-label",t),o.innerHTML=r,o.onclick=n,o},t=document.createElement("div");t.className="np-controls",t.appendChild(e("np-previous",U.previous,pe,()=>sg())),Wg=e("np-play",U.play,me,()=>Rp.click()),t.appendChild(Wg),t.appendChild(e("np-next",U.next,ge,()=>og())),Ng.querySelector(".progress").after(t),Ng.appendChild(e("np-close",U.closeNowPlaying,Ce,()=>Jg())),Ng.querySelector(".cover").onclick=()=>Rp.click(),qg.onclick=e=>{const t=qg.getBoundingClientRect();Tp.duration&&(Tp.currentTime=Tp.duration*(e.clientX-t.left)/t.width)}}();document.body.appendChild(Ng)}(e),
+let Eg,xg,Ag,Tg,Rg;const Mg=()=>Rg.classList.contains("collapsed");function Ig(){const e=Rg.querySelectorAll("audio-track").length;xg.textContent=U.queue(e);const t=Rg.querySelector("audio-track.playing")?.nextElementSibling;Ag.textContent=t?U.upNextTrack(vg(t).line):"",Eg.hidden=0==e}function Lg(){return Rg.classList.remove("collapsed"),Eg.classList.add("open"),Eg.setAttribute("aria-expanded","true"),Tg.classList.add("queue-open"),!0}function Ng(){return Rg.classList.add("collapsed"),Eg.classList.remove("open"),Eg.setAttribute("aria-expanded","false"),Tg.classList.remove("queue-open"),!0}let $g,Og,Dg,jg,_g,Ug,zg,qg,Hg,Fg,Kg,Wg,Vg,Xg;function Gg({controls:e=!1,onClose:t}={}){Xg=t||(()=>{}),function(e){$g=document.createElement("div"),$g.id="now-playing",$g.hidden=!0,$g.innerHTML=`\n    <div class="background"></div>\n    <div class="cover">\n      <img alt="">\n      <div class="paused">${me}</div>\n    </div>\n    <div class="details">\n      <h1 class="np-title"></h1>\n      <p class="np-artist"></p>\n      <p class="np-album"></p>\n      <p class="np-meta"></p>\n      <div class="progress"><div class="bar"><div class="fill"></div></div><span class="time"></span></div>\n      <h2 class="up-next-title"></h2>\n      <ol class="up-next"></ol>\n    </div>`,Og=$g.querySelector(".background"),Dg=$g.querySelector(".cover img"),jg=$g.querySelector(".paused"),_g=$g.querySelector(".np-title"),Ug=$g.querySelector(".np-artist"),zg=$g.querySelector(".np-album"),qg=$g.querySelector(".np-meta"),Hg=$g.querySelector(".bar"),Fg=$g.querySelector(".fill"),Kg=$g.querySelector(".time"),Wg=$g.querySelector(".up-next"),$g.querySelector(".up-next-title").textContent=U.upNext,Dg.onerror=()=>$g.classList.add("no-art"),e&&function(){$g.classList.add("controls");const e=(e,t,r,n)=>{const o=document.createElement("button");return o.type="button",o.className=e,o.title=t,o.setAttribute("aria-label",t),o.innerHTML=r,o.onclick=n,o},t=document.createElement("div");t.className="np-controls",t.appendChild(e("np-previous",U.previous,pe,()=>ag())),Vg=e("np-play",U.play,me,()=>Rp.click()),t.appendChild(Vg),t.appendChild(e("np-next",U.next,ge,()=>sg())),$g.querySelector(".progress").after(t),$g.appendChild(e("np-close",U.closeNowPlaying,Ce,()=>Zg())),$g.querySelector(".cover").onclick=()=>Rp.click(),Hg.onclick=e=>{const t=Hg.getBoundingClientRect();Tp.duration&&(Tp.currentTime=Tp.duration*(e.clientX-t.left)/t.width)}}();document.body.appendChild($g)}(e),
 // the playing track changes by class, and its details arrive with it
-new MutationObserver(Zg).observe(Ip,{childList:!0,subtree:!0,attributeFilter:["class"]});for(const e of["play","pause","loadedmetadata","emptied"])Wp(e,Zg);return Wp("timeupdate",ey),Zg(),Ng}const Gg=()=>!Ng.hidden;
+new MutationObserver(Yg).observe(Ip,{childList:!0,subtree:!0,attributeFilter:["class"]});for(const e of["play","pause","loadedmetadata","emptied"])Vp(e,Yg);return Vp("timeupdate",ty),Yg(),$g}const Qg=()=>!$g.hidden;
 // false when nothing plays
-function Qg(){return!!Ip.querySelector("audio-track.playing")&&(Zg(),Ng.hidden=!1,!0)}function Jg(){Gg()&&(Ng.hidden=!0,Vg())}function Zg(){const e=Ip.querySelector("audio-track.playing");if(!e)return void Jg();const t=Cg(e);Ng.classList.toggle("no-art",!t.cover),t.cover&&Og.getAttribute("src")!=t.cover&&(Og.src=t.cover,$g.style.backgroundImage=`url("${t.cover}")`),jg.textContent=t.title,_g.textContent=t.artist,Ug.textContent=t.album,zg.textContent=[t.genre,t.keywords].filter(Boolean).join(" · "),Dg.hidden=!Tp.paused,Wg&&(Wg.innerHTML=Tp.paused?me:he),Kg.innerHTML="";let r=e.nextElementSibling;for(let e=0;r&&e<3;e++,r=r.nextElementSibling){const e=document.createElement("li");e.textContent=Cg(r).line,Kg.appendChild(e)}Kg.previousElementSibling.hidden=!Kg.firstChild,ey()}const Yg=e=>`${Math.floor(e/60)}:${Math.floor(e%60).toString().padStart(2,"0")}`;function ey(){Gg()&&Tp.duration&&(Hg.style.width=100*Tp.currentTime/Tp.duration+"%",Fg.textContent=`${Yg(Tp.currentTime)} / ${Yg(Tp.duration)}`)}// ./src/startup.js
+function Jg(){return!!Ip.querySelector("audio-track.playing")&&(Yg(),$g.hidden=!1,!0)}function Zg(){Qg()&&($g.hidden=!0,Xg())}function Yg(){const e=Ip.querySelector("audio-track.playing");if(!e)return void Zg();const t=vg(e);$g.classList.toggle("no-art",!t.cover),t.cover&&Dg.getAttribute("src")!=t.cover&&(Dg.src=t.cover,Og.style.backgroundImage=`url("${t.cover}")`),_g.textContent=t.title,Ug.textContent=t.artist,zg.textContent=t.album,qg.textContent=[t.genre,t.keywords].filter(Boolean).join(" · "),jg.hidden=!Tp.paused,Vg&&(Vg.innerHTML=Tp.paused?me:he),Wg.innerHTML="";let r=e.nextElementSibling;for(let e=0;r&&e<3;e++,r=r.nextElementSibling){const e=document.createElement("li");e.textContent=vg(r).line,Wg.appendChild(e)}Wg.previousElementSibling.hidden=!Wg.firstChild,ty()}const ey=e=>`${Math.floor(e/60)}:${Math.floor(e%60).toString().padStart(2,"0")}`;function ty(){Qg()&&Tp.duration&&(Fg.style.width=100*Tp.currentTime/Tp.duration+"%",Kg.textContent=`${ey(Tp.currentTime)} / ${ey(Tp.duration)}`)}// ./src/startup.js
 // When the address names playlists, they are read at once and the library
 // waits: the first track gets the connection to itself, as the metadata of
 // the library would otherwise take it. The library goes on when that track
 // can play, or after a while, whichever comes first.
-let ty,ry,ny=!1;
+let ry,ny,oy=!1;
 // media events don't bubble, but they can be caught on the way down. The
 // element that plays is the one marked current.
-const oy=e=>{e.target?.classList?.contains("current")&&sy()};function sy(){if(!ny)return;ny=!1,clearTimeout(ry),document.removeEventListener("canplay",oy,!0);const e=ty;ty=void 0,e?.()}
+const sy=e=>{e.target?.classList?.contains("current")&&ay()};function ay(){if(!oy)return;oy=!1,clearTimeout(ny),document.removeEventListener("canplay",sy,!0);const e=ry;ry=void 0,e?.()}
 // the latest request counts: a new one replaces one that waits
 // ./src/search.js
-let ay,iy,cy,ly,dy;
+let iy,cy,ly,dy,uy;
 // when each listed key was last modified, for the metadata cache
-const uy=new Map;let fy=0;
+const fy=new Map;let hy=0;
 // the bucket may have changed
-function hy(){ly=dy=null,uy.clear()}
+function my(){dy=uy=null,fy.clear()}
 // list every track key in the bucket once, so search also covers unopened
 // folders; the library scan reads the keys from here too
-function my(){return!dy&&Em&&(dy=(async()=>{const e=[];let t;do{const r={Bucket:xm};t&&(r.ContinuationToken=t);const n=await Em.send(new Dm(r));for(const t of n.Contents||[])t.Key.endsWith(".mp3")&&(e.push(t.Key),uy.set(t.Key,t.LastModified));t=n.IsTruncated?n.NextContinuationToken:null}while(t);return ly=e,e})(),dy.catch(e=>{console.error(e),dy=null})),dy}
+function py(){return!uy&&Em&&(uy=(async()=>{const e=[];let t;do{const r={Bucket:xm};t&&(r.ContinuationToken=t);const n=await Em.send(new Dm(r));for(const t of n.Contents||[])t.Key.endsWith(".mp3")&&(e.push(t.Key),fy.set(t.Key,t.LastModified));t=n.IsTruncated?n.NextContinuationToken:null}while(t);return dy=e,e})(),uy.catch(e=>{console.error(e),uy=null})),uy}
 // when a listed key was last modified, for its cached metadata
-const py=e=>uy.get(e),gy=e=>{try{return decodeURIComponent(e)}catch(t){return e}},yy=e=>e.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();async function wy(){const e=++fy,t=ay.value.trim();if(t.length</* inlined export .MIN_SEARCH_LENGTH */2)return void(iy.innerHTML="");ly||my()?.then(()=>{e==fy&&wy()},()=>{});const r=yy(t).split(/\s+/),n=e=>{const t=yy(e);return r.every(e=>t.includes(e))},o={};try{for(const e of await Sm())o[e.key]=e}catch(e){
+const gy=e=>fy.get(e),yy=e=>{try{return decodeURIComponent(e)}catch(t){return e}},wy=e=>e.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();async function ky(){const e=++hy,t=iy.value.trim();if(t.length</* inlined export .MIN_SEARCH_LENGTH */2)return void(cy.innerHTML="");dy||py()?.then(()=>{e==hy&&ky()},()=>{});const r=wy(t).split(/\s+/),n=e=>{const t=wy(e);return r.every(e=>t.includes(e))},o={};try{for(const e of await Sm())o[e.key]=e}catch(e){
 // without the cache, the search goes by the keys
-console.warn("Reading the metadata cache failed:",e)}if(e!=fy)return;
+console.warn("Reading the metadata cache failed:",e)}if(e!=hy)return;
 // until the bucket listing arrives, fall back to the tracks seen before
-const s=ly||Object.keys(o).filter(e=>e.endsWith(".mp3")),a=new Set,i=[];for(const e of s){const t=e.split(/* inlined export .folderDelimiter */"/");for(let e=1;e<t.length;e++)a.add(t.slice(0,e).join(/* inlined export .folderDelimiter */"/"));const r=o[e],s=r?[e,...Object.values(r).map(gy)].join(" "):e;i.length</* inlined export .MAX_SEARCH_RESULTS */50&&n(s)&&i.push({key:e,record:r})}const c=[...a].filter(n).slice(0,/* inlined export .MAX_FOLDER_RESULTS */20),l=e=>e.firstChild.textContent.trim(),d=[...Xm.querySelectorAll("li.playlist")].filter(e=>n(l(e)));
+const s=dy||Object.keys(o).filter(e=>e.endsWith(".mp3")),a=new Set,i=[];for(const e of s){const t=e.split(/* inlined export .folderDelimiter */"/");for(let e=1;e<t.length;e++)a.add(t.slice(0,e).join(/* inlined export .folderDelimiter */"/"));const r=o[e],s=r?[e,...Object.values(r).map(yy)].join(" "):e;i.length</* inlined export .MAX_SEARCH_RESULTS */50&&n(s)&&i.push({key:e,record:r})}const c=[...a].filter(n).slice(0,/* inlined export .MAX_FOLDER_RESULTS */20),l=e=>e.firstChild.textContent.trim(),d=[...Xm.querySelectorAll("li.playlist")].filter(e=>n(l(e)));
 // by name only: the TV app may list the playlist's tracks inside its item
-iy.innerHTML="";for(const e of c)ky("result-folder",e,"",async()=>{const t=await my();if(!t)throw new Error("No bucket");by(t.filter(t=>t.startsWith(e+/* inlined export .folderDelimiter */"/")),e,"folder")});for(const e of d)ky("result-playlist",l(e),"",()=>e.querySelector(":scope > a.add")?.click());for(const{key:e,record:t}of i){const r=e.split(/* inlined export .folderDelimiter */"/"),n=r.pop().replace(/\.mp3$/,"");ky("result-track",gy(t?.title||t?.name||"")||n,[gy(t?.artist||""),gy(t?.album||"")].filter(Boolean).join(" – ")||r.join(/* inlined export .folderDelimiter */"/"),()=>by([e],e,"song"))}if(!iy.firstChild){const e=document.createElement("li");e.className="empty",e.textContent=U.noResults,iy.appendChild(e)}}function ky(e,t,r,n){const o=document.createElement("li");o.className=e;const s=document.createElement("span");if(s.className="name",s.textContent=t,o.appendChild(s),r){const e=document.createElement("small");e.textContent=" "+r,o.appendChild(e)}const a=document.createElement("a");a.className="action add",a.href="#",a.title="result-track"==e?U.playSong:U.playFolder,a.innerHTML=ye,a.onclick=async e=>{e.preventDefault(),e.stopPropagation();try{await n()}catch(e){Q(e,U.listingFailed)}},o.appendChild(document.createTextNode(" ")),o.appendChild(a),iy.appendChild(o)}async function by(e,t,r){Mp.appendChild(Yp(r,t,t));
+cy.innerHTML="";for(const e of c)by("result-folder",e,"",async()=>{const t=await py();if(!t)throw new Error("No bucket");Cy(t.filter(t=>t.startsWith(e+/* inlined export .folderDelimiter */"/")),e,"folder")});for(const e of d)by("result-playlist",l(e),"",()=>e.querySelector(":scope > a.add")?.click());for(const{key:e,record:t}of i){const r=e.split(/* inlined export .folderDelimiter */"/"),n=r.pop().replace(/\.mp3$/,"");by("result-track",yy(t?.title||t?.name||"")||n,[yy(t?.artist||""),yy(t?.album||"")].filter(Boolean).join(" – ")||r.join(/* inlined export .folderDelimiter */"/"),()=>Cy([e],e,"song"))}if(!cy.firstChild){const e=document.createElement("li");e.className="empty",e.textContent=U.noResults,cy.appendChild(e)}}function by(e,t,r,n){const o=document.createElement("li");o.className=e;const s=document.createElement("span");if(s.className="name",s.textContent=t,o.appendChild(s),r){const e=document.createElement("small");e.textContent=" "+r,o.appendChild(e)}const a=document.createElement("a");a.className="action add",a.href="#",a.title="result-track"==e?U.playSong:U.playFolder,a.innerHTML=ye,a.onclick=async e=>{e.preventDefault(),e.stopPropagation();try{await n()}catch(e){Q(e,U.listingFailed)}},o.appendChild(document.createTextNode(" ")),o.appendChild(a),cy.appendChild(o)}async function Cy(e,t,r){Mp.appendChild(eg(r,t,t));
 // one at a time, to keep the queue in the listed order
-for(const r of e){const e={Key:r};try{try{e.Metadata=await Im(r,uy.get(r))}catch(t){e.Metadata={}}e.href=await Rm(r),Zp(t),await ug(e)}catch(e){Q(e,U.trackFailed(r.replace(/^.*\//,"")))}}}let Cy=null;
+for(const r of e){const e={Key:r};try{try{e.Metadata=await Im(r,fy.get(r))}catch(t){e.Metadata={}}e.href=await Rm(r),Yp(t),await fg(e)}catch(e){Q(e,U.trackFailed(r.replace(/^.*\//,"")))}}}let vy=null;
 // onProgress gets {done, total, failed} after each track. The result is the
 // same, also when the scan was stopped before the end.
-function vy(){Cy&&(Cy.stopped=!0)}window.addEventListener("unhandledrejection",e=>Q(e.reason)),window.addEventListener("error",e=>{
+function Sy(){vy&&(vy.stopped=!0)}window.addEventListener("unhandledrejection",e=>Q(e.reason)),window.addEventListener("error",e=>{
 // a resource that didn't load, such as an image, is not an error of the code
 e.error&&Q(e.error)});
 // a link from the QR code of another device carries its settings
-let Sy,By=!1;try{const e=localStorage.getItem(j);By=function(e=location.hash){if(!e.startsWith(`#${le}=`))return!1;history.replaceState(null,"",location.pathname+location.search);const t=fe(new URLSearchParams(e.slice(1)).get(le));for(const e of ce)"string"==typeof t[e]&&localStorage.setItem(e,t[e]);return!0}(),
+let By,Py=!1;try{const e=localStorage.getItem(j);Py=function(e=location.hash){if(!e.startsWith(`#${le}=`))return!1;history.replaceState(null,"",location.pathname+location.search);const t=fe(new URLSearchParams(e.slice(1)).get(le));for(const e of ce)"string"==typeof t[e]&&localStorage.setItem(e,t[e]);return!0}(),
 // the texts are set as the app starts
-By&&localStorage.getItem(j)!=e&&location.reload()}catch(ts){
+Py&&localStorage.getItem(j)!=e&&location.reload()}catch(ts){
 // told once the page is up
-Sy=ts}const Py=localStorage.getItem("playerColor");Py&&document.documentElement.style.setProperty("--base-hue",Py);const Ey=document.querySelector("audio-player");if(!Ey)throw new Error("Didn't find an audio-player element in HTML document");Ey.id||(Ey.id="my-audio-player");const xy=document.querySelector("audio-browser");if(!xy)throw new Error("Didn't find an audio-browser element in HTML document");const Ay=()=>["endpoint","region","bucketName"].map(Pm).join(" ");let Ty=Ay();function Ry(){!
+By=ts}const Ey=localStorage.getItem("playerColor");Ey&&document.documentElement.style.setProperty("--base-hue",Ey);const xy=document.querySelector("audio-player");if(!xy)throw new Error("Didn't find an audio-player element in HTML document");xy.id||(xy.id="my-audio-player");const Ay=document.querySelector("audio-browser");if(!Ay)throw new Error("Didn't find an audio-browser element in HTML document");const Ty=()=>["endpoint","region","bucketName"].map(Pm).join(" ");let Ry=Ty();function My(){!
 // Without keys the bucket is public: the requests aren't signed, and the
 // tracks and covers are at their plain addresses. The region only matters
 // for signing, so any will do when it's not set.
@@ -1141,19 +1145,19 @@ function(){const e={};Tm.forEach(t=>{e[t]=Pm(t)});const t=!e.accessKeyId&&!e.sec
 // with the headers of a request that had no Origin, such as the audio
 // element's: then the browser hides the metadata. The app's own requests
 // get an address of their own, which only requests with an Origin use.
-t&&Em.middlewareStack.add(e=>t=>(t.request.query["x-cors"]="1",e(t)),{step:"build",name:"publicQuery"})}(),hy(),Vm?.querySelector(":scope > ol:not(.playlists)")?.remove(),Xm&&(Xm.textContent="");
+t&&Em.middlewareStack.add(e=>t=>(t.request.query["x-cors"]="1",e(t)),{step:"build",name:"publicQuery"})}(),my(),Vm?.querySelector(":scope > ol:not(.playlists)")?.remove(),Xm&&(Xm.textContent="");
 // The playlists in the address are read first, and the first track gets
 // the connection to itself: the library waits for it. Folders and songs in
 // the address are found in the listing, so it can't wait for them.
 const e=function(){const e=[...Qm.playlist];return Qm.playlist.clear(),e}
 // folders and songs in the address are found in the listing
-();var t;e.length&&!(Qm.folder.size>0||Qm.song.size>0)&&(ny||(ny=!0,document.addEventListener("canplay",oy,!0),ry=setTimeout(sy,/* inlined export .LIBRARY_HOLD_TIMEOUT */2e4))),async function(e){for(const t of e)try{await op(await sp(t))}catch(e){Q(e,U.playlistFailed(t.replace(/^.*\//,"")))}}(e).finally(()=>{
+();var t;e.length&&!(Qm.folder.size>0||Qm.song.size>0)&&(oy||(oy=!0,document.addEventListener("canplay",sy,!0),ny=setTimeout(ay,/* inlined export .LIBRARY_HOLD_TIMEOUT */2e4))),async function(e){for(const t of e)try{await op(await sp(t))}catch(e){Q(e,U.playlistFailed(t.replace(/^.*\//,"")))}}(e).finally(()=>{
 // nothing came of them: nothing to wait for
-document.querySelector("audio-player audio-track")||sy()}),t=()=>Jm(Vm),ny?ty=t:t()}!function(e){const t=document.createElement("div");t.className="search",ay=document.createElement("input"),ay.type="search",ay.title=U.search,ay.placeholder=U.searchPlaceholder,ay.autocomplete="off",ay.oninput=()=>{clearTimeout(cy),cy=setTimeout(wy,/* inlined export .SEARCH_DEBOUNCE */250)},ay.onkeydown=e=>{"Escape"==e.key&&(ay.value="",wy())},iy=document.createElement("ul"),iy.className="search-results",t.appendChild(ay),t.appendChild(iy),e.appendChild(t)}(function(e,t){const r=document.createElement("nav");r.id="skipNav",Gm=document.createElement("ol");const n=document.createElement("li"),o=document.createElement("a");o.href=`#${t.id}`,o.title=U.jumpToPlayer,
+document.querySelector("audio-player audio-track")||ay()}),t=()=>Jm(Vm),oy?ry=t:t()}!function(e){const t=document.createElement("div");t.className="search",iy=document.createElement("input"),iy.type="search",iy.title=U.search,iy.placeholder=U.searchPlaceholder,iy.autocomplete="off",iy.oninput=()=>{clearTimeout(ly),ly=setTimeout(ky,/* inlined export .SEARCH_DEBOUNCE */250)},iy.onkeydown=e=>{"Escape"==e.key&&(iy.value="",ky())},cy=document.createElement("ul"),cy.className="search-results",t.appendChild(iy),t.appendChild(cy),e.appendChild(t)}(function(e,t){const r=document.createElement("nav");r.id="skipNav",Gm=document.createElement("ol");const n=document.createElement("li"),o=document.createElement("a");o.href=`#${t.id}`,o.title=U.jumpToPlayer,
 // an image: not every font has the play symbol
 o.innerHTML=me,n.appendChild(o),Gm.appendChild(n),r.appendChild(Gm),Vm=document.createElement("nav");const s=document.createElement("ol");s.id="playlists",s.className="playlists";const a=document.createElement("li");a.className="folder",a.innerHTML=U.playlistTitle,a.onclick=function(e){
 // not a click on a playlist in it
-e.target==this&&(e.preventDefault(),e.stopPropagation(),this.classList.toggle("open"))},Xm=document.createElement("ol"),Xm.className="playlists",a.appendChild(Xm),s.appendChild(a);const i=document.createElement("li"),c=document.createElement("a");return c.title=U.jumpTo(U.playlistTitle),c.href="#playlists",c.innerHTML="#",i.appendChild(c),Gm.appendChild(i),e.innerHTML="",e.appendChild(r),Vm.appendChild(s),e.appendChild(Vm),r}(xy,Ey));const My=// ./src/settings.js
+e.target==this&&(e.preventDefault(),e.stopPropagation(),this.classList.toggle("open"))},Xm=document.createElement("ol"),Xm.className="playlists",a.appendChild(Xm),s.appendChild(a);const i=document.createElement("li"),c=document.createElement("a");return c.title=U.jumpTo(U.playlistTitle),c.href="#playlists",c.innerHTML="#",i.appendChild(c),Gm.appendChild(i),e.innerHTML="",e.appendChild(r),Vm.appendChild(s),e.appendChild(Vm),r}(Ay,xy));const Iy=// ./src/settings.js
 // addTransferControls comes from the platform: the ways of moving the
 // settings code between devices differ between the PWA and the TV app.
 // scanLibrary and stopLibraryScan run the library scan (scan.js).
@@ -1184,9 +1188,9 @@ if(v.value!=(localStorage.getItem(j)||""))return localStorage.setItem(j,v.value)
 // ss.classList.remove('open')
 i.close()}catch(e){E.textContent=e.toString()}};return i.appendChild(A),i.appendChild(l),i.appendChild(M),document.body.appendChild(i),document.body.appendChild(H),e.appendChild(c),{showError(e){
 // ss.classList.add('open')
-i.showModal(),E.textContent=e.toString()}}}(Ey,{onSave:()=>{
+i.showModal(),E.textContent=e.toString()}}}(xy,{onSave:()=>{
 // the queued tracks are from the old source
-Ay()!=Ty&&(Ty=Ay(),function(){for(const e of[...Mp.children])e.dataset.source.startsWith("offline:")||e.querySelector("a").click()}()),Ry(),Ep()},addTransferControls:
+Ty()!=Ry&&(Ry=Ty(),function(){for(const e of[...Mp.children])e.dataset.source.startsWith("offline:")||e.querySelector("a").click()}()),My(),Ep()},addTransferControls:
 // the settings code moves through the clipboard or a QR code. The QR code is
 // a link, so a camera app can open it, and the scanner here reads it as well
 function({dialog:e,container:t,addButton:r,exportCode:n,importCode:o,setMessage:s}){r(U.copySettings,async()=>{await navigator.clipboard.writeText(n()),s(U.copied)}),r(U.pasteSettings,async()=>{let e;try{e=await navigator.clipboard.readText()}catch(e){
@@ -1197,54 +1201,54 @@ return f(),void s(e.message)}requestAnimationFrame(h)}},m=r(U.scanQR,async()=>{i
 // the camera would stay on
 throw f(),e}m.textContent=U.stopScan,requestAnimationFrame(h)}});t.appendChild(a),e.addEventListener("close",()=>{i(),f()})},hasLocalData:async function(){return await Cm,await vm(km.transaction("meta","readonly").objectStore("meta").count())>0},clearLocalData:async()=>{
 // a running scan would put the old metadata back
-vy(),
+Sy(),
 // the metadata cache only: the offline playlists and tracks are kept
-await async function(){await Cm,await vm(km.transaction("meta","readwrite").objectStore("meta").clear())}(),hy(),await Ym()},
+await async function(){await Cm,await vm(km.transaction("meta","readwrite").objectStore("meta").clear())}(),my(),await Ym()},
 // the sort names may be new
-scanLibrary:e=>async function(e){const t={done:0,total:0,failed:0,stopped:!1};Cy=t;try{const r=await my();if(!r)throw new Error("No bucket");t.total=r.length,e(t);let n=0;const o=async()=>{for(;!t.stopped&&n<r.length;){const o=r[n++];try{await Im(o,py(o),"library")}catch(e){t.failed++}t.done++,e(t)}};return await Promise.all(Array.from({length:4},o)),t}finally{Cy=null}}(e).finally(Ym),stopLibraryScan:vy});!function(e){
+scanLibrary:e=>async function(e){const t={done:0,total:0,failed:0,stopped:!1};vy=t;try{const r=await py();if(!r)throw new Error("No bucket");t.total=r.length,e(t);let n=0;const o=async()=>{for(;!t.stopped&&n<r.length;){const o=r[n++];try{await Im(o,gy(o),"library")}catch(e){t.failed++}t.done++,e(t)}};return await Promise.all(Array.from({length:4},o)),t}finally{vy=null}}(e).finally(Ym),stopLibraryScan:Sy});!function(e,{oneAudioElement:t=!1}={}){Wp=t;
 // Safari: this is a music player, which plays on in the background
-try{"audioSession"in navigator&&(navigator.audioSession.type="playback")}catch(e){console.warn("Setting the audio session type failed:",e)}const t=document.createElement("div");t.id="buttons";const r=document.createElement("button");r.title=U.previous,
+try{"audioSession"in navigator&&(navigator.audioSession.type="playback")}catch(e){console.warn("Setting the audio session type failed:",e)}const r=document.createElement("div");r.id="buttons";const n=document.createElement("button");n.title=U.previous,
 // prev.textContent = '⏮'
-r.innerHTML=pe,t.appendChild(r),Rp=document.createElement("button"),Rp.title=U.play,
+n.innerHTML=pe,r.appendChild(n),Rp=document.createElement("button"),Rp.title=U.play,
 // play.textContent = '⏵'
-Rp.innerHTML=me,Rp.disabled=!0,t.appendChild(Rp);const n=document.createElement("button");n.title=U.next,
+Rp.innerHTML=me,Rp.disabled=!0,r.appendChild(Rp);const o=document.createElement("button");o.title=U.next,
 // next.textContent = '⏭'
-n.innerHTML=ge,t.appendChild(n),e.appendChild(t),Tp=Vp("A"),qp=Vp("B"),Tp.classList.add("current"),e.append(Tp,qp),Qp();const o=document.createElement("div");o.className="audio-time",Lp=document.createElement("input"),Lp.id="cursor",
+o.innerHTML=ge,r.appendChild(o),e.appendChild(r),Tp=Xp("A"),qp=Xp("B"),Tp.classList.add("current"),e.append(Tp,qp),Jp();const s=document.createElement("div");s.className="audio-time",Lp=document.createElement("input"),Lp.id="cursor",
 // cursor.type = 'time'
 // cursor.step = '1'
 // cursor.value = '00:00:00'
 Lp.size=5,Lp.pattern="[0-9]{1,2}:[0-9]{2}",Lp.value="0:00",Lp.disabled=!0,Lp.addEventListener("blur",e=>{const t=e.target.value.split(":"),r=60*parseInt(t[0])+parseInt(t[1]);
 // text that isn't a time is ignored; the cursor shows the time again
-Number.isFinite(r)&&(Tp.currentTime=r)}),o.appendChild(Lp),o.appendChild(document.createTextNode(" / ")),Np=document.createElement("input"),Np.id="trackLength",
+Number.isFinite(r)&&(Tp.currentTime=r)}),s.appendChild(Lp),s.appendChild(document.createTextNode(" / ")),Np=document.createElement("input"),Np.id="trackLength",
 // trackLength.type = 'time'
 // trackLength.step = '1'
-Np.size=5,Np.value="0:00",Np.disabled=!0,o.appendChild(Np),e.appendChild(o);const s=document.createElement("div");s.className="track",$p=document.createElement("input"),$p.id="trackTitle",$p.size=70,$p.className="track-title",$p.disabled=!0,s.appendChild($p),e.appendChild(s),Op=document.createElement("input"),Op.type="range",Op.id="progress",Op.addEventListener("input",e=>{
+Np.size=5,Np.value="0:00",Np.disabled=!0,s.appendChild(Np),e.appendChild(s);const a=document.createElement("div");a.className="track",$p=document.createElement("input"),$p.id="trackTitle",$p.size=70,$p.className="track-title",$p.disabled=!0,a.appendChild($p),e.appendChild(a),Op=document.createElement("input"),Op.type="range",Op.id="progress",Op.addEventListener("input",e=>{
 // Safari gets confused from scrubbing
 // too many concurrent seek requests set currentTime to 0
 // avoid many seeks by setting currentTime on a timeOut
 Up=parseInt(e.target.value),zp&&
 // cancel previous seek request
-clearTimeout(zp),zp=setTimeout(function(){Tp.currentTime=Up},/* inlined export .SEEK_TARGET_TIMEOUT */100)}),e.appendChild(Op);const a=function(){const e=parseInt(Tp.duration);Op.max=e,Np.value=parseInt(e/60)+":"+parseInt(e%60).toString().padStart(2,"0"),Lp.max="0:"+Np.value},i=e=>{const t=t=>r=>{e===Tp&&t(r)};e.onloadedmetadata=t(a),e.oncanplay=t(e=>{Rp.disabled=!1}),e.onplay=t(()=>{
+clearTimeout(zp),zp=setTimeout(function(){Tp.currentTime=Up},/* inlined export .SEEK_TARGET_TIMEOUT */100)}),e.appendChild(Op);const i=function(){const e=parseInt(Tp.duration);Op.max=e,Np.value=parseInt(e/60)+":"+parseInt(e%60).toString().padStart(2,"0"),Lp.max="0:"+Np.value},c=e=>{const t=t=>r=>{e===Tp&&t(r)};e.onloadedmetadata=t(i),e.oncanplay=t(e=>{Rp.disabled=!1}),e.onplay=t(()=>{
 // play.textContent = '⏸'
-Rp.innerHTML=he,Lp.disabled=!0,Jp("playing"),Rp.classList.remove("stalled"),(async()=>{_p&&(_p=clearTimeout(_p));try{
+Rp.innerHTML=he,Lp.disabled=!0,Zp("playing"),Rp.classList.remove("stalled"),(async()=>{_p&&(_p=clearTimeout(_p));try{
 // missing from some browser engines, such as older TVs
 jp=await(navigator.wakeLock?.request("screen"))}catch(e){console.warn(`${e.name}: ${e.message}`)}})()}),e.onpause=t(()=>{
 // 'pause' also fires when a track ends; the next track starts right away,
 // so don't tell iOS that the session is paused
 e.ended||(
 // play.textContent = '⏵'
-Lp.disabled=!1,Rp.innerHTML=me,Jp("paused"),_p=setTimeout(()=>jp?.release(),/* inlined export .WAKELOCK_CLEAR_TIMEOUT */3e5))}),
+Lp.disabled=!1,Rp.innerHTML=me,Zp("paused"),_p=setTimeout(()=>jp?.release(),/* inlined export .WAKELOCK_CLEAR_TIMEOUT */3e5))}),
 // 'waiting' fires between tracks while the next one loads, and when the
 // network is slow; playing goes on, so iOS mustn't hear that it is paused
-e.onwaiting=t(e=>{Rp.classList.add("stalled"),Lp.disabled=!1}),e.onplaying=t(e=>{Kp=0,dg(),Rp.innerHTML=he,Rp.classList.remove("stalled"),Jp("playing"),Lp.disabled=!0}),e.onstalled=t(e=>{
+e.onwaiting=t(e=>{Rp.classList.add("stalled"),Lp.disabled=!1}),e.onplaying=t(e=>{Kp=0,ug(),Rp.innerHTML=he,Rp.classList.remove("stalled"),Zp("playing"),Lp.disabled=!0}),e.onstalled=t(e=>{
 // play.innerHTML = '<span class="fa-solid fa-play"></span>'
-Rp.classList.add("stalled"),Lp.disabled=!1}),e.onended=t(()=>og()),
+Rp.classList.add("stalled"),Lp.disabled=!1}),e.onended=t(()=>sg()),
 // a track that won't play is skipped, unless none of them play
 e.onerror=t(()=>{
 // not the empty source of an emptied queue
-Tp.getAttribute("src")&&(Q(Tp.error,U.trackFailed($p.value)),++Kp<Ip.querySelectorAll("audio-track").length&&og())}),e.addEventListener("canplay",()=>cg(e,"canplay")),e.addEventListener("canplaythrough",()=>cg(e,"canplaythrough")),e.addEventListener("timeupdate",t(c))};n.onclick=e=>{og()},Mp=document.createElement("ol"),Mp.className="collection",e.appendChild(Mp),Om(Mp),Ip=document.createElement("nav"),e.appendChild(Ip),
+Tp.getAttribute("src")&&(Q(Tp.error,U.trackFailed($p.value)),++Kp<Ip.querySelectorAll("audio-track").length&&sg())}),e.addEventListener("canplay",()=>lg(e,"canplay")),e.addEventListener("canplaythrough",()=>lg(e,"canplaythrough")),e.addEventListener("timeupdate",t(l))};o.onclick=e=>{sg()},Mp=document.createElement("ol"),Mp.className="collection",e.appendChild(Mp),Om(Mp),Ip=document.createElement("nav"),e.appendChild(Ip),
 // a change in the queue may change the next track
-new MutationObserver(dg).observe(Ip,{childList:!0});const c=()=>{
+new MutationObserver(ug).observe(Ip,{childList:!0});const l=()=>{
 // 'stalled' only says that no data came for a while: a track that plays
 // with data in hand is not stalled, and nothing else clears the pulse
 !Tp.paused&&Tp.readyState>=Tp.HAVE_FUTURE_DATA&&Rp.classList.remove("stalled");const e=parseInt(Tp.currentTime)
@@ -1254,7 +1258,7 @@ new MutationObserver(dg).observe(Ip,{childList:!0});const c=()=>{
         parseInt(seconds/60).toString().padStart(2, '0'),
         parseInt(seconds%60).toString().padStart(2, '0')
       ].join(':')
-  */;Lp.value=parseInt(e/60)+":"+parseInt(e%60).toString().padStart(2,"0"),Op.value=e,"mediaSession"in navigator&&"setPositionState"in navigator.mediaSession&&Tp.duration&&Tp.currentTime&&navigator.mediaSession.setPositionState({duration:Tp.duration,position:Tp.currentTime,playbackRate:Tp.playbackRate})};i(Tp),i(qp),r.onclick=e=>{sg()},Rp.onclick=async e=>{if(!Tp.getAttribute("src"))return og();Tp.paused?await Tp.play().catch(e=>console.warn("Playback failed:",e)):Tp.pause()},"mediaSession"in navigator&&(navigator.mediaSession.setActionHandler("play",e=>{Tp.play().catch(e=>console.warn("Playback failed:",e))}),navigator.mediaSession.setActionHandler("pause",e=>{Tp.pause()}),navigator.mediaSession.setActionHandler("previoustrack",sg),navigator.mediaSession.setActionHandler("nexttrack",og),navigator.mediaSession.setActionHandler("stop",e=>{Tp.pause()}),navigator.mediaSession.setActionHandler("seekto",e=>{Tp.currentTime=e.seekTime}),navigator.mediaSession.setActionHandler("seekbackward",e=>{Tp.currentTime=Math.max(Tp.currentTime-e.seekOffset,0)}),navigator.mediaSession.setActionHandler("seekforward",e=>{Tp.currentTime=Math.min(Tp.currentTime+e.seekOffset,Tp.duration)}))}(Ey),function(e){
+  */;Lp.value=parseInt(e/60)+":"+parseInt(e%60).toString().padStart(2,"0"),Op.value=e,"mediaSession"in navigator&&"setPositionState"in navigator.mediaSession&&Tp.duration&&Tp.currentTime&&navigator.mediaSession.setPositionState({duration:Tp.duration,position:Tp.currentTime,playbackRate:Tp.playbackRate})};c(Tp),c(qp),n.onclick=e=>{ag()},Rp.onclick=async e=>{if(!Tp.getAttribute("src"))return sg();Tp.paused?await Tp.play().catch(e=>console.warn("Playback failed:",e)):Tp.pause()},"mediaSession"in navigator&&(navigator.mediaSession.setActionHandler("play",e=>{Tp.play().catch(e=>console.warn("Playback failed:",e))}),navigator.mediaSession.setActionHandler("pause",e=>{Tp.pause()}),navigator.mediaSession.setActionHandler("previoustrack",ag),navigator.mediaSession.setActionHandler("nexttrack",sg),navigator.mediaSession.setActionHandler("stop",e=>{Tp.pause()}),navigator.mediaSession.setActionHandler("seekto",e=>{Tp.currentTime=e.seekTime}),navigator.mediaSession.setActionHandler("seekbackward",e=>{Tp.currentTime=Math.max(Tp.currentTime-e.seekOffset,0)}),navigator.mediaSession.setActionHandler("seekforward",e=>{Tp.currentTime=Math.min(Tp.currentTime+e.seekOffset,Tp.duration)}))}(xy,{oneAudioElement:/* inlined export .oneAudioElement */!1}),function(e){
 // class 'playlists' keeps getFolders from using these lists for folders
 hp=document.createElement("ol"),hp.id="offline-playlists",hp.className="playlists",hp.hidden=!0;const t=document.createElement("li");t.className="folder",t.textContent=U.offlinePlaylistsTitle+" ",t.onclick=function(e){
 // not a click on a playlist in it
@@ -1262,11 +1266,9 @@ e.target==this&&(e.preventDefault(),e.stopPropagation(),this.classList.toggle("o
 // ask the browser not to evict offline storage under storage pressure
 navigator.storage?.persist?.(),await Ap(),Ep()}(a.value.trim())}catch(e){Q(e,"QuotaExceededError"==e.name?U.storageFull:U.offlineSaveFailed)}},kp.then(async()=>{await Ap(),
 // offline, the offline playlists are all there is to play
-navigator.onLine||hp.querySelector(".folder").classList.add("open"),Ep()}).catch(e=>Q(e)),window.addEventListener("online",()=>{lp.clear(),Ep()})}(Ey),// ./src/platform/pwa.js
-// The web app: browsers on phones and computers
-function(){const e=document.querySelector("audio-player");!function(e,t,{collapsed:r=!1}={}){Ag=e,Tg=t,Pg=document.createElement("button"),Pg.type="button",Pg.className="queue-summary",Eg=document.createElement("span"),Eg.className="count",xg=document.createElement("span"),xg.className="next",Pg.appendChild(Eg),Pg.appendChild(xg),Pg.onclick=()=>Rg()?Ig():Lg(),e.insertBefore(Pg,Tg),r?Lg():Ig(),
+navigator.onLine||hp.querySelector(".folder").classList.add("open"),Ep()}).catch(e=>Q(e)),window.addEventListener("online",()=>{lp.clear(),Ep()})}(xy),function(){const e=document.querySelector("audio-player");!function(e,t,{collapsed:r=!1}={}){Tg=e,Rg=t,Eg=document.createElement("button"),Eg.type="button",Eg.className="queue-summary",xg=document.createElement("span"),xg.className="count",Ag=document.createElement("span"),Ag.className="next",Eg.appendChild(xg),Eg.appendChild(Ag),Eg.onclick=()=>Mg()?Lg():Ng(),e.insertBefore(Eg,Rg),r?Ng():Lg(),
 // the playing track changes by class
-new MutationObserver(Mg).observe(Tg,{childList:!0,subtree:!0,attributeFilter:["class"]}),Mg()}(e,Ip),
+new MutationObserver(Ig).observe(Rg,{childList:!0,subtree:!0,attributeFilter:["class"]}),Ig()}(e,Ip),
 // Now Playing opens with the expand button at the top right, or a tap on
 // the album art, and closes with its own button or Esc. The page under it
 // doesn't scroll meanwhile. On a computer, the expand button also makes the
@@ -1275,9 +1277,9 @@ new MutationObserver(Mg).observe(Tg,{childList:!0,subtree:!0,attributeFilter:["c
 // Playing to open, and the button only toggles full screen. Phones keep their
 // browser as it is, and hide the button then: iPhones can't make a page full
 // screen.
-function(e,t){const r=document.createElement("button");r.type="button",r.className="np-open",r.innerHTML=be,e.appendChild(r);const n=window.matchMedia("(hover: hover) and (pointer: fine)");let o=!1;const s=Xg({controls:!0,onClose:()=>{document.documentElement.style.overflow="",s.contains(document.activeElement)&&r.focus(),o&&document.fullscreenElement&&document.exitFullscreen().catch(e=>console.warn("Leaving full screen failed:",e)),o=!1}}),a=()=>{const t=e.classList.contains("idle"),n=t&&document.fullscreenElement,o=n?U.exitFullScreen:t?U.fullScreen:U.nowPlaying;r.title=o,r.setAttribute("aria-label",o),r.innerHTML=n?Ce:be};
+function(e,t){const r=document.createElement("button");r.type="button",r.className="np-open",r.innerHTML=be,e.appendChild(r);const n=window.matchMedia("(hover: hover) and (pointer: fine)");let o=!1;const s=Gg({controls:!0,onClose:()=>{document.documentElement.style.overflow="",s.contains(document.activeElement)&&r.focus(),o&&document.fullscreenElement&&document.exitFullscreen().catch(e=>console.warn("Leaving full screen failed:",e)),o=!1}}),a=()=>{const t=e.classList.contains("idle"),n=t&&document.fullscreenElement,o=n?U.exitFullScreen:t?U.fullScreen:U.nowPlaying;r.title=o,r.setAttribute("aria-label",o),r.innerHTML=n?Ce:be};
 // the button's text and icon follow what it does
-new MutationObserver(a).observe(e,{attributes:!0,attributeFilter:["class"]}),document.addEventListener("fullscreenchange",a),a();const i=()=>{(document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()).catch(e=>Q(e,U.fullScreenFailed))},c=e=>{Qg()?(document.documentElement.style.overflow="hidden",s.querySelector(".np-close").focus(),e.currentTarget==r&&n.matches&&document.fullscreenEnabled&&!document.fullscreenElement&&(o=!0,document.documentElement.requestFullscreen().catch(e=>{o=!1,console.warn("Going full screen failed:",e)}))):e.currentTarget==r&&n.matches&&document.fullscreenEnabled&&i()};r.onclick=c,t.querySelector(".now-art").onclick=c,document.addEventListener("fullscreenchange",()=>{o&&!document.fullscreenElement&&Jg()}),window.addEventListener("keydown",e=>{"Escape"==e.key&&Gg()&&Jg()})}(e,vg(e,{hint:U.addHintClick})),function(e){z=document.createElement("div"),z.className="toast",z.setAttribute("role","status"),z.hidden=!0,document.body.appendChild(z),new MutationObserver(e=>{for(const t of e)for(const e of t.addedNodes)e.nodeType==Node.ELEMENT_NODE&&e.matches("audio-track")&&F(e)}).observe(e,{childList:!0})}
+new MutationObserver(a).observe(e,{attributes:!0,attributeFilter:["class"]}),document.addEventListener("fullscreenchange",a),a();const i=()=>{(document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()).catch(e=>Q(e,U.fullScreenFailed))},c=e=>{Jg()?(document.documentElement.style.overflow="hidden",s.querySelector(".np-close").focus(),e.currentTarget==r&&n.matches&&document.fullscreenEnabled&&!document.fullscreenElement&&(o=!0,document.documentElement.requestFullscreen().catch(e=>{o=!1,console.warn("Going full screen failed:",e)}))):e.currentTarget==r&&n.matches&&document.fullscreenEnabled&&i()};r.onclick=c,t.querySelector(".now-art").onclick=c,document.addEventListener("fullscreenchange",()=>{o&&!document.fullscreenElement&&Zg()}),window.addEventListener("keydown",e=>{"Escape"==e.key&&Qg()&&Zg()})}(e,Sg(e,{hint:U.addHintClick})),function(e){z=document.createElement("div"),z.className="toast",z.setAttribute("role","status"),z.hidden=!0,document.body.appendChild(z),new MutationObserver(e=>{for(const t of e)for(const e of t.addedNodes)e.nodeType==Node.ELEMENT_NODE&&e.matches("audio-track")&&F(e)}).observe(e,{childList:!0})}
 // the name of a folder, playlist, song or search result in the library
 (Ip),
 // a click on a name in the library adds it: the add link covers the row.
@@ -1286,4 +1288,4 @@ document.querySelector("audio-browser").addEventListener("click",e=>{const t=e.i
 // returns what is being added, until the count is final
 function(e,t){H={name:e,count:0,onFirst:t},V(U.adding(e)),K(15e3)}(function(e){const t=[...e.childNodes].find(e=>e.nodeType==Node.TEXT_NODE&&e.textContent.trim());return(t?.textContent||e.querySelector(".name")?.textContent||"").trim().replace(/\.(mp3|json)$/,"")}(t.parentNode))},!0),window.addEventListener("keydown",e=>{if("button"==e.target.tagName.toLowerCase())return;if("range"==e.target.type)return;if("search"==e.target.type)return;let t=document.querySelector("audio-track:focus-within"),r=!1;switch(e.key){case" ":e.preventDefault(),Rp.click();break;
 // case "Enter": play.disabled = true; audio.src = current.dataset.src; break
-case"Enter":t.querySelector(".name a")?.click();break;case"ArrowRight":og();break;case"ArrowLeft":sg();break;case"ArrowDown":e.preventDefault(),t&&(r=t.nextElementSibling?t.nextElementSibling:t.parentNode.firstElementChild);break;case"ArrowUp":e.preventDefault(),t&&(r=t.previousElementSibling?t.previousElementSibling:t.parentNode.lastElementChild)}r&&r.focus()}),"serviceWorker"in navigator&&navigator.serviceWorker.register("./sw.js").catch(e=>console.warn("Service worker registration failed:",e))}(),By&&W(U.settingsImported),Sy&&Q(Sy,U.invalidLink);try{Ry()}catch(ts){My.showError(ts)}
+case"Enter":t.querySelector(".name a")?.click();break;case"ArrowRight":sg();break;case"ArrowLeft":ag();break;case"ArrowDown":e.preventDefault(),t&&(r=t.nextElementSibling?t.nextElementSibling:t.parentNode.firstElementChild);break;case"ArrowUp":e.preventDefault(),t&&(r=t.previousElementSibling?t.previousElementSibling:t.parentNode.lastElementChild)}r&&r.focus()}),"serviceWorker"in navigator&&navigator.serviceWorker.register("./sw.js").catch(e=>console.warn("Service worker registration failed:",e))}(),Py&&W(U.settingsImported),By&&Q(By,U.invalidLink);try{My()}catch(ts){Iy.showError(ts)}
