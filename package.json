@@ -44,5 +44,8 @@
     "webpack": "latest",
     "webpack-cli": "latest",
     "webpack-dev-server": "latest"
+  },
+  "allowScripts": {
+    "fsevents": false
   }
 }
