@@ -135,7 +135,7 @@ audio-player, audio-browser {
 /* The player: a small Now Playing (player-bar.js), the buttons, the time
    and the settings in a row, and a thin progress bar under them. The queue
    below starts with its summary row (queue.js); expanded, its sources and
-   Save offline come before the tracks. A grid, as Chromium 76 has no gap
+   Shuffle and Save offline come before the tracks. A grid, as Chromium 76 has no gap
    in flexbox. */
 audio-player {
     align-items: center;
@@ -144,7 +144,7 @@ audio-player {
     grid-template-areas:
         "now buttons time gear expand"
         "progress progress progress progress progress"
-        "summary offline offline offline offline"
+        "summary actions actions actions actions"
         "sources sources sources sources sources"
         "queue queue queue queue queue";
     grid-template-columns: 1fr auto auto auto auto;
@@ -162,7 +162,7 @@ audio-player button.np-open { grid-area: expand; }
 audio-player #progress { grid-area: progress; }
 audio-player .queue-summary { grid-area: summary; }
 audio-player ol.collection { grid-area: sources; }
-audio-player button.save-offline { grid-area: offline; }
+audio-player .queue-actions { grid-area: actions; }
 audio-player > nav { grid-area: queue; }
 /* the title is in the small Now Playing */
 audio-player div.track {
@@ -419,26 +419,39 @@ audio-player ol.collection svg {
     height: 1.1em;
     width: 1.1em;
 }
-/* across the columns of the controls, so as not to widen them */
-audio-player button.save-offline {
+/* Shuffle and Save offline, across the columns of the controls, so as not
+   to widen them */
+audio-player .queue-actions {
     align-self: center;
+    display: flex;
+    justify-self: end;
+    margin: 0 0 0.5em 0;
+}
+audio-player .queue-actions[hidden], audio-player .queue-actions button[hidden] {
+    display: none;
+}
+audio-player .queue-actions button {
     background-color: var(--glass);
     border: 0;
     border-radius: 2em;
     color: var(--text);
     font-size: 1em;
-    justify-self: end;
-    margin: 0 0 0.5em 0;
+    margin: 0 0 0 0.6em;
     padding: 0.4em 1.1em;
     white-space: nowrap;
 }
-audio-player button.save-offline svg {
+audio-player .queue-actions button:first-child {
+    margin-left: 0;
+}
+audio-player .queue-actions button svg {
     fill: currentColor;
     height: 1.2em;
     vertical-align: -0.25em;
 }
-audio-player button.save-offline[hidden] {
-    display: none;
+/* drawn with lines */
+audio-player .queue-actions button.shuffle svg {
+    fill: none;
+    stroke: currentColor;
 }
 
 /* the queued tracks as rows: art, title, artist, album and length */

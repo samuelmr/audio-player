@@ -151,7 +151,7 @@
         audio-browser a.action.remove:hover {
             opacity: 1;
         }
-        audio-player button.save-offline:hover, .queue-summary:hover, audio-player ol.collection li:hover,
+        audio-player .queue-actions button:hover, .queue-summary:hover, audio-player ol.collection li:hover,
         audio-track:not(.playing):hover, audio-browser nav#skipNav ol a:hover,
         audio-browser a.action.add:hover, audio-browser nav#skipNav ul.search-results li:hover {
             background-color: var(--line);
@@ -258,7 +258,7 @@
     }
 
     /* phones: the art and title, the progress bar with the time under it,
-       and the buttons in a row of their own; Save offline is an icon */
+       and the buttons in a row of their own; Shuffle and Save offline are icons */
     @media (max-width: 40em) {
         :root {
             --gutter: 1em;
@@ -270,7 +270,7 @@
                 "progress progress progress"
                 "time time time"
                 "buttons buttons buttons"
-                "summary summary offline"
+                "summary summary actions"
                 "sources sources sources"
                 "queue queue queue";
             grid-template-columns: 1fr auto auto;
@@ -308,13 +308,13 @@
             height: 4em;
             width: 4em;
         }
-        audio-player button.save-offline {
+        audio-player .queue-actions button {
             border-radius: 50%;
             font-size: 0;
-            margin: 0;
+            margin-left: 0.4rem;
             padding: 0.6rem;
         }
-        audio-player button.save-offline svg {
+        audio-player .queue-actions button svg {
             display: block;
             height: 1.4rem;
             width: 1.4rem;

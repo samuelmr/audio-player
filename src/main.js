@@ -9,6 +9,7 @@ import { initSettings } from './settings.js'
 import { setting } from './defaults.js'
 import { initPlayer, clearQueue } from './player.js'
 import { initOffline, runDownloads } from './offline.js'
+import { initShuffle } from './shuffle.js'
 import { clearMeta, hasMeta } from './db.js'
 import { scanLibrary, stopLibraryScan } from './scan.js'
 import { initErrorHandling, reportError } from './errors.js'
@@ -92,7 +93,7 @@ const settings = initSettings(player, {
   stopLibraryScan,
 })
 initPlayer(player, {oneAudioElement: platform.oneAudioElement})
-initOffline(player)
+initShuffle(initOffline(player))
 platform.init()
 if (linkedSettings) notify(locale.settingsImported)
 if (linkError) reportError(linkError, locale.invalidLink)

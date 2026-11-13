@@ -63,6 +63,7 @@ export default {
   noResults: 'Aucun résultat',
 
   saveOffline: 'Enregistrer hors ligne',
+  shuffle: 'Mélanger',
   offlineName: 'Nom',
   offlinePlaylistsTitle: 'Listes de lecture hors ligne',
   playOfflinePlaylist: 'Ajouter le contenu de la liste de lecture à la file d’attente',

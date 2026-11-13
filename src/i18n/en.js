@@ -66,6 +66,7 @@ export default {
   noResults: 'No matches',
 
   saveOffline: 'Save offline',
+  shuffle: 'Shuffle',
   offlineName: 'Name',
   offlinePlaylistsTitle: 'Offline playlists',
   playOfflinePlaylist: 'Add playlist contents to queue',

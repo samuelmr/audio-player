@@ -19,9 +19,11 @@ export function initAdding(playerList) {
   toast.hidden = true
   document.body.appendChild(toast)
   new MutationObserver((mutations) => {
+    // a track removed and added again was moved, such as by Shuffle
+    const moved = new Set(mutations.flatMap(mutation => [...mutation.removedNodes]))
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
-        if (node.nodeType == Node.ELEMENT_NODE && node.matches('audio-track')) {
+        if (node.nodeType == Node.ELEMENT_NODE && node.matches('audio-track') && !moved.has(node)) {
           trackAdded(node)
         }
       }

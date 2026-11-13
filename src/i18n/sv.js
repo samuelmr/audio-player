@@ -63,6 +63,7 @@ export default {
   noResults: 'Inga träffar',
 
   saveOffline: 'Spara offline',
+  shuffle: 'Blanda',
   offlineName: 'Namn',
   offlinePlaylistsTitle: 'Offline-spellistor',
   playOfflinePlaylist: 'Lägg till spellistans innehåll i kön',

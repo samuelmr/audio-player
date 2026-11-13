@@ -63,6 +63,7 @@ export default {
   noResults: 'Ei osumia',
 
   saveOffline: 'Tallenna offline-käyttöön',
+  shuffle: 'Sekoita',
   offlineName: 'Nimi',
   offlinePlaylistsTitle: 'Offline-soittolistat',
   playOfflinePlaylist: 'Lisää soittolistan kappaleet jonoon',

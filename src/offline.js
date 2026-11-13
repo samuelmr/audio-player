@@ -62,10 +62,14 @@ export function initOffline(player) {
   saveOfflineButton.type = 'button'
   saveOfflineButton.className = 'save-offline'
   saveOfflineButton.innerHTML = offlineSVG + ' ' + locale.saveOffline
-  saveOfflineButton.hidden = true
-  player.insertBefore(saveOfflineButton, collection)
+  // the queue's actions: Save offline, and Shuffle (shuffle.js)
+  const queueActions = document.createElement('div')
+  queueActions.className = 'queue-actions'
+  queueActions.hidden = true
+  queueActions.appendChild(saveOfflineButton)
+  player.insertBefore(queueActions, collection)
   new MutationObserver(() => {
-    saveOfflineButton.hidden = !playerList.querySelector('audio-track')
+    queueActions.hidden = !playerList.querySelector('audio-track')
   }).observe(playerList, {childList: true})
 
   const saveOfflineDialog = document.createElement('dialog')
@@ -131,6 +135,7 @@ export function initOffline(player) {
     failedKeys.clear()
     runDownloads()
   })
+  return queueActions
 }
 
 export async function getOfflineUrl(key) {

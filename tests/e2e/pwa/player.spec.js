@@ -335,3 +335,32 @@ test.describe('with long tracks queued', () => {
     await expectPlaying(page, 'So What')
   })
 })
+
+test.describe('Shuffle', () => {
+  const shuffle = (page) => page.locator('audio-player button.shuffle')
+
+  test('is hidden with one track in the queue', async ({page}) => {
+    await page.locator('audio-browser li.song[data-key="KLF - 3 a.m. Eternal.mp3"] > a.add').click()
+    await expect(queue(page)).toHaveCount(1)
+    await expect(page.locator('audio-player button.save-offline')).toBeVisible()
+    await expect(shuffle(page)).toBeHidden()
+  })
+
+  test('reorders the queue, the playing track first, without counting the moved tracks as added', async ({page}) => {
+    await addFolder(page, 'Miles Davis')
+    await expectPlaying(page, 'So What')
+    await addFolder(page, 'ABBA')
+    await expect(queue(page)).toHaveCount(5)
+    const toast = page.locator('.toast')
+    await expect(toast).toHaveText('Added ABBA: 3 tracks')
+    // the same random order every time
+    await page.evaluate(() => { Math.random = () => 0 })
+    await shuffle(page).click()
+    await expect(queue(page).locator('.name a')).toHaveText(['So What', 'Dancing Queen', 'Knowing Me, Knowing You', 'Money, Money, Money', 'Freddie Freeloader'])
+    await expect(summary(page).locator('.next')).toHaveText('Up next: Dancing Queen – ABBA')
+    await expectPlaying(page, 'So What')
+    await expect(toast).toHaveText('Added ABBA: 3 tracks')
+    await next(page).click()
+    await expectPlaying(page, 'Dancing Queen')
+  })
+})

@@ -63,6 +63,7 @@ export default {
   noResults: 'Keine Treffer',
 
   saveOffline: 'Offline speichern',
+  shuffle: 'Mischen',
   offlineName: 'Name',
   offlinePlaylistsTitle: 'Offline-Playlists',
   playOfflinePlaylist: 'Inhalt der Playlist zur Warteschlange hinzufügen',

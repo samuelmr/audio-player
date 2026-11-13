@@ -370,6 +370,9 @@ contain your secret key, so don't share them.
   show only the next track, and opens it again.
 - *Save offline*, beside the queue's first row, saves what's in the queue as an offline playlist. Its tracks
   are downloaded in the background, and it can be played without a network.
+- *Shuffle*, beside *Save offline*, puts the queue in a random order, with the
+  playing track first. Press it again for another order. The address keeps
+  the order the music was added in.
 - The address of the page follows the queue, such as
   `index.html?folder=ABBA/Arrival&track=Miles%20Davis/So%20What.mp3&playlist=Road%20trip.json`
   (`folder`, `track` and `playlist` can each be repeated). Opening such an
@@ -485,6 +488,7 @@ Typing the keys with the remote is slow, so copy them from the web app:
 - The queue is the row under the player: Right or OK expands it. OK on the
   playing track at the top opens *Now Playing* over the whole screen, which
   also opens by itself after 20 seconds without input during playback.
+- *Shuffle* and *Save offline* are beside the sources of the expanded queue.
 - Play/Pause, Stop, Rewind and Fast-forward work as usual. The channel keys
   move to the next and previous track.
 - Back goes up a level, and from the player buttons asks whether to exit.

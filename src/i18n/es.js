@@ -63,6 +63,7 @@ export default {
   noResults: 'Sin resultados',
 
   saveOffline: 'Guardar sin conexión',
+  shuffle: 'Mezclar',
   offlineName: 'Nombre',
   offlinePlaylistsTitle: 'Listas sin conexión',
   playOfflinePlaylist: 'Añadir el contenido de la lista a la cola',

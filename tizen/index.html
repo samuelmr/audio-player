@@ -81,7 +81,7 @@
     audio-player, audio-browser {
         max-width: none;
     }
-    /* the queue's sources and Save offline are in the open queue, past
+    /* the queue's sources, Shuffle and Save offline are in the open queue, past
        the summary that Right opens it from */
     audio-player {
         grid-column-gap: 2.5em;
@@ -89,15 +89,15 @@
             "now buttons time gear"
             "progress progress progress progress"
             "summary summary summary summary"
-            "sources offline offline offline"
+            "sources actions actions actions"
             "queue queue queue queue";
         grid-template-columns: 1fr auto auto auto;
         padding-top: 1.25em;
     }
-    audio-player:not(.queue-open) button.save-offline {
+    audio-player:not(.queue-open) .queue-actions {
         display: none;
     }
-    audio-player button.save-offline {
+    audio-player .queue-actions {
         align-self: start;
     }
     .toast {
