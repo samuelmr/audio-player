@@ -99,6 +99,6 @@ The TV has no console to read, and the phone's is out of reach too.
 
 ## Trying on a real TV
 
-Needs Tizen Studio and a TV in developer mode (see the README). Install with
-`TV_IP=<address> npm run install:tv`, then drive the app with
+Needs Tizen Studio and a TV in developer mode (see the README). Build and install with
+`npm run package:tizen && TV_IP=<address> npm run install:tv`, then drive the app with
 `scripts/tv-debug.js` (keys, JavaScript, screenshots; usage at its top).

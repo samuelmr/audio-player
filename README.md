@@ -595,7 +595,8 @@ The tests serve the apps on port 4173 and the fake bucket on 4174. To run them
 in two copies of the repository at once, such as two git worktrees, give one
 of them other ports: `TEST_PORT=4273 npm run check` uses 4273 and 4274.
 
-To try a change on a real TV, install it with `npm run install:tv`, and
+To try a change on a real TV, build and install it with
+`npm run package:tizen && TV_IP=<address> npm run install:tv`, and
 [`scripts/tv-debug.js`](scripts/tv-debug.js) can then press the keys of the
 remote, run JavaScript in the app and take screenshots:
 
