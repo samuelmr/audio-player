@@ -474,6 +474,12 @@ audio-player .queue-actions button.shuffle svg {
     fill: none;
     stroke: currentColor;
 }
+/* on, in the accent: seen from afar too, without the focus */
+audio-player .queue-actions button[aria-pressed="true"] {
+    background-color: var(--accent-soft);
+    box-shadow: inset 0 0 0 0.12em var(--accent);
+    color: var(--accent);
+}
 
 /* the queued tracks as rows: art, title, artist, album and length */
 audio-player > nav {
