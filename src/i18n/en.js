@@ -13,6 +13,7 @@ export default {
   playPlaylist: 'Add playlist contents to queue',
   jumpTo: (target) => `Jump to ${target}`,
   jumpToPlayer: 'Jump to player',
+  jumpToPlaylists: 'Jump to playlists',
 
   save: 'Save',
   reset: 'Cancel',
@@ -28,7 +29,7 @@ export default {
   sortBySortNameYear: 'Artist sort names, albums by year',
   language: 'Language',
   deviceLanguage: 'Device language',
-  missingSetting: (key) => `S3 ${key} is missing`,
+  missingSetting: (label) => `${label} is missing`,
   publicBucket: 'None for a public bucket',
 
   transferTitle: 'Transfer settings',

@@ -17,7 +17,7 @@ test.describe('first start', () => {
     await page.goto('./')
     await expect(dialog(page)).toBeVisible()
     // without keys the bucket would be a public one, at an address still to give
-    await expect(dialog(page).locator('form .error')).toContainText('endpoint is missing')
+    await expect(dialog(page).locator('form .error')).toContainText('S3 endpoint is missing')
     for (const [key, value] of Object.entries(SETTINGS)) {
       await field(page, key).fill(value)
     }
@@ -55,7 +55,7 @@ test.describe('a public bucket', () => {
     await page.locator('button.gear').click()
     await field(page, 'accessKeyId').fill(SETTINGS.accessKeyId)
     await dialog(page).getByRole('button', {name: 'Save'}).click()
-    await expect(dialog(page).locator('form .error')).toContainText('secretAccessKey is missing')
+    await expect(dialog(page).locator('form .error')).toContainText('S3 secretAccessKey is missing')
   })
 })
 

@@ -32,7 +32,7 @@ export function connectS3() {
   const required = isPublic ? ['endpoint', 'bucketName'] : ['accessKeyId', 'secretAccessKey', 'endpoint', 'bucketName']
   required.forEach(key => {
     if (!params[key]) {
-      throw new Error(locale.missingSetting(key))
+      throw new Error(locale.missingSetting(locale[key]))
     }
   })
   const s3opts = {

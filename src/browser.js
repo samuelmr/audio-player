@@ -53,7 +53,7 @@ export function initBrowser(browser, player) {
   playlistParent.appendChild(pli)
   const mli = document.createElement('li')
   const pa = document.createElement('a')
-  pa.title = locale.jumpTo(locale.playlistTitle)
+  pa.title = locale.jumpToPlaylists
   pa.href = `#playlists`
   pa.innerHTML = '#'
   mli.appendChild(pa)
