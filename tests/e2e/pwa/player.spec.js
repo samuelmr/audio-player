@@ -346,7 +346,7 @@ test.describe('Shuffle', () => {
     await expect(shuffle(page)).toBeHidden()
   })
 
-  test('reorders the queue, the playing track first, without counting the moved tracks as added', async ({page}) => {
+  test('on, reorders the queue, the playing track first, without counting the moved tracks as added', async ({page}) => {
     await addFolder(page, 'Miles Davis')
     await expectPlaying(page, 'So What')
     await addFolder(page, 'ABBA')
@@ -362,5 +362,24 @@ test.describe('Shuffle', () => {
     await expect(toast).toHaveText('Added ABBA: 3 tracks')
     await next(page).click()
     await expectPlaying(page, 'Dancing Queen')
+  })
+
+  test('is a toggle: on, added tracks go to random places; off, the queue is in the order of adding', async ({page}) => {
+    await addFolder(page, 'Miles Davis')
+    await expectPlaying(page, 'So What')
+    await addFolder(page, 'ABBA')
+    await expect(queue(page)).toHaveCount(5)
+    await page.evaluate(() => { Math.random = () => 0 })
+    await expect(shuffle(page)).toHaveAttribute('aria-pressed', 'false')
+    await shuffle(page).click()
+    await expect(shuffle(page)).toHaveAttribute('aria-pressed', 'true')
+    await expect(queue(page).locator('.name a')).toHaveText(['So What', 'Dancing Queen', 'Knowing Me, Knowing You', 'Money, Money, Money', 'Freddie Freeloader'])
+    // right after the playing track, as the random number is 0
+    await page.locator('audio-browser li.song[data-key="KLF - 3 a.m. Eternal.mp3"] > a.add').click()
+    await expect(queue(page).locator('.name a')).toHaveText(['So What', '3 a.m. Eternal', 'Dancing Queen', 'Knowing Me, Knowing You', 'Money, Money, Money', 'Freddie Freeloader'])
+    await shuffle(page).click()
+    await expect(shuffle(page)).toHaveAttribute('aria-pressed', 'false')
+    await expect(queue(page).locator('.name a')).toHaveText(['So What', 'Freddie Freeloader', 'Dancing Queen', 'Knowing Me, Knowing You', 'Money, Money, Money', '3 a.m. Eternal'])
+    await expectPlaying(page, 'So What')
   })
 })

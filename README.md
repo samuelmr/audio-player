@@ -371,8 +371,9 @@ contain your secret key, so don't share them.
 - *Save offline*, beside the queue's first row, saves what's in the queue as an offline playlist. Its tracks
   are downloaded in the background, and it can be played without a network.
 - *Shuffle*, beside *Save offline*, puts the queue in a random order, with the
-  playing track first. Press it again for another order. The address keeps
-  the order the music was added in.
+  playing track first, and tracks added meanwhile in random places after it.
+  Pressed again, it puts the queue back in the order the music was added in,
+  which is also the order in the address.
 - The address of the page follows the queue, such as
   `index.html?folder=ABBA/Arrival&track=Miles%20Davis/So%20What.mp3&playlist=Road%20trip.json`
   (`folder`, `track` and `playlist` can each be repeated). Opening such an

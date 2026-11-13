@@ -150,7 +150,7 @@ test.describe('one audio element', () => {
 })
 
 test.describe('Shuffle', () => {
-  test('in the open queue, OK reorders the queue with the playing track first', async ({page, remote}) => {
+  test('in the open queue, OK shuffles the queue with the playing track first, and OK again unshuffles it', async ({page, remote}) => {
     await focusOn(folder(page, 'ABBA'))
     await remote.press('OK')
     await expect(queue(page)).toHaveCount(5)
@@ -167,6 +167,11 @@ test.describe('Shuffle', () => {
     await expect(queue(page).locator('.name a')).toHaveText(['So What', 'Dancing Queen', 'Knowing Me, Knowing You', 'Money, Money, Money', 'Freddie Freeloader'])
     await expect(shuffle).toBeFocused()
     await remote.press('MediaTrackNext')
+    await expectPlaying(page, 'Dancing Queen')
+    // OK again puts it back in the order of adding
+    await remote.press('OK')
+    await expect(shuffle).toHaveAttribute('aria-pressed', 'false')
+    await expect(queue(page).locator('.name a')).toHaveText(['So What', 'Freddie Freeloader', 'Dancing Queen', 'Knowing Me, Knowing You', 'Money, Money, Money'])
     await expectPlaying(page, 'Dancing Queen')
   })
 })
