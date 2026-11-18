@@ -115,6 +115,25 @@ test('plays the next track in the element that loaded it while the previous one 
   expect(current).toEqual({...waiting, current: true})
 })
 
+// the length in the metadata may be wrong, as it is for some real uploads
+test('shows the length of the audio instead of the one in the metadata', async ({page}) => {
+  await page.route(url => url.pathname.endsWith('/01%20So%20What.mp3'), async route => {
+    if (route.request().method() != 'HEAD') return route.continue()
+    const response = await route.fetch()
+    await route.fulfill({response, headers: {...response.headers(), 'x-amz-meta-length': '174000'}})
+  })
+  await addFolder(page, 'Björk')
+  await expectPlaying(page, 'Human Behaviour')
+  await addFolder(page, 'Miles Davis')
+  const soWhat = queue(page).filter({hasText: 'So What'})
+  await expect(soWhat.locator('span.duration')).toHaveText('2:54')
+  // So What starts in the element that got it ready while Björk played
+  await expectPlaying(page, 'So What')
+  await expect(soWhat.locator('span.duration')).toHaveText('0:30')
+  await expect(page.locator('#trackLength')).toHaveValue('0:30')
+  await expect(page.locator('#progress')).toHaveAttribute('max', '30')
+})
+
 // iOS may let the position of a paused element run on in the background
 test('starts the next track from the beginning, also when the other element has run on', async ({page}) => {
   await page.addInitScript(() => {

@@ -119,8 +119,9 @@ test('adds an .m3u playlist, with the metadata of its tracks', async ({page}) =>
   await openPlaylists(page)
   await playlist(page, 'Swedish').click()
   await expect(titles(page)).toHaveText(['Money, Money, Money', 'Knowing Me, Knowing You'])
-  // the first from its #EXTINF line
-  await expect(queue(page).locator('span.duration')).toHaveText(['2:05', '0:02'])
+  // the playing one shows the length of its audio instead of the 2:05 of its
+  // #EXTINF line, whose reading the unit tests check
+  await expect(queue(page).locator('span.duration')).toHaveText(['0:02', '0:02'])
 })
 
 test('a link to a playlist in the format that is not listed adds the listed one', async ({page}) => {
@@ -215,7 +216,7 @@ test('a link to a song adds only the song', async ({page}) => {
   await expect(titles(page)).toHaveText(['Freddie Freeloader'])
 })
 
-test('a track without a length shows none', async ({page}) => {
+test('a track without a length shows the length of its audio', async ({page}) => {
   // the metadata of the track has no length. Not one at the top of the
   // bucket, whose metadata came with the listing
   await page.route(url => url.pathname.endsWith('/01%20Human%20Behaviour.mp3'), async route => {
@@ -227,7 +228,8 @@ test('a track without a length shows none', async ({page}) => {
   })
   await page.goto('./?track=Bj%C3%B6rk%2FDebut%2F01%20Human%20Behaviour.mp3')
   await expect(titles(page)).toHaveText(['Human Behaviour'])
-  await expect(queue(page).locator('span.duration')).toHaveText('')
+  await expectPlaying(page, 'Human Behaviour')
+  await expect(queue(page).locator('span.duration')).toHaveText('0:02')
 })
 
 test('a link with several folders, songs and a playlist adds them all', async ({page}) => {

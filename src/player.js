@@ -201,12 +201,6 @@ export function initPlayer(player) {
   })
   player.appendChild(progress)
 
-  const updateDuration = function() {
-    const seconds = parseInt(audio.duration)
-    progress.max = seconds
-    trackLength.value = parseInt(seconds/60) + ':' + parseInt(seconds%60).toString().padStart(2, '0')
-    cursor.max = '0:' + trackLength.value
-  }
   const requestWakeLock = async () => {
     if (wakelockCooldown) {
       wakelockCooldown = clearTimeout(wakelockCooldown) // returns undefined
@@ -222,7 +216,8 @@ export function initPlayer(player) {
   // that is current. The other one is getting the next track ready.
   const bindAudio = (el) => {
     const current = (handler) => (e) => { if (el === audio) handler(e) }
-    el.onloadedmetadata = current(updateDuration)
+    // also when the browser corrects its first estimate of the length
+    el.ondurationchange = current(updateDuration)
     el.oncanplay = current((e) => {
       play.disabled = false
     })
@@ -473,6 +468,8 @@ const playTrack = async (track) => {
     if (staged) {
       const old = audio
       switchTo(staged.el)
+      // the element learned the length of the track while it waited
+      updateDuration()
       playingUrl = staged.owned ? staged.url : undefined
       audio.volume = volume
       // iOS may let the position of a paused element run on in the background
@@ -569,6 +566,30 @@ function switchTo(el) {
   standby.classList.remove('current')
   audio.classList.add('current')
   audio.muted = false
+}
+
+const minutes = (seconds) => `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`
+
+// The length of a track in the queue, in whole seconds
+function showDuration(track, seconds) {
+  const meta = track.querySelector('section.duration meta')
+  const span = track.querySelector('span.duration')
+  if (!meta || !span) return
+  meta.content = `PT${Math.floor(seconds / 60)}M${seconds % 60}S`
+  span.textContent = minutes(seconds)
+}
+
+// The length of the playing track as its audio element has it. The length in
+// the metadata may be wrong, so this one replaces it in the queue too.
+function updateDuration() {
+  const seconds = Math.floor(audio.duration)
+  // NaN while there's no track, Infinity for a stream
+  if (!Number.isFinite(seconds) || seconds <= 0) return
+  progress.max = seconds
+  trackLength.value = minutes(seconds)
+  cursor.max = '0:' + trackLength.value
+  const track = playerList.querySelector('audio-track.playing')
+  if (track) showDuration(track, seconds)
 }
 
 // the track in the other element, if it is the one to play and is ready
@@ -758,15 +779,10 @@ export async function createAudioTrack(obj, source) {
   const durationSpan = document.createElement('span')
   durationSpan.className = 'duration'
   duration.appendChild(durationSpan)
-  // a track without a length, or with 0, shows none
-  const seconds = Math.round(parseInt(myDuration) / 1000) // ms to s
-  if (seconds > 0) {
-    const min = Math.floor(seconds / 60)
-    const sec = seconds % 60
-    durationMeta.content = `PT${min}M${sec}S`
-    durationSpan.textContent = [min, sec.toString().padStart(2, '0')].join(':')
-  }
   track.appendChild(duration)
+  // a track without a length, or with 0, shows none until it plays
+  const seconds = Math.round(parseInt(myDuration) / 1000) // ms to s
+  if (seconds > 0) showDuration(track, seconds)
 
   const trackNumber = document.createElement('section')
   trackNumber.className = 'trackNumber'
