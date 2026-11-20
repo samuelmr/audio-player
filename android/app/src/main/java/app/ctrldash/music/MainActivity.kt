@@ -9,6 +9,7 @@ import android.view.KeyEvent
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.window.OnBackInvokedDispatcher
@@ -49,6 +50,9 @@ class MainActivity : Activity() {
             settings.useWideViewPort = true
             settings.loadWithOverviewMode = true
             settings.allowFileAccess = false
+            // a bucket on the home network may be served over plain http,
+            // as the Samsung TV app allows too; the app's own files aren't
+            settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             // the page shows the focus itself
             defaultFocusHighlightEnabled = false
             webViewClient = object : WebViewClient() {

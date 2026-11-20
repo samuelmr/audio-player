@@ -8,8 +8,11 @@
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
+    <!-- cleartext: a bucket on the home network may be served over plain
+         http, as with the mixed content that MainActivity allows -->
     <application
         android:allowBackup="false"
+        android:usesCleartextTraffic="true"
         android:banner="@drawable/banner"
         android:icon="@drawable/icon"
         android:label="@string/app_name"
