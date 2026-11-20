@@ -1,30 +1,29 @@
 // Now Playing on the TV (now-playing.js). It opens by itself when the
 // remote has been idle for a while during playback, and with OK on the
-// player bar (tizen-player.js) or on the playing track in the queue. In it:
+// player bar (tv-player.js) or on the playing track in the queue. In it:
 //   OK plays and pauses, Left and Right go to the previous and next track
 //   Back, Up and Down return to browsing, with the focus where it was
 
 import { audio, onAudio, play, playerList, playNext, playPrevious } from '../player.js'
 import { initNowPlaying as initView, isOpen, open as openView, close } from '../now-playing.js'
-import { focusPlayer } from './tizen-library.js'
+import { focusPlayer } from './tv-library.js'
+import { isBack } from './tv-keys.js'
 
 const LEFT = 37
 const UP = 38
 const RIGHT = 39
 const DOWN = 40
 const ENTER = 13
-const BACK = 10009
 
 const IDLE_TIME = 20 * 1000
 
 let idleTimer, returnFocus
 
-// in the view; the media keys keep working through tizen.js
+// in the view; the media keys keep working through tv.js
 const keys = {
   [ENTER]: () => play.click(),
   [LEFT]: () => playPrevious(),
   [RIGHT]: () => playNext(),
-  [BACK]: () => close(),
   [UP]: () => close(),
   [DOWN]: () => close(),
 }
@@ -37,7 +36,7 @@ export function initNowPlaying() {
   window.addEventListener('keydown', (e) => {
     resetIdle()
     const action = isOpen()
-      ? keys[e.keyCode]
+      ? (isBack(e) ? close : keys[e.keyCode])
       // OK on the playing track opens the view, instead of starting the track over
       : e.keyCode == ENTER && document.activeElement?.matches?.('audio-track.playing, audio-player .now') && open
     if (action) {

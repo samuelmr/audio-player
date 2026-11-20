@@ -1,4 +1,4 @@
-// Back goes up a level, and from the player asks before exiting (tizen.js)
+// Back goes up a level, and from the player asks before exiting (tv.js)
 import { test, expect, folder } from '../fixtures.js'
 import { focusOn, queueFolder, queue } from './helpers.js'
 
@@ -38,11 +38,11 @@ test('from the player, asks before exiting', async ({page, remote}) => {
   await expect(exitDialog(page).getByRole('button', {name: 'Cancel'})).toBeFocused()
   await remote.press('Back')
   await expect(exitDialog(page)).toBeHidden()
-  expect(await page.evaluate(() => tizenCalls.exited)).toBe(false)
+  expect(await page.evaluate(() => tvCalls.exited)).toBe(false)
 
   await remote.press('Back')
   await remote.press('Left')
   await expect(exitDialog(page).getByRole('button', {name: 'Exit'})).toBeFocused()
   await remote.press('OK')
-  expect(await page.evaluate(() => tizenCalls.exited)).toBe(true)
+  expect(await page.evaluate(() => tvCalls.exited)).toBe(true)
 })

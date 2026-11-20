@@ -1,4 +1,4 @@
-// Settings on the TV come as a settings code typed in from a phone (tizen.js)
+// Settings on the TV come as a settings code typed in from a phone (tv.js)
 import { test, expect, folder } from '../fixtures.js'
 import { SETTINGS } from '../library.js'
 import { focused, focusOn } from './helpers.js'

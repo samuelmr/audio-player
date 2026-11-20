@@ -90,10 +90,13 @@ const pwa = {
 // tests/build/tv-compat.test.js checks the built TV app against it
 export const TV_CHROME = 76
 
-// The TV app is packaged into a .wgt and loaded from local files,
-// so it's one classic script without lazy-loaded chunks
-const tizen = {
-  ...shared("tizen"),
+// The TV apps are loaded from files in their packages: the Samsung TV app
+// from a .wgt, the Google TV app from the assets of an Android app
+// (android/). So each is one classic script without lazy-loaded chunks,
+// for the oldest Chromium of the two. extra are files of the platform's
+// own, and meta the <meta> tags of its page.
+const tv = (name, { extra = [], meta = {} } = {}) => ({
+  ...shared(name),
   // the dependencies too: most of the newer syntax comes from the AWS SDK
   module: {
     rules: [{
@@ -109,7 +112,7 @@ const tizen = {
   },
   output: {
     filename: "audioplayer.js",
-    path: path.resolve(__dirname, "dist/tizen"),
+    path: path.resolve(__dirname, `dist/${name}`),
     clean: true,
   },
   plugins: [
@@ -117,18 +120,25 @@ const tizen = {
     new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
-      template: 'tizen/index.html',
+      template: 'tv/index.html',
       scriptLoading: 'defer',
       styles,
+      meta,
     }),
     new CopyPlugin({
       patterns: [
-        'tizen/config.xml',
-        {from: 'pwa/play-192.png', to: 'icon.png'},
+        ...extra,
         fonts,
       ].map(p => typeof p == 'string' ? {from: p, to: '[name][ext]'} : p),
     }),
   ],
-};
+});
 
-export default [pwa, tizen];
+const tizen = tv("tizen", {extra: ['tizen/config.xml', {from: 'pwa/play-192.png', to: 'icon.png'}]});
+
+// Its icons are in android/. Google TV devices draw at twice the density, so
+// the page is laid out 1920 pixels wide, as on the Samsung TVs, and the
+// WebView scales it to the screen.
+const androidtv = tv("androidtv", {meta: {viewport: 'width=1920'}});
+
+export default [pwa, tizen, androidtv];

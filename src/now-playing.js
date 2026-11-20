@@ -1,7 +1,7 @@
 // Now Playing: the playing track over the whole screen, with its album art
 // large and, blurred, as the background, its details, its progress and the
 // next tracks. Each app opens and closes it its own way: the remote on the
-// TV (tizen-now-playing.js), buttons, taps and Esc on the web (pwa.js).
+// TV (tv-now-playing.js), buttons, taps and Esc on the web (pwa.js).
 // With controls, it has buttons of its own, a click on the art plays and
 // pauses, and a click on the progress bar seeks. onClose hears of it
 // closing, also by itself when nothing plays any more.

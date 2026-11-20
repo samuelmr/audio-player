@@ -1,4 +1,4 @@
-// The Now Playing view (tizen-now-playing.js)
+// The Now Playing view (tv-now-playing.js)
 import { test, expect, folder, expectPlaying } from '../fixtures.js'
 import { focusOn, queueFolder, queue } from './helpers.js'
 

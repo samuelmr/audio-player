@@ -1,7 +1,8 @@
 # CLAUDE.md
 
 Ctrl– audio player: a music player for MP3s in an S3 bucket, built from one
-codebase as a web app (PWA) and a Samsung TV (Tizen) app. The README is the
+codebase as a web app (PWA), a Samsung TV (Tizen) app and a Google TV
+(Android) app, the last two sharing one TV app. The README is the
 main documentation; read its *Development and contributing* section for the
 layout, the test tiers and how translations work. This file adds what the
 README doesn't say, or what is easy to miss.
@@ -65,14 +66,15 @@ The TV has no console to read, and the phone's is out of reach too.
   assume `Metadata` or a stored record exists. The same goes for the address
   hash and the settings code.
 - **Platforms:** an error shown in the PWA is shown on the TV too. Check
-  `src/platform/tizen-*.js` when you add handling to a PWA-only path.
+  `src/platform/tv*.js` when you add handling to a PWA-only path.
 - Add a test for the failing case, with `page.route` to make the fake S3
   fail (see `tests/e2e/pwa/library.spec.js`). An uncaught error in the page
   fails the e2e tests, which is on purpose.
 
 ## Constraints
 
-- The TV app must run on Tizen 6 (Chromium 76). Babel handles the script, but
+- The TV app must run on Tizen 6 (Chromium 76), and the Google TV app shares
+  its script and CSS. Babel handles the script, but
   the CSS must avoid what Chromium 76 lacks (flexbox `gap`, `inset`,
   `clamp()`...). `npm run test:build` checks this.
 - The repo must build and pass its tests for anyone who forks it: no real
@@ -102,3 +104,9 @@ The TV has no console to read, and the phone's is out of reach too.
 Needs Tizen Studio and a TV in developer mode (see the README). Build and install with
 `npm run package:tizen && TV_IP=<address> npm run install:tv`, then drive the app with
 `scripts/tv-debug.js` (keys, JavaScript, screenshots; usage at its top).
+
+On Google TV, `npm run package:androidtv && ANDROID_TV=<address:port> npm run install:androidtv`
+needs `ANDROID_HOME` set to the Android SDK and the device paired with `adb`
+(see the README). Gradle can't follow "latest" like npm does: the versions in
+`android/*.gradle.kts` are written out, so raise them to the newest when you
+change the Android app.

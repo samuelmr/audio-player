@@ -2,17 +2,19 @@
 
 A music player for your own music library, kept in an S3-compatible object
 storage bucket (AWS S3, Contabo, Backblaze B2, Wasabi, MinIO, Cloudflare R2…).
-It comes in two forms:
+It comes in three forms:
 
 - a web app (PWA) for desktop and mobile browsers, which can also be added to
   the home screen and save playlists for offline listening
 - a Samsung TV app (Tizen), worked with the TV's remote control
+- a Google TV app (Android TV), the same TV app for Google TV devices and TVs
 
 The app talks to your bucket directly from the browser. There is no server of
 its own, and your keys stay on your device.
 
 - [Using the player on a computer or phone](#using-the-player-on-a-computer-or-phone)
 - [Using the player on a Samsung TV](#using-the-player-on-a-samsung-tv)
+- [Using the player on Google TV](#using-the-player-on-google-tv)
 - [Development and contributing](#development-and-contributing)
 
 ## Using the player on a computer or phone
@@ -518,6 +520,76 @@ with:
 
 Photos of the screen help too.
 
+## Using the player on Google TV
+
+The Google TV app is the same as the Samsung TV app, in an Android app. It
+isn't in Google Play either: you build it and install it over your network.
+It runs on Google TV and Android TV devices and TVs with **Android 8 or later**.
+
+### What you need for Google TV
+
+- A bucket with your music, set up as in
+  [Using the player on a computer or phone](#using-the-player-on-a-computer-or-phone),
+  including the [CORS configuration](#allowing-the-browser-to-read-the-bucket-cors).
+- A computer on the same network as the device, with [Node.js](https://nodejs.org/)
+  and this repository (`git clone`, `npm install`).
+- Java 17 or later, and the Android SDK. Android Studio comes with both, or
+  without it, on macOS:
+
+  ```sh
+  brew install --cask android-commandlinetools
+  export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
+  sdkmanager "platform-tools" "platforms;android-36"
+  ```
+
+  Set `ANDROID_HOME` to the SDK's folder in your shell's profile. Android
+  Studio's is `~/Library/Android/sdk` on macOS.
+- The Google TV app on your phone, connected to the device, for typing on it.
+
+### 1. Turn on developer options and debugging
+
+1. On the device, open *Settings* → *System* → *About*, and press OK on
+   *Android TV OS build* seven times, until it says you're a developer.
+2. Open *Settings* → *System* → *Developer options*, and turn on *USB
+   debugging*.
+3. Turn on *Wireless debugging* there too, and open it. It shows the device's
+   IP address and port, such as `192.168.1.30:37851`.
+4. The first time, choose *Pair device with pairing code*, and on the
+   computer, with the address and code it shows:
+
+   ```sh
+   $ANDROID_HOME/platform-tools/adb pair 192.168.1.30:41235 123456
+   ```
+
+Devices with Android 10 or older have no *Wireless debugging*: turn on
+*Network debugging* instead, or use the port `5555`.
+
+### 2. Build and install the app
+
+```sh
+npm run package:androidtv
+ANDROID_TV=192.168.1.30:37851 npm run install:androidtv
+```
+
+`package:androidtv` builds the app into
+`android/app/build/outputs/apk/debug/app-debug.apk`, and `install:androidtv`
+connects to the device and installs it. Use the address and port of *Wireless
+debugging* instead of `192.168.1.30:37851`; the port changes when it's turned
+off and on. *Ctrl music* is then among the apps, under *Apps* → *Your apps*.
+
+### 3. Enter the settings
+
+As on the [Samsung TV](#4-enter-the-settings): copy the settings code from the
+web app, select the text field under *Transfer settings* in the app's
+settings, and paste the code with the keyboard of the Google TV app on your
+phone.
+
+### Using the Google TV remote
+
+The remote works as on the [Samsung TV](#using-the-remote). The music plays
+on under the screensaver; Back from the player buttons exits the app, which
+stops it.
+
 ## Development and contributing
 
 Contributions are welcome: bug reports, fixes, and new features.
@@ -546,27 +618,36 @@ Open <http://127.0.0.1:4173/pwa/>, and enter the settings from `SETTINGS` in
 [`tests/e2e/library.js`](tests/e2e/library.js). `npm start` runs a development
 server for the web app, which you can point at your own bucket.
 
-The TV app needs [Tizen Studio](#what-you-need-for-the-tv) only for packaging it and
-trying it on a TV.
+The TV apps need [Tizen Studio](#what-you-need-for-the-tv) or the
+[Android SDK](#what-you-need-for-google-tv) only for packaging them and trying
+them on a TV.
 
 ### Layout
 
-- `src/` has the code shared by both apps, and `src/platform/` what differs
-  between them. `src/styles.css` is the look of both; each app's HTML
-  template adds its own: hover and touch in the web app, the remote's focus
-  and the larger text in the TV app. The TV loads `src/styles.css` too, so it
-  must work on Chromium 76.
+- `src/` has the code shared by the apps, and `src/platform/` what differs
+  between them: `pwa.js` for the web app, `tv.js` and the `tv-*.js` modules
+  for the TV apps, and `tizen.js` and `androidtv.js` for what differs between
+  the TVs. `src/styles.css` is the look of all; each app's HTML template adds
+  its own: hover and touch in the web app, the remote's focus and the larger
+  text in the TV apps. The TV loads `src/styles.css` too, so it must work on
+  Chromium 76.
 - `src/i18n/` has the translations, see [Translating](#translating)
 - `pwa/` has the web app's HTML template, service worker, manifest and icon
   (`icon.svg` is the source of `play-192.png` and `play-512.png`: `rsvg-convert -w 192 -h 192 pwa/icon.svg -o pwa/play-192.png`, and likewise with 512)
-- `tizen/` has the TV app's HTML template and `config.xml`
+- `tv/` has the TV apps' HTML template
+- `tizen/` has the Samsung TV app's `config.xml`
+- `android/` has the Google TV app: an Android app (Kotlin, Gradle) that
+  shows the TV app of `dist/androidtv` in a WebView and passes Back and the
+  media keys to it
 - `scripts/` has the script for uploading music, and one for driving the TV
   app on a TV (see [Testing](#testing))
 - `tests/` has the tests, see below
 
-`npm run build` builds both apps, into `dist/pwa` and `dist/tizen`.
+`npm run build` builds the apps, into `dist/pwa`, `dist/tizen` and
+`dist/androidtv`. The Google TV app's Android project bundles `dist/androidtv`
+in its assets (`npm run package:androidtv`).
 
-The TV app runs on Tizen 6.0 and later. The oldest of these TVs have
+The Samsung TV app runs on Tizen 6.0 and later. The oldest of these TVs have
 Chromium 76, so Babel compiles the TV app's script for it, and the stylesheets
 avoid what it lacks (such as `gap` in flexbox, `inset` and `clamp()`).
 `npm run test:build` checks this.
@@ -581,14 +662,16 @@ runs every test that doesn't need Tizen Studio.
 | `npm test` | Node | Unit tests of the source (`tests/unit`) |
 | `npm run test:build` | Node | The built apps: their files, and that the TV app has nothing Chromium 76 lacks (`tests/build`) |
 | `npm run test:pwa` | Node, Playwright's Chromium | The web app in Chromium (`tests/e2e/pwa`) |
-| `npm run test:tv` | Node, Playwright's Chromium | The TV app in Chromium, worked with remote control keys (`tests/e2e/tv`) |
+| `npm run test:tv` | Node, Playwright's Chromium | Both TV apps in Chromium, worked with remote control keys (`tests/e2e/tv`) |
 | `npm run check` | Node, Playwright's Chromium | All of the above |
 | `npm run test:tizen` | Tizen Studio | Packages and signs the `.wgt` and checks it; with `TV_IP` set, installs and launches it on that TV |
 | `npm run check:full` | Tizen Studio | `check` and `test:tizen` |
 
 The end-to-end tests need no bucket or keys: `tests/e2e/server.js` serves the
 built apps and a fake S3 bucket with the small library of
-`tests/e2e/library.js`. The TV app gets stand-ins for the Tizen APIs it uses.
+`tests/e2e/library.js`. The TV tests run on both TV apps: the Samsung TV app
+gets stand-ins for the Tizen APIs it uses, and the Google TV app for what its
+Android activity adds to the page.
 Chromium can't be as old as the oldest TVs, so the checks of `test:build`
 stand in for running on them.
 
@@ -604,6 +687,10 @@ remote, run JavaScript in the app and take screenshots:
 ```sh
 TV_IP=192.168.1.20 node scripts/tv-debug.js --launch key:ArrowDown key:Enter shot:tv.png
 ```
+
+On Google TV, `npm run package:androidtv && ANDROID_TV=<address:port> npm run install:androidtv`
+installs a debug build, whose page Chrome on the computer can inspect at
+`chrome://inspect` while the computer is connected to the device with `adb`.
 
 Left to be tried by hand on the devices: playback on a real TV and its remote,
 a Tizen 6 TV, a home screen app on iOS in the background, and scanning a QR

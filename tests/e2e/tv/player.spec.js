@@ -1,4 +1,4 @@
-// The queue (tizen-queue.js) and the media keys of the remote (tizen.js)
+// The queue (tv-queue.js) and the media keys of the remote (tv.js)
 import { test, expect, folder, audioState, expectPlaying } from '../fixtures.js'
 import { focusOn, queueFolder, queue } from './helpers.js'
 

@@ -1,5 +1,5 @@
-// Shared by the PWA and the TV app. Webpack resolves '#platform'
-// to src/platform/pwa.js or src/platform/tizen.js
+// Shared by the PWA and the TV apps. Webpack resolves '#platform' to
+// src/platform/pwa.js, src/platform/tizen.js or src/platform/androidtv.js
 import * as platform from '#platform'
 import { connectS3 } from './s3.js'
 import { initBrowser, browserList, getFolders, orderLibrary, clearLibrary, takeLinkedPlaylists, linkedNeedsListing, addLinkedPlaylists } from './browser.js'

@@ -1,4 +1,4 @@
-// The library worked with the remote (tizen-library.js, spatial-navigation.js)
+// The library worked with the remote (tv-library.js, spatial-navigation.js)
 import { test, expect, folder, queue, expectPlaying, TIZEN_KEYS } from '../fixtures.js'
 import { focused, focusOn, toast, queueFolder } from './helpers.js'
 
@@ -7,8 +7,9 @@ test.beforeEach(async ({page}) => {
   await expect(folder(page, 'ABBA')).toBeVisible()
 })
 
-test('registers the media keys of the remote', async ({page}) => {
-  expect(await page.evaluate(() => tizenCalls.registeredKeys)).toEqual(Object.keys(TIZEN_KEYS))
+test('registers the media keys of the remote', async ({page}, testInfo) => {
+  test.skip(testInfo.project.name != 'tizen', 'only Tizen has keys to register')
+  expect(await page.evaluate(() => tvCalls.registeredKeys)).toEqual(Object.keys(TIZEN_KEYS))
 })
 
 test('the arrows reach the library from the player', async ({page, remote}) => {

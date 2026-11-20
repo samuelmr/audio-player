@@ -1,5 +1,5 @@
 // The end-to-end tests' web server, started by Playwright (playwright.config.js):
-//   APP_PORT serves the built apps: /pwa/ and /tizen/ from dist/
+//   APP_PORT serves the built apps: /pwa/, /tizen/ and /androidtv/ from dist/
 //   S3_PORT is a fake S3 bucket with the library of library.js
 //
 // The fake S3 answers the requests the apps make, path-style
@@ -194,5 +194,5 @@ const app = http.createServer((req, res) => {
 
 app.listen(APP_PORT, '127.0.0.1')
 s3.listen(S3_PORT, '127.0.0.1', () => {
-  console.log(`apps on http://127.0.0.1:${APP_PORT}/pwa/ and /tizen/, fake S3 on http://127.0.0.1:${S3_PORT}`)
+  console.log(`apps on http://127.0.0.1:${APP_PORT}/pwa/, /tizen/ and /androidtv/, fake S3 on http://127.0.0.1:${S3_PORT}`)
 })

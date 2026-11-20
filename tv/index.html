@@ -10,7 +10,7 @@
     /* The TV app is dark, like the room it's watched in, whatever the TV's
        color scheme: these are the dark colors of styles.css, which has them
        only for devices set to dark. Behind everything is the album art of
-       the playing track, blurred (tizen-player.js). The text is large, for
+       the playing track, blurred (tv-player.js). The text is large, for
        reading from the sofa. */
     :root {
         --base-lightness: 25%;
@@ -151,7 +151,7 @@
     }
 
     /* Two columns: folders on the left, and the songs of the selected
-       folder or playlist on the right, level with it (tizen-library.js) */
+       folder or playlist on the right, level with it (tv-library.js) */
     audio-browser nav:not(#skipNav) {
         font-size: 1.15em;
     }
@@ -175,7 +175,7 @@
     }
 
     /* the songs on a panel, level with their folder; left and width
-       come from tizen-library.js. important: styles.css shows the lists of
+       come from tv-library.js. important: styles.css shows the lists of
        open folders */
     audio-browser li.folder > ol.songs, audio-browser li.playlist > ol.songs {
         display: none !important;

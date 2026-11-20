@@ -39,7 +39,7 @@ describe('the PWA', () => {
   })
 })
 
-describe('the TV app', () => {
+describe('the Samsung TV app', () => {
   const dir = 'dist/tizen'
   const config = read(`${dir}/config.xml`)
 
@@ -83,8 +83,24 @@ describe('the TV app', () => {
   })
 })
 
+// the assets of the Android app (android/), which adds its own icons
+describe('the Google TV app', () => {
+  const dir = 'dist/androidtv'
+
+  test('has the files to bundle, and one script without chunks', () => {
+    expect(fs.readdirSync(dir).sort()).toEqual(['audioplayer.js', 'fonts', 'index.html'])
+    expect(parses(`${dir}/audioplayer.js`, 'script')).not.toThrow()
+  })
+
+  test("is the Samsung TV app's page, laid out as wide as on the Samsung TVs", () => {
+    const html = read(`${dir}/index.html`)
+    expect(html).toMatch(/<meta name="viewport" content="width=1920">/)
+    expect(html.replace(/<meta name="viewport"[^>]*>/, '')).toBe(read('dist/tizen/index.html'))
+  })
+})
+
 // the privacy policy says that the apps contact no one but the bucket
-describe.each(['dist/pwa', 'dist/tizen'])('%s', (dir) => {
+describe.each(['dist/pwa', 'dist/tizen', 'dist/androidtv'])('%s', (dir) => {
   const html = read(`${dir}/index.html`)
 
   test('loads nothing from other sites', () => {

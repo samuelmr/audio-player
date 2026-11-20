@@ -1,6 +1,7 @@
 // End-to-end tests of the built apps in Chromium, against a fake S3
-// (tests/e2e/server.js). Neither needs Tizen Studio: the TV app runs
-// with a stand-in for the Tizen APIs (tests/e2e/fixtures.js).
+// (tests/e2e/server.js). None needs Tizen Studio or the Android SDK: the
+// TV tests run on both TV apps, each with a stand-in for its platform
+// (tests/e2e/fixtures.js).
 import { defineConfig } from '@playwright/test'
 import { APP_PORT } from './tests/e2e/library.js'
 
@@ -28,14 +29,14 @@ export default defineConfig({
         viewport: {width: 1280, height: 800},
       },
     },
-    {
-      name: 'tv',
+    ...['tizen', 'androidtv'].map(name => ({
+      name,
       testMatch: 'tv/**/*.spec.js',
       use: {
-        baseURL: `http://127.0.0.1:${APP_PORT}/tizen/`,
+        baseURL: `http://127.0.0.1:${APP_PORT}/${name}/`,
         viewport: {width: 1920, height: 1080},
       },
-    },
+    })),
   ],
   webServer: {
     command: 'node tests/e2e/server.js',

@@ -4,8 +4,9 @@
 //   - the apps start with the fake bucket's settings, unless a test file
 //     says test.use({settings: null})
 //   - an uncaught error in the page fails the test
-//   - the TV app gets a stand-in for the Tizen APIs, and `remote` presses
-//     the remote control's keys
+//   - the TV apps get a stand-in for their platform: the Tizen APIs, or
+//     what the Google TV app's activity adds to the page; `remote` presses
+//     the remote control's keys, the way each platform sends them
 import { test as base, expect } from '@playwright/test'
 import { SETTINGS, APP_PORT, S3_PORT } from './library.js'
 
@@ -27,20 +28,28 @@ const BACK = 10009
 // before the app's script: what tizen.js uses of the Tizen web APIs,
 // and a record of the calls for the tests to check
 function installTizen(keys) {
-  window.tizenCalls = {registeredKeys: [], exited: false}
+  window.tvCalls = {registeredKeys: [], exited: false}
   window.tizen = {
     tvinputdevice: {
       registerKey: (name) => {
         if (!(name in keys)) throw new Error(`Unknown key ${name}`)
-        window.tizenCalls.registeredKeys.push(name)
+        window.tvCalls.registeredKeys.push(name)
       },
       getKey: (name) => ({name, code: keys[name]}),
     },
     application: {
-      getCurrentApplication: () => ({exit: () => { window.tizenCalls.exited = true }}),
+      getCurrentApplication: () => ({exit: () => { window.tvCalls.exited = true }}),
     },
   }
 }
+
+// what the Google TV app's activity (android/) adds to the page
+function installAndroidTv() {
+  window.tvCalls = {exited: false}
+  window.AndroidTv = {exit: () => { window.tvCalls.exited = true }}
+}
+
+const TV_PROJECTS = ['tizen', 'androidtv']
 
 const ARROWS = {Up: 'ArrowUp', Down: 'ArrowDown', Left: 'ArrowLeft', Right: 'ArrowRight', OK: 'Enter'}
 // the TV app drops arrow repeats closer than this (spatial-navigation.js)
@@ -66,8 +75,11 @@ export const test = base.extend({
         localStorage.setItem('testSettingsSet', '1')
       }, settings)
     }
-    if (testInfo.project.name == 'tv') {
+    if (testInfo.project.name == 'tizen') {
       await page.addInitScript(installTizen, TIZEN_KEYS)
+    }
+    else if (testInfo.project.name == 'androidtv') {
+      await page.addInitScript(installAndroidTv)
     }
     const errors = []
     page.on('pageerror', e => errors.push(e.message))
@@ -75,9 +87,12 @@ export const test = base.extend({
     expect(errors, 'uncaught errors in the page').toEqual([])
   },
 
-  // the remote control of the TV: arrows and OK are keyboard keys,
-  // Back and the media keys have codes of their own
-  remote: async ({page}, use) => {
+  // The remote control of the TV: arrows and OK are keyboard keys. On the
+  // Samsung TVs, Back and the media keys have codes of their own; the Google
+  // TV app's activity sends them as a keydown named by the web's key value.
+  remote: async ({page}, use, testInfo) => {
+    if (!TV_PROJECTS.includes(testInfo.project.name)) throw new Error('The remote is for the TV apps')
+    const android = testInfo.project.name == 'androidtv'
     await use({
       async press(key, {times = 1} = {}) {
         for (let i = 0; i < times; i++) {
@@ -85,14 +100,16 @@ export const test = base.extend({
             await page.keyboard.press(ARROWS[key])
           }
           else {
-            const keyCode = key == 'Back' ? BACK : TIZEN_KEYS[key]
-            if (!keyCode) throw new Error(`No remote key ${key}`)
-            await page.evaluate((keyCode) => {
+            if (key != 'Back' && !TIZEN_KEYS[key]) throw new Error(`No remote key ${key}`)
+            const init = android
+              ? {key: key == 'Back' ? 'GoBack' : key, types: ['keydown']}
+              : {keyCode: key == 'Back' ? BACK : TIZEN_KEYS[key], types: ['keydown', 'keyup']}
+            await page.evaluate(({types, ...init}) => {
               const target = document.activeElement || document.body
-              for (const type of ['keydown', 'keyup']) {
-                target.dispatchEvent(new KeyboardEvent(type, {keyCode, which: keyCode, bubbles: true, cancelable: true}))
+              for (const type of types) {
+                target.dispatchEvent(new KeyboardEvent(type, {...init, which: init.keyCode, bubbles: true, cancelable: true}))
               }
-            }, keyCode)
+            }, init)
           }
           await page.waitForTimeout(PRESS_INTERVAL)
         }

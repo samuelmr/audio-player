@@ -1,4 +1,4 @@
-// The player bar and the backdrop (tizen-player.js)
+// The player bar and the backdrop (tv-player.js)
 import { test, expect, folder, audioState } from '../fixtures.js'
 import { focusOn, queueFolder } from './helpers.js'
 

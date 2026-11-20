@@ -1,5 +1,5 @@
 // The player bar on the TV (player-bar.js), where OK opens the full Now
-// Playing (tizen-now-playing.js). Behind the whole app is the album art,
+// Playing (tv-now-playing.js). Behind the whole app is the album art,
 // blurred and dark, as in Now Playing; without art, a gradient of the
 // player's hue.
 
