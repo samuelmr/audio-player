@@ -213,12 +213,27 @@ function coveringBar(element) {
   return bar && !bar.contains(element) && bar.parentNode.contains(element) ? bar : null
 }
 
+// A list that scrolls in a box of its own (the queue) is entered at what
+// shows of it: the items scrolled out of its box still have a place on the
+// screen, over what's above or below the box. Inside the list, they're the
+// next ones up or down, and moving to them scrolls the list.
+function scrolledAway(element, current) {
+  const rect = element.getBoundingClientRect()
+  for (let scroller = element.parentElement; scroller && !scroller.contains(current); scroller = scroller.parentElement) {
+    if (getComputedStyle(scroller).overflowY == 'visible') continue
+    const visible = scroller.getBoundingClientRect()
+    if (rect.bottom <= visible.top || rect.top >= visible.bottom) return true
+  }
+  return false
+}
+
 function closest(from, current, options, direction) {
   let best, bestScore = Infinity
   for (const option of options) {
     if (option == current || !usable(option)) continue
     const optionScore = score(from, box(option, direction == 'up' || direction == 'down'), direction)
-    if (optionScore < bestScore) {
+    // measured only for a better option, as it looks up the styles around it
+    if (optionScore < bestScore && !scrolledAway(option, current)) {
       best = option
       bestScore = optionScore
     }

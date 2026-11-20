@@ -79,6 +79,35 @@ test.describe('the queue', () => {
     await remote.press('OK')
     await expectPlaying(page, 'Freddie Freeloader')
   })
+
+  // in a long queue playing far down, the tracks scrolled out of the queue's
+  // box have their places over the sources and Shuffle
+  test('Down from the summary skips the tracks scrolled out of view, which Up still reaches in the queue', async ({page, remote}) => {
+    for (const name of ['ABBA', 'Björk']) {
+      await focusOn(folder(page, name))
+      await remote.press('OK')
+    }
+    await focusOn(page.locator('audio-browser li.song[data-key="KLF - 3 a.m. Eternal.mp3"]'))
+    await remote.press('OK')
+    await expect(queue(page)).toHaveCount(7)
+    await focusOn(summary(page))
+    await remote.press('OK')
+    // the first track just under the summary, out of the queue's box
+    const hidden = await queue(page).nth(0).evaluate((track) => {
+      const nav = track.parentNode
+      nav.scrollTop += track.getBoundingClientRect().top - document.querySelector('.queue-summary').getBoundingClientRect().bottom - 2
+      return track.getBoundingClientRect().bottom <= nav.getBoundingClientRect().top
+    })
+    expect(hidden).toBe(true)
+    await remote.press('Down')
+    await expect(page.locator('audio-player button.shuffle')).toBeFocused()
+    await remote.press('Left')
+    await expect(page.locator('audio-player ol.collection a').last()).toBeFocused()
+
+    await focusOn(queue(page).nth(1))
+    await remote.press('Up')
+    await expect(queue(page).nth(0)).toBeFocused()
+  })
 })
 
 test.describe('the media keys', () => {
