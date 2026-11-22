@@ -154,9 +154,10 @@ test.describe('one audio element', () => {
   test('plays the next track from memory in the same element', async ({page, remote}) => {
     await page.evaluate(() => {
       window.otherLoaded = []
+      // only the audio elements: the album art's src may come in meanwhile
       new MutationObserver((records) => {
         for (const {target} of records) {
-          if (!target.classList.contains('current') && target.getAttribute('src')) {
+          if (target.tagName == 'AUDIO' && !target.classList.contains('current') && target.getAttribute('src')) {
             window.otherLoaded.push(target.getAttribute('src'))
           }
         }
