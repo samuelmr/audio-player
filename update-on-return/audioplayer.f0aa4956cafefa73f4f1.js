@@ -1112,7 +1112,7 @@ const dy=/<script[^>]*\ssrc="([^"]*audioplayer\.[0-9a-f]{8,}\.js)"/;function uy(
 async function(){const e=document.querySelector('script[src*="audioplayer."]');if(!e)return;
 // fetch() calls pass the service worker (sw.js), and 'no-cache' passes the
 // browser's cache, so this is the page as the host has it now
-const t=await fetch(location.pathname,{cache:"no-cache"});if(!t.ok)throw new Error(`The page gave HTTP ${t.status}`);const r=(await t.text()).match(dy);if(!r)return;const n=(e,t)=>new URL(e,t).pathname;n(r[1],t.url)==n(e.src)||document.querySelector("audio-player audio-track")||document.querySelector("dialog[open]")||[...document.querySelectorAll("input[type=search]")].some(e=>e.value)||location.reload()}().catch(e=>console.warn("Checking for a new version failed:",e))})}// ./src/startup.js
+const t=await fetch(location.pathname,{cache:"no-cache"});if(!t.ok)throw new Error(`The page gave HTTP ${t.status}`);const r=(await t.text()).match(dy);if(!r)return;const n=(e,t)=>new URL(e,t).pathname;n(r[1],t.url)==n(e.src)||document.querySelector("audio-player audio-track")||document.querySelector("dialog[open]")||[...document.querySelectorAll("input[type=search]")].some(e=>e.value)||(console.info(`Reloading to the new version, ${r[1]}`),location.reload())}().catch(e=>console.warn("Checking for a new version failed:",e))})}// ./src/startup.js
 // When the address names playlists, they are read at once and the library
 // waits: the first track gets the connection to itself, as the metadata of
 // the library would otherwise take it. The library goes on when that track
