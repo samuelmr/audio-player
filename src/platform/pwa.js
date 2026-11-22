@@ -11,6 +11,7 @@ import { initPlayerBar } from '../player-bar.js'
 import { initQueue } from '../queue.js'
 import { initAdding, itemName, startAdding } from '../adding.js'
 import { initNowPlaying, open as openNowPlaying, close as closeNowPlaying, isOpen } from '../now-playing.js'
+import { initAppUpdate } from '../app-update.js'
 
 // a browser plays two audio elements at once (player.js)
 export const oneAudioElement = false
@@ -31,6 +32,7 @@ export function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(e => console.warn('Service worker registration failed:', e))
   }
+  initAppUpdate()
 }
 
 // Now Playing opens with the expand button at the top right, or a tap on

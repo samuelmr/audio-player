@@ -309,6 +309,11 @@ Open the address of the app (or of your `index.html`) in a browser. On a phone,
 you can add it to the home screen (Share → *Add to Home Screen* on iOS, the
 menu → *Install app* or *Add to Home screen* on Android) to use it like an app.
 
+The app takes a new version into use when it's opened, and when it comes back
+to the front with nothing in the queue, no dialog open and nothing typed in the
+search. With something queued, it waits so as not to lose the queue: close the
+app (on iOS, swipe it away in the app switcher) and open it again to update.
+
 ### Settings
 
 The first time, the settings open by themselves. Later, open them with the ⚙
