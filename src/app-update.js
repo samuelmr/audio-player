@@ -31,6 +31,7 @@ async function checkForUpdate() {
   if (!latest) return
   const path = (src, base) => new URL(src, base).pathname
   if (path(latest[1], response.url) != path(running.src) && nothingToLose()) {
+    console.info(`Reloading to the new version, ${latest[1]}`)
     location.reload()
   }
 }
