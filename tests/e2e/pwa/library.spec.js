@@ -120,7 +120,7 @@ test('adds an .m3u playlist, with the metadata of its tracks', async ({page}) =>
   await playlist(page, 'Swedish').click()
   await expect(titles(page)).toHaveText(['Money, Money, Money', 'Knowing Me, Knowing You'])
   // the first from its #EXTINF line
-  await expect(queue(page).locator('span.duration')).toHaveText(['2:05', '0:02'])
+  await expect(queue(page).locator('span.duration')).toHaveText(['2:05', '0:03'])
 })
 
 test('a link to a playlist in the format that is not listed adds the listed one', async ({page}) => {

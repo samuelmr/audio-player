@@ -115,6 +115,16 @@ test('plays the next track in the element that loaded it while the previous one 
   expect(current).toEqual({...waiting, current: true})
 })
 
+// the next track's metadata loaded while the other element was the current one
+test('shows the length of the next track when it plays from the other element', async ({page}) => {
+  await addFolder(page, 'ABBA')
+  await expectPlaying(page, 'Dancing Queen')
+  await expect(page.locator('#trackLength')).toHaveValue('0:02')
+  await expectPlaying(page, 'Knowing Me, Knowing You')
+  await expect(page.locator('#trackLength')).toHaveValue('0:03')
+  await expect(page.locator('#progress')).toHaveAttribute('max', '3')
+})
+
 // iOS may let the position of a paused element run on in the background
 test('starts the next track from the beginning, also when the other element has run on', async ({page}) => {
   await page.addInitScript(() => {

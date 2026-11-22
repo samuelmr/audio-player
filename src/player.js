@@ -208,12 +208,6 @@ export function initPlayer(player, {oneAudioElement = false} = {}) {
   })
   player.appendChild(progress)
 
-  const updateDuration = function() {
-    const seconds = parseInt(audio.duration)
-    progress.max = seconds
-    trackLength.value = parseInt(seconds/60) + ':' + parseInt(seconds%60).toString().padStart(2, '0')
-    cursor.max = '0:' + trackLength.value
-  }
   const requestWakeLock = async () => {
     if (wakelockCooldown) {
       wakelockCooldown = clearTimeout(wakelockCooldown) // returns undefined
@@ -571,12 +565,22 @@ function getHue(r, g, b) {
   return Math.round(h*360)
 }
 
+function updateDuration() {
+  const seconds = parseInt(audio.duration)
+  progress.max = seconds
+  trackLength.value = parseInt(seconds/60) + ':' + parseInt(seconds%60).toString().padStart(2, '0')
+  cursor.max = '0:' + trackLength.value
+}
+
 function switchTo(el) {
   standby = audio
   audio = el
   standby.classList.remove('current')
   audio.classList.add('current')
   audio.muted = false
+  // a track loaded in the other element had its metadata before it was the
+  // current one, when 'loadedmetadata' was not listened to
+  if (audio.readyState >= audio.HAVE_METADATA) updateDuration()
 }
 
 // the track in the other element, if it is the one to play and is ready

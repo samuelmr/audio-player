@@ -22,6 +22,7 @@ export const PUBLIC_SETTINGS = {
 }
 
 // the ABBA tracks are short, to test moving on at the end of a track, and
+// not all of the same length, to see the length change with the track;
 // the Miles Davis ones long enough to seek in.
 // meta becomes x-amz-meta-* headers, like the metadata of the real uploads;
 // length is in milliseconds, as in the tags the uploads were made from
@@ -29,7 +30,7 @@ const track = (key, seconds, meta) => ({key, seconds, meta: {length: String(seco
 
 export const TRACKS = [
   track('ABBA/Arrival/01 Dancing Queen.mp3', 2, {artist: 'ABBA', album: 'Arrival', title: 'Dancing Queen', tracknumber: '1', year: '1976'}),
-  track('ABBA/Arrival/02 Knowing Me, Knowing You.mp3', 2, {artist: 'ABBA', album: 'Arrival', title: 'Knowing Me, Knowing You', tracknumber: '2', year: '1976'}),
+  track('ABBA/Arrival/02 Knowing Me, Knowing You.mp3', 3, {artist: 'ABBA', album: 'Arrival', title: 'Knowing Me, Knowing You', tracknumber: '2', year: '1976'}),
   track('ABBA/Arrival/03 Money, Money, Money.mp3', 2, {artist: 'ABBA', album: 'Arrival', title: 'Money, Money, Money', tracknumber: '3', year: '1976'}),
   track('Björk/Debut/01 Human Behaviour.mp3', 2, {artist: 'Björk', artistsort: 'Guðmundsdóttir, Björk', album: 'Debut', title: 'Human Behaviour', tracknumber: '1', year: '1993'}),
   track('Miles Davis/Kind of Blue/01 So What.mp3', 30, {artist: 'Miles Davis', artistsort: 'Davis, Miles', album: 'Kind of Blue', title: 'So What', tracknumber: '1', year: '1959', genre: 'Jazz', image: 'Miles Davis/Kind of Blue/cover.png'}),
