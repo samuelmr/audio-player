@@ -1096,66 +1096,82 @@ let Ng,$g,Og,Dg,jg;const _g=()=>jg.classList.contains("collapsed");function zg()
 // the playing track changes by class, and its details arrive with it
 new MutationObserver(iy).observe(zp,{childList:!0,subtree:!0,attributeFilter:["class"]});for(const e of["play","pause","loadedmetadata","emptied"])tg(e,iy);return tg("timeupdate",ly),iy(),qg}const oy=()=>!qg.hidden;
 // false when nothing plays
-function sy(){return!!zp.querySelector("audio-track.playing")&&(iy(),qg.hidden=!1,!0)}function ay(){oy()&&(qg.hidden=!0,ry())}function iy(){const e=zp.querySelector("audio-track.playing");if(!e)return void ay();const t=Mg(e);qg.classList.toggle("no-art",!t.cover),t.cover&&Kg.getAttribute("src")!=t.cover&&(Kg.src=t.cover,Fg.style.backgroundImage=`url("${t.cover}")`),Wg.textContent=t.title,Xg.textContent=t.artist,Gg.textContent=t.album,Qg.textContent=[t.genre,t.keywords].filter(Boolean).join(" · "),Vg.hidden=!Dp.paused,ty&&(ty.innerHTML=Dp.paused?me:he),ey.innerHTML="";let r=e.nextElementSibling;for(let e=0;r&&e<3;e++,r=r.nextElementSibling){const e=document.createElement("li");e.textContent=Mg(r).line,ey.appendChild(e)}ey.previousElementSibling.hidden=!ey.firstChild,ly()}const cy=e=>`${Math.floor(e/60)}:${Math.floor(e%60).toString().padStart(2,"0")}`;function ly(){oy()&&Dp.duration&&(Zg.style.width=100*Dp.currentTime/Dp.duration+"%",Yg.textContent=`${cy(Dp.currentTime)} / ${cy(Dp.duration)}`)}// ./src/startup.js
+function sy(){return!!zp.querySelector("audio-track.playing")&&(iy(),qg.hidden=!1,!0)}function ay(){oy()&&(qg.hidden=!0,ry())}function iy(){const e=zp.querySelector("audio-track.playing");if(!e)return void ay();const t=Mg(e);qg.classList.toggle("no-art",!t.cover),t.cover&&Kg.getAttribute("src")!=t.cover&&(Kg.src=t.cover,Fg.style.backgroundImage=`url("${t.cover}")`),Wg.textContent=t.title,Xg.textContent=t.artist,Gg.textContent=t.album,Qg.textContent=[t.genre,t.keywords].filter(Boolean).join(" · "),Vg.hidden=!Dp.paused,ty&&(ty.innerHTML=Dp.paused?me:he),ey.innerHTML="";let r=e.nextElementSibling;for(let e=0;r&&e<3;e++,r=r.nextElementSibling){const e=document.createElement("li");e.textContent=Mg(r).line,ey.appendChild(e)}ey.previousElementSibling.hidden=!ey.firstChild,ly()}const cy=e=>`${Math.floor(e/60)}:${Math.floor(e%60).toString().padStart(2,"0")}`;function ly(){oy()&&Dp.duration&&(Zg.style.width=100*Dp.currentTime/Dp.duration+"%",Yg.textContent=`${cy(Dp.currentTime)} / ${cy(Dp.duration)}`)}// ./src/app-update.js
+// A new version of the web app, taken into use when the app comes back to the
+// front. A home screen app on iOS isn't started again when it's opened: the
+// page left in the background comes back as it was, for days if need be.
+// The scripts are named by their content (webpack.config.js), so the page on
+// the host loads another script when there is a new version. The app reloads
+// to it only when that loses nothing: nothing queued, no dialog open, no
+// search typed. Otherwise it waits for the next time it comes to the front,
+// or for the app to be closed. The TV apps run the script of their package,
+// and don't check.
+// the app's own script in index.html, such as audioplayer.0123456789abcdef.js
+const dy=/<script[^>]*\ssrc="([^"]*audioplayer\.[0-9a-f]{8,}\.js)"/;function uy(){document.addEventListener("visibilitychange",()=>{"visible"==document.visibilityState&&
+// offline, or the host is down: the app goes on as it is
+async function(){const e=document.querySelector('script[src*="audioplayer."]');if(!e)return;
+// fetch() calls pass the service worker (sw.js), and 'no-cache' passes the
+// browser's cache, so this is the page as the host has it now
+const t=await fetch(location.pathname,{cache:"no-cache"});if(!t.ok)throw new Error(`The page gave HTTP ${t.status}`);const r=(await t.text()).match(dy);if(!r)return;const n=(e,t)=>new URL(e,t).pathname;n(r[1],t.url)==n(e.src)||document.querySelector("audio-player audio-track")||document.querySelector("dialog[open]")||[...document.querySelectorAll("input[type=search]")].some(e=>e.value)||(console.info(`Reloading to the new version, ${r[1]}`),location.reload())}().catch(e=>console.warn("Checking for a new version failed:",e))})}// ./src/startup.js
 // When the address names playlists, they are read at once and the library
 // waits: the first track gets the connection to itself, as the metadata of
 // the library would otherwise take it. The library goes on when that track
 // can play, or after a while, whichever comes first.
-let dy,uy,fy=!1;
+let fy,hy,my=!1;
 // media events don't bubble, but they can be caught on the way down. The
 // element that plays is the one marked current.
-const hy=e=>{e.target?.classList?.contains("current")&&my()};function my(){if(!fy)return;fy=!1,clearTimeout(uy),document.removeEventListener("canplay",hy,!0);const e=dy;dy=void 0,e?.()}
+const py=e=>{e.target?.classList?.contains("current")&&gy()};function gy(){if(!my)return;my=!1,clearTimeout(hy),document.removeEventListener("canplay",py,!0);const e=fy;fy=void 0,e?.()}
 // the latest request counts: a new one replaces one that waits
 // ./src/search.js
-let py,gy,yy,wy,ky;
+let yy,wy,ky,by,Cy;
 // when each listed key was last modified, for the metadata cache
-const by=new Map;let Cy=0;
+const vy=new Map;let Sy=0;
 // the bucket may have changed
-function vy(){wy=ky=null,by.clear()}
+function By(){by=Cy=null,vy.clear()}
 // list every track key in the bucket once, so search also covers unopened
 // folders; the library scan reads the keys from here too
-function Sy(){return!ky&&Nm&&(ky=(async()=>{const e=[];let t;do{const r={Bucket:$m};t&&(r.ContinuationToken=t);const n=await Nm.send(new Km(r));for(const t of n.Contents||[])t.Key.endsWith(".mp3")&&(e.push(t.Key),by.set(t.Key,t.LastModified));t=n.IsTruncated?n.NextContinuationToken:null}while(t);return wy=e,e})(),ky.catch(e=>{console.error(e),ky=null})),ky}
+function Py(){return!Cy&&Nm&&(Cy=(async()=>{const e=[];let t;do{const r={Bucket:$m};t&&(r.ContinuationToken=t);const n=await Nm.send(new Km(r));for(const t of n.Contents||[])t.Key.endsWith(".mp3")&&(e.push(t.Key),vy.set(t.Key,t.LastModified));t=n.IsTruncated?n.NextContinuationToken:null}while(t);return by=e,e})(),Cy.catch(e=>{console.error(e),Cy=null})),Cy}
 // when a listed key was last modified, for its cached metadata
-const By=e=>by.get(e),Py=e=>{try{return decodeURIComponent(e)}catch(t){return e}},xy=e=>e.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();async function Ey(){const e=++Cy,t=py.value.trim();if(t.length</* inlined export .MIN_SEARCH_LENGTH */2)return void(gy.innerHTML="");wy||Sy()?.then(()=>{e==Cy&&Ey()},()=>{});const r=xy(t).split(/\s+/),n=e=>{const t=xy(e);return r.every(e=>t.includes(e))},o={};try{for(const e of await Rm())o[e.key]=e}catch(e){
+const xy=e=>vy.get(e),Ey=e=>{try{return decodeURIComponent(e)}catch(t){return e}},Ay=e=>e.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();async function Ty(){const e=++Sy,t=yy.value.trim();if(t.length</* inlined export .MIN_SEARCH_LENGTH */2)return void(wy.innerHTML="");by||Py()?.then(()=>{e==Sy&&Ty()},()=>{});const r=Ay(t).split(/\s+/),n=e=>{const t=Ay(e);return r.every(e=>t.includes(e))},o={};try{for(const e of await Rm())o[e.key]=e}catch(e){
 // without the cache, the search goes by the keys
-console.warn("Reading the metadata cache failed:",e)}if(e!=Cy)return;
+console.warn("Reading the metadata cache failed:",e)}if(e!=Sy)return;
 // until the bucket listing arrives, fall back to the tracks seen before
-const s=wy||Object.keys(o).filter(e=>e.endsWith(".mp3")),a=new Set,i=[];for(const e of s){const t=e.split(/* inlined export .folderDelimiter */"/");for(let e=1;e<t.length;e++)a.add(t.slice(0,e).join(/* inlined export .folderDelimiter */"/"));const r=o[e],s=r?[e,...Object.values(r).map(Py)].join(" "):e;i.length</* inlined export .MAX_SEARCH_RESULTS */50&&n(s)&&i.push({key:e,record:r})}const c=[...a].filter(n).slice(0,/* inlined export .MAX_FOLDER_RESULTS */20),l=e=>e.firstChild.textContent.trim(),d=[...rp.querySelectorAll("li.playlist")].filter(e=>n(l(e)));
+const s=by||Object.keys(o).filter(e=>e.endsWith(".mp3")),a=new Set,i=[];for(const e of s){const t=e.split(/* inlined export .folderDelimiter */"/");for(let e=1;e<t.length;e++)a.add(t.slice(0,e).join(/* inlined export .folderDelimiter */"/"));const r=o[e],s=r?[e,...Object.values(r).map(Ey)].join(" "):e;i.length</* inlined export .MAX_SEARCH_RESULTS */50&&n(s)&&i.push({key:e,record:r})}const c=[...a].filter(n).slice(0,/* inlined export .MAX_FOLDER_RESULTS */20),l=e=>e.firstChild.textContent.trim(),d=[...rp.querySelectorAll("li.playlist")].filter(e=>n(l(e)));
 // by name only: the TV app may list the playlist's tracks inside its item
-gy.innerHTML="";for(const e of c)Ay("result-folder",e,"",async()=>{const t=await Sy();if(!t)throw new Error("No bucket");Ty(t.filter(t=>t.startsWith(e+/* inlined export .folderDelimiter */"/")),e,"folder")});for(const e of d)Ay("result-playlist",l(e),"",()=>e.querySelector(":scope > a.add")?.click());for(const{key:e,record:t}of i){const r=e.split(/* inlined export .folderDelimiter */"/"),n=r.pop().replace(/\.mp3$/,"");Ay("result-track",Py(t?.title||t?.name||"")||n,[Py(t?.artist||""),Py(t?.album||"")].filter(Boolean).join(" – ")||r.join(/* inlined export .folderDelimiter */"/"),()=>Ty([e],e,"song"))}if(!gy.firstChild){const e=document.createElement("li");e.className="empty",e.textContent=z.noResults,gy.appendChild(e)}}function Ay(e,t,r,n){const o=document.createElement("li");o.className=e;const s=document.createElement("span");if(s.className="name",s.textContent=t,o.appendChild(s),r){const e=document.createElement("small");e.textContent=" "+r,o.appendChild(e)}const a=document.createElement("a");a.className="action add",a.href="#",a.title="result-track"==e?z.playSong:z.playFolder,a.innerHTML=ye,a.onclick=async e=>{e.preventDefault(),e.stopPropagation();try{await n()}catch(e){Q(e,z.listingFailed)}},o.appendChild(document.createTextNode(" ")),o.appendChild(a),gy.appendChild(o)}async function Ty(e,t,r){_p.appendChild(cg(r,t,t));
+wy.innerHTML="";for(const e of c)My("result-folder",e,"",async()=>{const t=await Py();if(!t)throw new Error("No bucket");Ry(t.filter(t=>t.startsWith(e+/* inlined export .folderDelimiter */"/")),e,"folder")});for(const e of d)My("result-playlist",l(e),"",()=>e.querySelector(":scope > a.add")?.click());for(const{key:e,record:t}of i){const r=e.split(/* inlined export .folderDelimiter */"/"),n=r.pop().replace(/\.mp3$/,"");My("result-track",Ey(t?.title||t?.name||"")||n,[Ey(t?.artist||""),Ey(t?.album||"")].filter(Boolean).join(" – ")||r.join(/* inlined export .folderDelimiter */"/"),()=>Ry([e],e,"song"))}if(!wy.firstChild){const e=document.createElement("li");e.className="empty",e.textContent=z.noResults,wy.appendChild(e)}}function My(e,t,r,n){const o=document.createElement("li");o.className=e;const s=document.createElement("span");if(s.className="name",s.textContent=t,o.appendChild(s),r){const e=document.createElement("small");e.textContent=" "+r,o.appendChild(e)}const a=document.createElement("a");a.className="action add",a.href="#",a.title="result-track"==e?z.playSong:z.playFolder,a.innerHTML=ye,a.onclick=async e=>{e.preventDefault(),e.stopPropagation();try{await n()}catch(e){Q(e,z.listingFailed)}},o.appendChild(document.createTextNode(" ")),o.appendChild(a),wy.appendChild(o)}async function Ry(e,t,r){_p.appendChild(cg(r,t,t));
 // one at a time, to keep the queue in the listed order
-for(const r of e){const e={Key:r};try{try{e.Metadata=await zm(r,by.get(r))}catch(t){e.Metadata={}}e.href=await jm(r),ig(t),await bg(e)}catch(e){Q(e,z.trackFailed(r.replace(/^.*\//,"")))}}}// ./src/shuffle.js
+for(const r of e){const e={Key:r};try{try{e.Metadata=await zm(r,vy.get(r))}catch(t){e.Metadata={}}e.href=await jm(r),ig(t),await bg(e)}catch(e){Q(e,z.trackFailed(r.replace(/^.*\//,"")))}}}// ./src/shuffle.js
 // Shuffle, beside Save offline: a toggle. On, the queue is in a random
 // order with the playing track first, and tracks added meanwhile go to a
 // random place after the playing one. Off, the queue is back in the order
 // the tracks were added in. The queue itself is reordered, so that it, Up
 // next and the track loaded ahead show the order the tracks play in.
-let My,Ry=!1;
+let Ly,Iy=!1;
 // audio-track -> when it was added; tracks are only ever appended
-const Ly=new WeakMap;let Iy=0;
+const Ny=new WeakMap;let $y=0;
 // a new array of the items in a random order (Fisher–Yates)
-const Ny=()=>[...zp.querySelectorAll("audio-track")];
+const Oy=()=>[...zp.querySelectorAll("audio-track")];
 // adds the button to the queue's actions, before Save offline
-function $y(){const e=Ny(),t=e.filter(e=>!Ly.has(e));for(const e of t)Ly.set(e,Iy++);
+function Dy(){const e=Oy(),t=e.filter(e=>!Ny.has(e));for(const e of t)Ny.set(e,$y++);
 // an emptied queue starts over in order
-e.length?Ry&&t.length&&
+e.length?Iy&&t.length&&
 // each to a random place after the playing track, or anywhere if none plays
-function(e){for(const t of e){const e=Ny().filter(e=>e!=t),r=e.findIndex(e=>e.classList.contains("playing")),n=e[r+1+Math.floor(Math.random()*(e.length-r))]||null;n!=t.nextElementSibling&&zp.insertBefore(t,n)}}(t):Oy(!1),
+function(e){for(const t of e){const e=Oy().filter(e=>e!=t),r=e.findIndex(e=>e.classList.contains("playing")),n=e[r+1+Math.floor(Math.random()*(e.length-r))]||null;n!=t.nextElementSibling&&zp.insertBefore(t,n)}}(t):jy(!1),
 // with one track, there's nothing to shuffle
-My.hidden=e.length<2}function Oy(e){Ry=e,My.setAttribute("aria-pressed",String(Ry)),Ry?function(){const e=Ny(),t=e.find(e=>e.classList.contains("playing")),r=function(e,t=Math.random){const r=[...e];for(let e=r.length-1;e>0;e--){const n=Math.floor(t()*(e+1));[r[e],r[n]]=[r[n],r[e]]}return r}(e.filter(e=>e!=t));zp.append(...t?[t,...r]:r)}():function(){const e=Ny(),t=[...e].sort((e,t)=>Ly.get(e)-Ly.get(t));
+Ly.hidden=e.length<2}function jy(e){Iy=e,Ly.setAttribute("aria-pressed",String(Iy)),Iy?function(){const e=Oy(),t=e.find(e=>e.classList.contains("playing")),r=function(e,t=Math.random){const r=[...e];for(let e=r.length-1;e>0;e--){const n=Math.floor(t()*(e+1));[r[e],r[n]]=[r[n],r[e]]}return r}(e.filter(e=>e!=t));zp.append(...t?[t,...r]:r)}():function(){const e=Oy(),t=[...e].sort((e,t)=>Ny.get(e)-Ny.get(t));
 // moving tracks for nothing would load the next track again
-t.some((t,r)=>t!=e[r])&&zp.append(...t)}()}let Dy=null;
+t.some((t,r)=>t!=e[r])&&zp.append(...t)}()}let _y=null;
 // onProgress gets {done, total, failed} after each track. The result is the
 // same, also when the scan was stopped before the end.
-function jy(){Dy&&(Dy.stopped=!0)}window.addEventListener("unhandledrejection",e=>Q(e.reason)),window.addEventListener("error",e=>{
+function zy(){_y&&(_y.stopped=!0)}window.addEventListener("unhandledrejection",e=>Q(e.reason)),window.addEventListener("error",e=>{
 // a resource that didn't load, such as an image, is not an error of the code
 e.error&&Q(e.error)});
 // a link from the QR code of another device carries its settings
-let _y,zy=!1;try{const e=localStorage.getItem(j);zy=function(e=location.hash){if(!e.startsWith(`#${le}=`))return!1;history.replaceState(null,"",location.pathname+location.search);const t=fe(new URLSearchParams(e.slice(1)).get(le));for(const e of ce)"string"==typeof t[e]&&localStorage.setItem(e,t[e]);return!0}(),
+let Uy,Hy=!1;try{const e=localStorage.getItem(j);Hy=function(e=location.hash){if(!e.startsWith(`#${le}=`))return!1;history.replaceState(null,"",location.pathname+location.search);const t=fe(new URLSearchParams(e.slice(1)).get(le));for(const e of ce)"string"==typeof t[e]&&localStorage.setItem(e,t[e]);return!0}(),
 // the texts are set as the app starts
-zy&&localStorage.getItem(j)!=e&&location.reload()}catch(rs){
+Hy&&localStorage.getItem(j)!=e&&location.reload()}catch(rs){
 // told once the page is up
-_y=rs}const Uy=localStorage.getItem("playerColor");Uy&&document.documentElement.style.setProperty("--base-hue",Uy);const Hy=document.querySelector("audio-player");if(!Hy)throw new Error("Didn't find an audio-player element in HTML document");Hy.id||(Hy.id="my-audio-player");const qy=document.querySelector("audio-browser");if(!qy)throw new Error("Didn't find an audio-browser element in HTML document");const Fy=()=>["endpoint","region","bucketName"].map(Im).join(" ");let Ky=Fy();function Vy(){!
+Uy=rs}const qy=localStorage.getItem("playerColor");qy&&document.documentElement.style.setProperty("--base-hue",qy);const Fy=document.querySelector("audio-player");if(!Fy)throw new Error("Didn't find an audio-player element in HTML document");Fy.id||(Fy.id="my-audio-player");const Ky=document.querySelector("audio-browser");if(!Ky)throw new Error("Didn't find an audio-browser element in HTML document");const Vy=()=>["endpoint","region","bucketName"].map(Im).join(" ");let Wy=Vy();function Xy(){!
 // Without keys the bucket is public: the requests aren't signed, and the
 // tracks and covers are at their plain addresses. The region only matters
 // for signing, so any will do when it's not set.
@@ -1164,19 +1180,19 @@ function(){const e={};Dm.forEach(t=>{e[t]=Im(t)});const t=!e.accessKeyId&&!e.sec
 // with the headers of a request that had no Origin, such as the audio
 // element's: then the browser hides the metadata. The app's own requests
 // get an address of their own, which only requests with an Origin use.
-t&&Nm.middlewareStack.add(e=>t=>(t.request.query["x-cors"]="1",e(t)),{step:"build",name:"publicQuery"})}(),vy(),tp?.querySelector(":scope > ol:not(.playlists)")?.remove(),rp&&(rp.textContent="");
+t&&Nm.middlewareStack.add(e=>t=>(t.request.query["x-cors"]="1",e(t)),{step:"build",name:"publicQuery"})}(),By(),tp?.querySelector(":scope > ol:not(.playlists)")?.remove(),rp&&(rp.textContent="");
 // The playlists in the address are read first, and the first track gets
 // the connection to itself: the library waits for it. Folders and songs in
 // the address are found in the listing, so it can't wait for them.
 const e=function(){const e=[...op.playlist];return op.playlist.clear(),e}
 // folders and songs in the address are found in the listing
-();var t;e.length&&!(op.folder.size>0||op.song.size>0)&&(fy||(fy=!0,document.addEventListener("canplay",hy,!0),uy=setTimeout(my,/* inlined export .LIBRARY_HOLD_TIMEOUT */2e4))),async function(e){for(const t of e)try{await fp(await hp(t))}catch(e){Q(e,z.playlistFailed(t.replace(/^.*\//,"")))}}(e).finally(()=>{
+();var t;e.length&&!(op.folder.size>0||op.song.size>0)&&(my||(my=!0,document.addEventListener("canplay",py,!0),hy=setTimeout(gy,/* inlined export .LIBRARY_HOLD_TIMEOUT */2e4))),async function(e){for(const t of e)try{await fp(await hp(t))}catch(e){Q(e,z.playlistFailed(t.replace(/^.*\//,"")))}}(e).finally(()=>{
 // nothing came of them: nothing to wait for
-document.querySelector("audio-player audio-track")||my()}),t=()=>sp(tp),fy?dy=t:t()}!function(e){const t=document.createElement("div");t.className="search",py=document.createElement("input"),py.type="search",py.title=z.search,py.placeholder=z.searchPlaceholder,py.autocomplete="off",py.oninput=()=>{clearTimeout(yy),yy=setTimeout(Ey,/* inlined export .SEARCH_DEBOUNCE */250)},py.onkeydown=e=>{"Escape"==e.key&&(py.value="",Ey())},gy=document.createElement("ul"),gy.className="search-results",t.appendChild(py),t.appendChild(gy),e.appendChild(t)}(function(e,t){const r=document.createElement("nav");r.id="skipNav",np=document.createElement("ol");const n=document.createElement("li"),o=document.createElement("a");o.href=`#${t.id}`,o.title=z.jumpToPlayer,
+document.querySelector("audio-player audio-track")||gy()}),t=()=>sp(tp),my?fy=t:t()}!function(e){const t=document.createElement("div");t.className="search",yy=document.createElement("input"),yy.type="search",yy.title=z.search,yy.placeholder=z.searchPlaceholder,yy.autocomplete="off",yy.oninput=()=>{clearTimeout(ky),ky=setTimeout(Ty,/* inlined export .SEARCH_DEBOUNCE */250)},yy.onkeydown=e=>{"Escape"==e.key&&(yy.value="",Ty())},wy=document.createElement("ul"),wy.className="search-results",t.appendChild(yy),t.appendChild(wy),e.appendChild(t)}(function(e,t){const r=document.createElement("nav");r.id="skipNav",np=document.createElement("ol");const n=document.createElement("li"),o=document.createElement("a");o.href=`#${t.id}`,o.title=z.jumpToPlayer,
 // an image: not every font has the play symbol
 o.innerHTML=me,n.appendChild(o),np.appendChild(n),r.appendChild(np),tp=document.createElement("nav");const s=document.createElement("ol");s.id="playlists",s.className="playlists";const a=document.createElement("li");a.className="folder",a.innerHTML=z.playlistTitle,a.onclick=function(e){
 // not a click on a playlist in it
-e.target==this&&(e.preventDefault(),e.stopPropagation(),this.classList.toggle("open"))},rp=document.createElement("ol"),rp.className="playlists",a.appendChild(rp),s.appendChild(a);const i=document.createElement("li"),c=document.createElement("a");return c.title=z.jumpToPlaylists,c.href="#playlists",c.innerHTML="#",i.appendChild(c),np.appendChild(i),e.innerHTML="",e.appendChild(r),tp.appendChild(s),e.appendChild(tp),r}(qy,Hy));const Wy=// ./src/settings.js
+e.target==this&&(e.preventDefault(),e.stopPropagation(),this.classList.toggle("open"))},rp=document.createElement("ol"),rp.className="playlists",a.appendChild(rp),s.appendChild(a);const i=document.createElement("li"),c=document.createElement("a");return c.title=z.jumpToPlaylists,c.href="#playlists",c.innerHTML="#",i.appendChild(c),np.appendChild(i),e.innerHTML="",e.appendChild(r),tp.appendChild(s),e.appendChild(tp),r}(Ky,Fy));const Gy=// ./src/settings.js
 // addTransferControls comes from the platform: the ways of moving the
 // settings code between devices differ between the PWA and the TV app.
 // scanLibrary and stopLibraryScan run the library scan (scan.js).
@@ -1207,9 +1223,9 @@ if(v.value!=(localStorage.getItem(j)||""))return localStorage.setItem(j,v.value)
 // ss.classList.remove('open')
 i.close()}catch(e){x.textContent=e.toString()}};return i.appendChild(A),i.appendChild(l),i.appendChild(R),document.body.appendChild(i),document.body.appendChild(q),e.appendChild(c),{showError(e){
 // ss.classList.add('open')
-i.showModal(),x.textContent=e.toString()}}}(Hy,{onSave:()=>{
+i.showModal(),x.textContent=e.toString()}}}(Fy,{onSave:()=>{
 // the queued tracks are from the old source
-Fy()!=Ky&&(Ky=Fy(),function(){for(const e of[..._p.children])e.dataset.source.startsWith("offline:")||e.querySelector("a").click()}()),Vy(),Np()},addTransferControls:
+Vy()!=Wy&&(Wy=Vy(),function(){for(const e of[..._p.children])e.dataset.source.startsWith("offline:")||e.querySelector("a").click()}()),Xy(),Np()},addTransferControls:
 // the settings code moves through the clipboard or a QR code. The QR code is
 // a link, so a camera app can open it, and the scanner here reads it as well
 function({dialog:e,container:t,addButton:r,exportCode:n,importCode:o,setMessage:s}){r(z.copySettings,async()=>{await navigator.clipboard.writeText(n()),s(z.copied)}),r(z.pasteSettings,async()=>{let e;try{e=await navigator.clipboard.readText()}catch(e){
@@ -1220,11 +1236,11 @@ return f(),void s(e.message)}requestAnimationFrame(h)}},m=r(z.scanQR,async()=>{i
 // the camera would stay on
 throw f(),e}m.textContent=z.stopScan,requestAnimationFrame(h)}});t.appendChild(a),e.addEventListener("close",()=>{i(),f()})},hasLocalData:async function(){return await Tm,await Mm(Em.transaction("meta","readonly").objectStore("meta").count())>0},clearLocalData:async()=>{
 // a running scan would put the old metadata back
-jy(),
+zy(),
 // the metadata cache only: the offline playlists and tracks are kept
-await async function(){await Tm,await Mm(Em.transaction("meta","readwrite").objectStore("meta").clear())}(),vy(),await ip()},
+await async function(){await Tm,await Mm(Em.transaction("meta","readwrite").objectStore("meta").clear())}(),By(),await ip()},
 // the sort names may be new
-scanLibrary:e=>async function(e){const t={done:0,total:0,failed:0,stopped:!1};Dy=t;try{const r=await Sy();if(!r)throw new Error("No bucket");t.total=r.length,e(t);let n=0;const o=async()=>{for(;!t.stopped&&n<r.length;){const o=r[n++];try{await zm(o,By(o),"library")}catch(e){t.failed++}t.done++,e(t)}};return await Promise.all(Array.from({length:4},o)),t}finally{Dy=null}}(e).finally(ip),stopLibraryScan:jy});var Xy;!function(e,{oneAudioElement:t=!1}={}){eg=t;
+scanLibrary:e=>async function(e){const t={done:0,total:0,failed:0,stopped:!1};_y=t;try{const r=await Py();if(!r)throw new Error("No bucket");t.total=r.length,e(t);let n=0;const o=async()=>{for(;!t.stopped&&n<r.length;){const o=r[n++];try{await zm(o,xy(o),"library")}catch(e){t.failed++}t.done++,e(t)}};return await Promise.all(Array.from({length:4},o)),t}finally{_y=null}}(e).finally(ip),stopLibraryScan:zy});var Qy;!function(e,{oneAudioElement:t=!1}={}){eg=t;
 // Safari: this is a music player, which plays on in the background
 try{"audioSession"in navigator&&(navigator.audioSession.type="playback")}catch(e){console.warn("Setting the audio session type failed:",e)}const r=document.createElement("div");r.id="buttons";const n=document.createElement("button");n.title=z.previous,
 // prev.textContent = '⏮'
@@ -1277,7 +1293,7 @@ new MutationObserver(kg).observe(zp,{childList:!0});const l=()=>{
         parseInt(seconds/60).toString().padStart(2, '0'),
         parseInt(seconds%60).toString().padStart(2, '0')
       ].join(':')
-  */;Up.value=parseInt(e/60)+":"+parseInt(e%60).toString().padStart(2,"0"),Fp.value=e,"mediaSession"in navigator&&"setPositionState"in navigator.mediaSession&&Dp.duration&&Dp.currentTime&&navigator.mediaSession.setPositionState({duration:Dp.duration,position:Dp.currentTime,playbackRate:Dp.playbackRate})};c(Dp),c(Qp),n.onclick=e=>{mg()},jp.onclick=async e=>{if(!Dp.getAttribute("src"))return hg();Dp.paused?await Dp.play().catch(e=>console.warn("Playback failed:",e)):Dp.pause()},"mediaSession"in navigator&&(navigator.mediaSession.setActionHandler("play",e=>{Dp.play().catch(e=>console.warn("Playback failed:",e))}),navigator.mediaSession.setActionHandler("pause",e=>{Dp.pause()}),navigator.mediaSession.setActionHandler("previoustrack",mg),navigator.mediaSession.setActionHandler("nexttrack",hg),navigator.mediaSession.setActionHandler("stop",e=>{Dp.pause()}),navigator.mediaSession.setActionHandler("seekto",e=>{Dp.currentTime=e.seekTime}),navigator.mediaSession.setActionHandler("seekbackward",e=>{Dp.currentTime=Math.max(Dp.currentTime-e.seekOffset,0)}),navigator.mediaSession.setActionHandler("seekforward",e=>{Dp.currentTime=Math.min(Dp.currentTime+e.seekOffset,Dp.duration)}))}(Hy,{oneAudioElement:/* inlined export .oneAudioElement */!1}),Xy=function(e){
+  */;Up.value=parseInt(e/60)+":"+parseInt(e%60).toString().padStart(2,"0"),Fp.value=e,"mediaSession"in navigator&&"setPositionState"in navigator.mediaSession&&Dp.duration&&Dp.currentTime&&navigator.mediaSession.setPositionState({duration:Dp.duration,position:Dp.currentTime,playbackRate:Dp.playbackRate})};c(Dp),c(Qp),n.onclick=e=>{mg()},jp.onclick=async e=>{if(!Dp.getAttribute("src"))return hg();Dp.paused?await Dp.play().catch(e=>console.warn("Playback failed:",e)):Dp.pause()},"mediaSession"in navigator&&(navigator.mediaSession.setActionHandler("play",e=>{Dp.play().catch(e=>console.warn("Playback failed:",e))}),navigator.mediaSession.setActionHandler("pause",e=>{Dp.pause()}),navigator.mediaSession.setActionHandler("previoustrack",mg),navigator.mediaSession.setActionHandler("nexttrack",hg),navigator.mediaSession.setActionHandler("stop",e=>{Dp.pause()}),navigator.mediaSession.setActionHandler("seekto",e=>{Dp.currentTime=e.seekTime}),navigator.mediaSession.setActionHandler("seekbackward",e=>{Dp.currentTime=Math.max(Dp.currentTime-e.seekOffset,0)}),navigator.mediaSession.setActionHandler("seekforward",e=>{Dp.currentTime=Math.min(Dp.currentTime+e.seekOffset,Dp.duration)}))}(Fy,{oneAudioElement:/* inlined export .oneAudioElement */!1}),Qy=function(e){
 // class 'playlists' keeps getFolders from using these lists for folders
 Cp=document.createElement("ol"),Cp.id="offline-playlists",Cp.className="playlists",Cp.hidden=!0;const t=document.createElement("li");t.className="folder",t.textContent=z.offlinePlaylistsTitle+" ",t.onclick=function(e){
 // not a click on a playlist in it
@@ -1287,7 +1303,7 @@ const n=document.createElement("div");n.className="queue-actions",n.hidden=!0,n.
 // ask the browser not to evict offline storage under storage pressure
 navigator.storage?.persist?.(),await Op(),Np())}(i.value.trim())}catch(e){Q(e,"QuotaExceededError"==e.name?z.storageFull:z.offlineSaveFailed)}},Ep.then(async()=>{await Op(),
 // offline, the offline playlists are all there is to play
-navigator.onLine||Cp.querySelector(".folder").classList.add("open"),Np()}).catch(e=>Q(e)),window.addEventListener("online",()=>{yp.clear(),Np()}),n}(Hy),My=document.createElement("button"),My.type="button",My.className="shuffle",My.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg> '+z.shuffle,My.setAttribute("aria-pressed","false"),My.hidden=!0,My.onclick=()=>Oy(!Ry),Xy.insertBefore(My,Xy.firstChild),new MutationObserver($y).observe(zp,{childList:!0}),function(){const e=document.querySelector("audio-player");!function(e,t,{collapsed:r=!1}={}){Dg=e,jg=t,Ng=document.createElement("button"),Ng.type="button",Ng.className="queue-summary",$g=document.createElement("span"),$g.className="count",Og=document.createElement("span"),Og.className="next",Ng.appendChild($g),Ng.appendChild(Og),Ng.onclick=()=>_g()?Ug():Hg(),e.insertBefore(Ng,jg),r?Hg():Ug(),
+navigator.onLine||Cp.querySelector(".folder").classList.add("open"),Np()}).catch(e=>Q(e)),window.addEventListener("online",()=>{yp.clear(),Np()}),n}(Fy),Ly=document.createElement("button"),Ly.type="button",Ly.className="shuffle",Ly.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg> '+z.shuffle,Ly.setAttribute("aria-pressed","false"),Ly.hidden=!0,Ly.onclick=()=>jy(!Iy),Qy.insertBefore(Ly,Qy.firstChild),new MutationObserver(Dy).observe(zp,{childList:!0}),function(){const e=document.querySelector("audio-player");!function(e,t,{collapsed:r=!1}={}){Dg=e,jg=t,Ng=document.createElement("button"),Ng.type="button",Ng.className="queue-summary",$g=document.createElement("span"),$g.className="count",Og=document.createElement("span"),Og.className="next",Ng.appendChild($g),Ng.appendChild(Og),Ng.onclick=()=>_g()?Ug():Hg(),e.insertBefore(Ng,jg),r?Hg():Ug(),
 // the playing track changes by class
 new MutationObserver(zg).observe(jg,{childList:!0,subtree:!0,attributeFilter:["class"]}),zg()}(e,zp),
 // Now Playing opens with the expand button at the top right, or a tap on
@@ -1311,4 +1327,4 @@ document.querySelector("audio-browser").addEventListener("click",e=>{const t=e.i
 // returns what is being added, until the count is final
 function(e,t){q={name:e,count:0,onFirst:t},W(z.adding(e)),K(15e3)}(function(e){const t=[...e.childNodes].find(e=>e.nodeType==Node.TEXT_NODE&&e.textContent.trim());return(t?.textContent||e.querySelector(".name")?.textContent||"").trim().replace(/\.(mp3|json)$/,"")}(t.parentNode))},!0),window.addEventListener("keydown",e=>{if("button"==e.target.tagName.toLowerCase())return;if("range"==e.target.type)return;if("search"==e.target.type)return;let t=document.querySelector("audio-track:focus-within"),r=!1;switch(e.key){case" ":e.preventDefault(),jp.click();break;
 // case "Enter": play.disabled = true; audio.src = current.dataset.src; break
-case"Enter":t.querySelector(".name a")?.click();break;case"ArrowRight":hg();break;case"ArrowLeft":mg();break;case"ArrowDown":e.preventDefault(),t&&(r=t.nextElementSibling?t.nextElementSibling:t.parentNode.firstElementChild);break;case"ArrowUp":e.preventDefault(),t&&(r=t.previousElementSibling?t.previousElementSibling:t.parentNode.lastElementChild)}r&&r.focus()}),"serviceWorker"in navigator&&navigator.serviceWorker.register("./sw.js").catch(e=>console.warn("Service worker registration failed:",e))}(),zy&&V(z.settingsImported),_y&&Q(_y,z.invalidLink);try{Vy()}catch(rs){Wy.showError(rs)}
+case"Enter":t.querySelector(".name a")?.click();break;case"ArrowRight":hg();break;case"ArrowLeft":mg();break;case"ArrowDown":e.preventDefault(),t&&(r=t.nextElementSibling?t.nextElementSibling:t.parentNode.firstElementChild);break;case"ArrowUp":e.preventDefault(),t&&(r=t.previousElementSibling?t.previousElementSibling:t.parentNode.lastElementChild)}r&&r.focus()}),"serviceWorker"in navigator&&navigator.serviceWorker.register("./sw.js").catch(e=>console.warn("Service worker registration failed:",e)),uy()}(),Hy&&V(z.settingsImported),Uy&&Q(Uy,z.invalidLink);try{Xy()}catch(rs){Gy.showError(rs)}
