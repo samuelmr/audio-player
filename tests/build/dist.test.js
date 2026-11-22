@@ -12,17 +12,20 @@ describe('the PWA', () => {
   const dir = 'dist/pwa'
 
   test('has the files to deploy', () => {
-    // and the AWS SDK's lazily loaded chunks, such as 274.audioplayer.js
-    const files = fs.readdirSync(dir).filter(file => !/^\d+\.audioplayer\.js$/.test(file))
-    expect(files.sort()).toEqual(['audioplayer.js', 'fonts', 'index.html', 'manifest.json', 'play-192.png', 'play-512.png', 'privacy.html', 'sw.js'])
+    // the scripts are named by their content, and the AWS SDK's lazily
+    // loaded chunks by their number too, such as 274.0123456789abcdef.js
+    const files = fs.readdirSync(dir).filter(file => !/^\d+\.[0-9a-f]{8,}\.js$/.test(file))
+      .map(file => file.replace(/^audioplayer\.[0-9a-f]{8,}\.js$/, 'audioplayer.[hash].js'))
+    expect(files.sort()).toEqual(['audioplayer.[hash].js', 'fonts', 'index.html', 'manifest.json', 'play-192.png', 'play-512.png', 'privacy.html', 'sw.js'])
   })
 
   test('loads its script as a module, with the stylesheet inlined', () => {
     const html = read(`${dir}/index.html`)
-    expect(html).toMatch(/<script[^>]*type="module"[^>]*src="audioplayer.js"|<script[^>]*src="audioplayer.js"[^>]*type="module"/)
+    const script = fs.readdirSync(dir).find(file => file.startsWith('audioplayer.'))
+    expect(html).toMatch(new RegExp(`<script[^>]*type="module"[^>]*src="${script}"|<script[^>]*src="${script}"[^>]*type="module"`))
     expect(html).not.toContain('<%')
     expect(html).toContain(read('src/styles.css').trim())
-    expect(parses(`${dir}/audioplayer.js`, 'module')).not.toThrow()
+    expect(parses(`${dir}/${script}`, 'module')).not.toThrow()
   })
 
   // minified, but not bundled: service workers can't load modules everywhere

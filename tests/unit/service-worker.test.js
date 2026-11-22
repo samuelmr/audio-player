@@ -9,6 +9,8 @@ function fakeCaches() {
   const entries = new Map() // url -> response
   const cache = {
     put: vi.fn(async (request, response) => { entries.set(request.url, response) }),
+    keys: vi.fn(async () => [...entries.keys()].map(url => ({url}))),
+    delete: vi.fn(async (request) => entries.delete(request.url)),
     match: vi.fn(async (request, {ignoreSearch} = {}) => {
       const key = (url) => ignoreSearch ? url.split('?')[0] : url
       for (const [url, response] of entries) {
@@ -16,7 +18,13 @@ function fakeCaches() {
       }
     }),
   }
-  return {entries, cache, open: vi.fn(async () => cache)}
+  const names = new Set(['app-shell'])
+  return {
+    entries, cache, names,
+    open: vi.fn(async (name) => { names.add(name); return cache }),
+    keys: vi.fn(async () => [...names]),
+    delete: vi.fn(async (name) => names.delete(name)),
+  }
 }
 
 let listeners, caches, fetch, self
@@ -53,6 +61,24 @@ test('takes over at once, also the open pages', async () => {
   expect(self.clients.claim).toHaveBeenCalled()
 })
 
+test('deletes the caches of older versions when it takes over', async () => {
+  await caches.open('app-shell-2')
+  let waited
+  listeners.activate({waitUntil: (promise) => { waited = promise }})
+  await waited
+  expect([...caches.names]).toEqual(['app-shell-2'])
+})
+
+test('takes over even if deleting the old caches fails', async () => {
+  vi.spyOn(console, 'warn').mockImplementation(() => {})
+  caches.keys.mockRejectedValue(new Error('no caches'))
+  let waited
+  listeners.activate({waitUntil: (promise) => { waited = promise }})
+  await waited
+  expect(self.clients.claim).toHaveBeenCalled()
+  expect(console.warn).toHaveBeenCalled()
+})
+
 describe('handles the app itself', () => {
   test.each([
     ['the page', request('./', {mode: 'navigate', destination: 'document'})],
@@ -86,6 +112,33 @@ describe('network first', () => {
     const response = await dispatchFetch(request('audioplayer.js', {destination: 'script'}))
     expect(await response.text()).toBe('new')
     expect(caches.entries.has(`${ORIGIN}/music/audioplayer.js`)).toBe(true)
+  })
+
+  test("asks the host even when the browser's own cache has the file", async () => {
+    await dispatchFetch(request('audioplayer.js', {destination: 'script'}))
+    expect(fetch).toHaveBeenCalledWith(expect.anything(), {cache: 'no-cache'})
+  })
+
+  test('keeps only the newest version of a script named by its content', async () => {
+    const script = (name) => request(name, {destination: 'script'})
+    for (const name of ['audioplayer.0123456789abcdef.js', '274.0123456789abcdef.js', 'audioplayer.fedcba9876543210.js']) {
+      fetch.mockResolvedValueOnce(new Response(name, {status: 200}))
+      await dispatchFetch(script(name))
+    }
+    await vi.waitFor(() => expect(caches.entries.has(`${ORIGIN}/music/audioplayer.0123456789abcdef.js`)).toBe(false))
+    expect([...caches.entries.keys()].sort()).toEqual([
+      `${ORIGIN}/music/274.0123456789abcdef.js`,
+      `${ORIGIN}/music/audioplayer.fedcba9876543210.js`,
+    ])
+  })
+
+  test('gives the response even if caching it fails', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    caches.cache.put.mockRejectedValue(new DOMException('Quota exceeded', 'QuotaExceededError'))
+    fetch.mockResolvedValue(new Response('new', {status: 200}))
+    const response = await dispatchFetch(request('audioplayer.js', {destination: 'script'}))
+    expect(await response.text()).toBe('new')
+    await vi.waitFor(() => expect(console.warn).toHaveBeenCalled())
   })
 
   test("doesn't cache errors", async () => {

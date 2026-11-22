@@ -50,7 +50,10 @@ const shared = (name) => ({
 const pwa = {
   ...shared("pwa"),
   output: {
-    filename: "audioplayer.js",
+    // named by their content, so that a new index.html never gets an old
+    // script from a cache
+    filename: "audioplayer.[contenthash].js",
+    chunkFilename: "[id].[contenthash].js",
     path: path.resolve(__dirname, "dist/pwa"),
     clean: true,
     library: {

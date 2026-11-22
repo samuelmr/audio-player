@@ -286,8 +286,10 @@ DEFAULT_BUCKET_URL="https://s3.example.com/demo-music" npm run build:pwa
 ```
 
 The app is in `dist/pwa`. Serve all of its files over HTTPS from any static
-web host. Besides `audioplayer.js`, the build makes script chunks such as
-`274.audioplayer.js`, which the app loads when it needs them.
+web host. The scripts are named by their content, such as
+`audioplayer.24ad6ee1dbad5388a145.js` and the chunks the app loads when it
+needs them, such as `274.8e8eb985141576f7ce71.js`, so a new version never
+gets an old script from a cache.
 
 You can also serve the app from the object storage. The AWS CLI sets each
 file's content type from its extension:
@@ -299,7 +301,9 @@ aws --endpoint-url "$S3ENDPOINT" s3 cp dist/pwa "s3://$S3BUCKET/" --recursive
 These files have to be publicly readable. Depending on your provider, add
 `--acl public-read` to the command or make them public in the provider's
 settings. Your music doesn't have to be public: the app reads it with your key.
-The player doesn't need to be in the same bucket as the music files.
+The player doesn't need to be in the same bucket as the music files. Each new
+version adds scripts under new names; the old ones can be deleted after it's
+uploaded.
 
 Open the address of the app (or of your `index.html`) in a browser. On a phone,
 you can add it to the home screen (Share → *Add to Home Screen* on iOS, the
